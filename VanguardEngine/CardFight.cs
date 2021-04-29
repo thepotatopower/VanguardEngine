@@ -6,43 +6,27 @@ using System.IO;
 
 namespace VanguardEngine
 {
-    class CardFight
+    public class CardFight
     {
-        protected Player _player1;
-        protected Player _player2;
-        protected int _turn;
-        protected int _phase;
-        protected bool _gameOver = false;
-        protected LuaInterpreter luaInterpreter = new LuaInterpreter();
-        protected InputManager _inputManager;
+        public Player _player1;
+        public Player _player2;
+        public int _turn;
+        public int _phase;
+        public bool _gameOver = false;
+        public LuaInterpreter luaInterpreter = new LuaInterpreter();
+        public InputManager _inputManager;
+        public List<Card> _deck1;
+        public List<Card> _deck2;
 
 
-
-        public bool Initialize(string recipe1, string recipe2, InputManager inputManager)
+        public bool Initialize(List<Card> Deck1, List<Card> Deck2, InputManager inputManager)
         {
-            List<Card> deck1, deck2;
-            SQLiteDataAccess sql = new SQLiteDataAccess();
-            deck1 = new List<Card>();
-            deck2 = new List<Card>();
-            string[] f1 = File.ReadAllLines(recipe1);
-            string[] f2 = File.ReadAllLines(recipe2);
-            int tempID = 0;
-            Card card = null;
-            if (f1.Length != 52 || f2.Length != 52)
-            {
-                return false;
-            }
-            for (int i = 0; i < 52; i++)
-            {
-                if (i == 0 || i == 5)
-                    continue;
-                card = sql.Load(f1[i]);
-                card.tempID = tempID++;
-                deck1.Add(card);
-                card = sql.Load(f2[i]);
-                card.tempID = tempID++;
-                deck2.Add(card);
-            }
+            List<Card> deck1;
+            List<Card> deck2;
+            deck1 = Deck1;
+            deck2 = Deck2;
+            foreach (Card card in deck2)
+                card.tempID += 50;
             _player1 = new Player();
             _player2 = new Player();
             _player1.Initialize(deck1, deck2, _player2);
@@ -147,7 +131,7 @@ namespace VanguardEngine
             }
         }
 
-        protected int SelectPrompt(int max)
+        public int SelectPrompt(int max)
         {
             int selection = 0;
             string input;
@@ -161,13 +145,13 @@ namespace VanguardEngine
             }
             return selection;
         }
-        protected void Draw(Player player1, Player player2, int count)
+        public void Draw(Player player1, Player player2, int count)
         {
             player1.Draw(count);
             player2.EnemyDraw(count);
         }
 
-        protected void Mulligan(Player player1, Player player2)
+        public void Mulligan(Player player1, Player player2)
         {
             int selection;
             int mulliganCount = 0;
@@ -206,7 +190,7 @@ namespace VanguardEngine
             }
         }
 
-        protected void BrowseHand(Player player1)
+        public void BrowseHand(Player player1)
         {
             int max;
             int selection;
@@ -220,7 +204,7 @@ namespace VanguardEngine
             }
         }
 
-        protected void BrowseField(Player player1)
+        public void BrowseField(Player player1)
         {
             int max;
             int selection;
@@ -239,13 +223,13 @@ namespace VanguardEngine
             }
         }
 
-        protected void ShuffleDeck(Player player1, Player player2)
+        public void ShuffleDeck(Player player1, Player player2)
         {
             player1.ShuffleDeck();
             player2.EnemyShuffleDeck();
         }
 
-        protected void RidePhaseMenu(Player player1, Player player2)
+        public void RidePhaseMenu(Player player1, Player player2)
         {
             int input;
             bool CanRideFromRideDeck = player1.CanRideFromRideDeck();
@@ -281,7 +265,7 @@ namespace VanguardEngine
             }
         }
 
-        protected void Ride(Player player1, Player player2, int location, int selection)
+        public void Ride(Player player1, Player player2, int location, int selection)
         {
             List<Effect> effects;
             player1.Ride(location, selection, C.Player);
@@ -290,7 +274,7 @@ namespace VanguardEngine
             ActivateEffects(effects);
         }
 
-        protected void Discard(Player player1, Player player2, int count)
+        public void Discard(Player player1, Player player2, int count)
         {
             List<int> list;
             list = _inputManager.SelectCardsFromHand(count);
@@ -298,7 +282,7 @@ namespace VanguardEngine
             player2.Discard(list, C.Enemy);
         }
 
-        protected void MainPhaseMenu(Player player1, Player player2)
+        public void MainPhaseMenu(Player player1, Player player2)
         {
             int selection;
             int location;
@@ -359,7 +343,7 @@ namespace VanguardEngine
             }
         }
 
-        protected void Call(Player player1, Player player2, int location, int selection)
+        public void Call(Player player1, Player player2, int location, int selection)
         {
             //List<Effect> Effects;            
             player1.Call(location, selection, C.Player);
@@ -367,24 +351,24 @@ namespace VanguardEngine
             //Effects = player1.CheckForCallEffects();
         }
 
-        protected void MoveRearguard(Player player1, Player player2, int selection)
+        public void MoveRearguard(Player player1, Player player2, int selection)
         {
             player1.MoveRearguard(selection);
             player2.EnemyMoveRearguard(selection);
         }
 
-        protected void ActivateACT(Player player1, int selection)
+        public void ActivateACT(Player player1, int selection)
         {
             player1.ActivateACT(selection);
         }
 
-        protected void ActivateOrder(Player player1, Player player2, int selection)
+        public void ActivateOrder(Player player1, Player player2, int selection)
         {
             player1.ActivateOrder(selection);
             player2.EnemyActivateOrder(selection);
         }
 
-        protected void BattlePhaseMenu(Player player1, Player player2)
+        public void BattlePhaseMenu(Player player1, Player player2)
         {
             int selection;
             int target;
@@ -414,7 +398,7 @@ namespace VanguardEngine
             }
         }
 
-        protected void Attack(Player player1, Player player2, int attacker, int target)
+        public void Attack(Player player1, Player player2, int attacker, int target)
         {
             int selection;
             int max;
@@ -513,7 +497,7 @@ namespace VanguardEngine
             player2.EndAttack();
         }
 
-        protected void TriggerCheck(Player player1, Player player2, bool drivecheck)
+        public void TriggerCheck(Player player1, Player player2, bool drivecheck)
         {
             int check;
             int selection;
@@ -646,7 +630,7 @@ namespace VanguardEngine
             return false;
         }
     }
-    class C
+    public class C
     {
         public const bool Player = true;
         public const bool Enemy = false;

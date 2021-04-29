@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace VanguardEngine
 {
-    class InputManager
+    public class InputManager
     {
         Player _player1;
         Player _player2;
@@ -18,6 +18,7 @@ namespace VanguardEngine
         string string_input;
         Card card_input;
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
+        public EventHandler<CardEventArgs> OnPlayerSwap;
 
         public void Initialize(Player player1, Player player2)
         {
@@ -30,6 +31,8 @@ namespace VanguardEngine
             Player temp = _player1;
             _player1 = _player2;
             _player2 = temp;
+            if (OnPlayerSwap != null)
+                OnPlayerSwap(this, new CardEventArgs());
         }
 
         public int SelectPrompt(int max)

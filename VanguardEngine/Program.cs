@@ -19,7 +19,10 @@ namespace VanguardEngine
             //LuaTest testing = new LuaTest();
             //testing.Testing();
             Console.WriteLine("Starting CardFight.");
-            start = cardFight.Initialize("testDeck.txt", "testDeck.txt", inputManager);
+            LoadCards loadCards = new LoadCards();
+            List<Card> deck1 = loadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = loadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
+            start = cardFight.Initialize(deck1, deck2, inputManager);
             if (!start)
             {
                 Console.WriteLine("Initialization error.");
@@ -29,7 +32,6 @@ namespace VanguardEngine
             {
                 cardFight.StartFight();
             }
-           
         }
     }
 }

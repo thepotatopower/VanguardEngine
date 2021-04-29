@@ -6,9 +6,16 @@ namespace VanguardEngine
 {
     public class Player
     {
-        protected Field _field;
+        public Field _field;
         protected int _damage = 0;
         protected int _turn = 1;
+
+        public event EventHandler<CardEventArgs> OnDraw;
+        public event EventHandler<CardEventArgs> OnRideFromRideDeck;
+        public event EventHandler<CardEventArgs> OnRideFromHand;
+        public event EventHandler<CardEventArgs> OnCallFromHand;
+        public event EventHandler<CardEventArgs> OnCallFromDeck;
+        public event EventHandler<CardEventArgs> OnChangeColumn;
 
         public void Initialize(List<Card> deck1, List<Card> deck2, Player player2)
         {
@@ -38,13 +45,43 @@ namespace VanguardEngine
 
         public void Draw(int count)
         {
-            _field.Draw(count);
+            List<Card> cardsAdded = new List<Card>();
+            CardEventArgs args = new CardEventArgs();
+            for (int i = 0; i < count; i++)
+            {
+                _field.PlayerDeck[0].faceup = true;
+                _field.PlayerHand.Add(_field.PlayerDeck[0]);
+                cardsAdded.Add(_field.PlayerDeck[0]);
+                _field.PlayerDeck.Remove(_field.PlayerDeck[0]);
+            }
+            args.i = count;
+            args.cardList = cardsAdded;
+            args.player = true;
+            if (OnDraw != null)
+            {
+                OnDraw(this, args);
+            }
             Console.WriteLine("----------\nDrew " + count + " card(s).");
         }
 
         public void EnemyDraw(int count)
         {
-            _field.EnemyDraw(count);
+            List<Card> cardsAdded = new List<Card>();
+            CardEventArgs args = new CardEventArgs();
+            for (int i = 0; i < count; i++)
+            {
+                _field.EnemyDeck[0].faceup = true;
+                _field.EnemyHand.Add(_field.EnemyDeck[0]);
+                cardsAdded.Add(_field.EnemyDeck[0]);
+                _field.EnemyDeck.Remove(_field.EnemyDeck[0]);
+            }
+            args.i = count;
+            args.cardList = cardsAdded;
+            args.player = false;
+            if (OnDraw != null)
+            {
+                OnDraw(this, args);
+            }
         }
 
         public void ReturnCardFromHandToDeck(int selection, bool player)

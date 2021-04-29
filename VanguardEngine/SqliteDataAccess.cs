@@ -11,6 +11,7 @@ namespace VanguardEngine
 {
     public class SQLiteDataAccess
     {
+        public string connectionString;
         public Card Load(string id)
         {
             using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
@@ -19,9 +20,10 @@ namespace VanguardEngine
                 return output[0];
             }
         }
-        private static string LoadConnectionString(string id = "Default")
+        private string LoadConnectionString(string id = "Default")
         {
-            return ConfigurationManager.ConnectionStrings[id].ConnectionString;
+            //return ConfigurationManager.ConnectionStrings[id].ConnectionString;
+            return connectionString;
 
         }
     }

@@ -228,24 +228,5 @@ namespace VanguardEngine
                 list[_shuffleKey[n]] = temp;
             }
         }
-
-        public void Draw(int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                _playerDeck[0].faceup = true;
-                _playerHand.Add(_playerDeck[0]);
-                _playerDeck.Remove(_playerDeck[0]);
-            }
-        }
-
-        public void EnemyDraw(int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                _enemyHand.Add(_enemyDeck[0]);
-                _enemyDeck.Remove(_enemyDeck[0]);
-            }
-        }
     }
 }

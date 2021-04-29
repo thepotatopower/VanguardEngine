@@ -93,6 +93,8 @@ namespace VanguardEngine
         bool _isMandatory = true;
         bool _needsPrompt = true;
         bool _isSuperiorCall = false;
+        bool _active = true;
+        int _effectType;
         Script _script;
         DynValue _effectActivate;
 
