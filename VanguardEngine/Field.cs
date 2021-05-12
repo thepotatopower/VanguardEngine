@@ -177,7 +177,9 @@ namespace VanguardEngine
         {
             _enemyPlayer = enemyPlayer;
             _units[FL.PlayerVanguard] = deck1[0].Clone();
+            _units[FL.PlayerVanguard].faceup = false;
             _units[FL.EnemyVanguard] = deck2[0].Clone();
+            _units[FL.EnemyVanguard].faceup = false;
             for (int i = 1; i < 4; i++)
             {
                 _playerRideDeck.Add(deck1[i].Clone());

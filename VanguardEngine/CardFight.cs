@@ -13,13 +13,17 @@ namespace VanguardEngine
         public int _turn;
         public int _phase;
         public bool _gameOver = false;
-        public LuaInterpreter luaInterpreter = new LuaInterpreter();
+        public LuaInterpreter luaInterpreter;
         public InputManager _inputManager;
         public List<Card> _deck1;
         public List<Card> _deck2;
+        public EventHandler<CardEventArgs> OnDrawPhase;
+        public EventHandler<CardEventArgs> OnRidePhase;
+        public EventHandler<CardEventArgs> OnMainPhase;
+        public EventHandler<CardEventArgs> OnBattlePhase;
+        public EventHandler<CardEventArgs> OnEndPhase;
 
-
-        public bool Initialize(List<Card> Deck1, List<Card> Deck2, InputManager inputManager)
+        public bool Initialize(List<Card> Deck1, List<Card> Deck2, InputManager inputManager, string luaPath)
         {
             List<Card> deck1;
             List<Card> deck2;
@@ -29,10 +33,11 @@ namespace VanguardEngine
                 card.tempID += 50;
             _player1 = new Player();
             _player2 = new Player();
-            _player1.Initialize(deck1, deck2, _player2);
-            _player2.Initialize(deck2, deck1, _player1);
+            _player1.Initialize(deck1, deck2, _player2, 1);
+            _player2.Initialize(deck2, deck1, _player1, 2);
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
+            luaInterpreter = new LuaInterpreter(luaPath);
             ShuffleDeck(_player1, _player2);
             ShuffleDeck(_player2, _player1);
             return true;
@@ -42,6 +47,7 @@ namespace VanguardEngine
         {
             Player player1;
             Player player2;
+            CardEventArgs args;
             int RPS1 = 0, RPS2 = 0;
             int first = 0;
             while (RPS1 == RPS2)
@@ -80,6 +86,8 @@ namespace VanguardEngine
             }
             Mulligan(player1, player2);
             Console.WriteLine("----------\nSTAND UP! VANGUARD!");
+            player1.StandUpVanguard();
+            player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
             while(true)
@@ -109,6 +117,11 @@ namespace VanguardEngine
                     return;
                 }
                 Console.WriteLine("----------\nEND PHASE");
+                if (OnEndPhase != null)
+                {
+                    args = new CardEventArgs();
+                    OnEndPhase(this, args);
+                }
                 player1.ResetPower();
                 player2.ResetPower();
                 _turn++;
@@ -153,23 +166,12 @@ namespace VanguardEngine
 
         public void Mulligan(Player player1, Player player2)
         {
-            int selection;
-            int mulliganCount = 0;
+            List<int> selection;
             for (int i = 0; i < 2; i++)
             {
-                while (mulliganCount < 5)
-                {
-                    player1.PrintHand();
-                    Console.WriteLine("----------\nChoose a card to mulligan?");
-                    if (!_inputManager.YesNo())
-                        break;
-                    selection = _inputManager.SelectCardFromHand();
-                    player1.ReturnCardFromHandToDeck(selection, C.Player);
-                    player2.ReturnCardFromHandToDeck(selection, C.Enemy);
-                    mulliganCount++;
-                }
-                player1.Draw(mulliganCount);
-                player2.EnemyDraw(mulliganCount);
+                selection = _inputManager.SelectCardsToMulligan();
+                player1.MulliganCards(selection, true);
+                player2.MulliganCards(selection, false);
                 Console.WriteLine("----------\nNew hand: ");
                 player1.PrintHand();
                 if (player1 == _player1)
@@ -186,7 +188,6 @@ namespace VanguardEngine
                     player2 = _player2;
                     _inputManager.SwapPlayers();
                 }
-                mulliganCount = 0;
             }
         }
 
@@ -234,17 +235,23 @@ namespace VanguardEngine
             int input;
             bool CanRideFromRideDeck = player1.CanRideFromRideDeck();
             bool CanRideFromHand = player1.CanRideFromHand();
+            CardEventArgs args;
+            if (OnRidePhase != null)
+            {
+                args = new CardEventArgs();
+                OnRidePhase(this, args);
+            }
             while (true)
             {
                 if (CanRideFromRideDeck || CanRideFromHand)
                 {
                     Console.WriteLine("----------\nDo you wish to Ride?");
-                    if (_inputManager.YesNo())
+                    if (_inputManager.YesNo(PromptType.Ride))
                     {
                         if (CanRideFromRideDeck)
                         {
                             Console.WriteLine("----------\nRide from Ride Deck?");
-                            if (_inputManager.YesNo())
+                            if (_inputManager.YesNo(PromptType.RideFromRideDeck))
                             {
                                 Discard(player1, player2, 1);
                                 input = _inputManager.SelectCardFromRideDeck();
@@ -288,6 +295,12 @@ namespace VanguardEngine
             int location;
             int max;
             int input;
+            CardEventArgs args;
+            if (OnMainPhase != null)
+            {
+                args = new CardEventArgs();
+                OnMainPhase(this, args);
+            }
             while (true)
             {
                 selection = _inputManager.SelectMainPhaseAction();
@@ -372,7 +385,12 @@ namespace VanguardEngine
         {
             int selection;
             int target;
-            int max;
+            CardEventArgs args;
+            if (OnBattlePhase != null)
+            {
+                args = new CardEventArgs();
+                OnBattlePhase(this, args);
+            }
             while (true)
             {
                 if (player1.CanAttack())
@@ -415,7 +433,7 @@ namespace VanguardEngine
                 Console.WriteLine("----------\nBoost?\n" +
                     "1. Yes\n" +
                     "2. No");
-                if (_inputManager.YesNo())
+                if (_inputManager.YesNo(PromptType.Boost))
                 {
                     player1.Boost();
                     player2.EnemyBoost();
@@ -511,21 +529,21 @@ namespace VanguardEngine
             if (check != Trigger.NotTrigger && check != Trigger.Over) 
             {
                 Console.WriteLine("----------\nChoose unit to give +10000 power to.");
-                selection = _inputManager.SelectActiveUnit();
+                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000);
                 player1.AddPower(selection, 10000);
                 player2.AddPower(selection, 10000);
             }
             if (check == Trigger.Critical) 
             {
                 Console.WriteLine("----------\nChoose unit to give Critical to.");
-                selection = _inputManager.SelectActiveUnit();
+                selection = _inputManager.SelectActiveUnit(PromptType.AddCritical, 1);
                 player1.AddCritical(selection, 1);
                 player2.AddCritical(selection, 1);
             }
             else if (check == Trigger.Stand) //STAND TRIGGER (no stand triggers rn, will fix later if needed)
             {
                 Console.WriteLine("----------\nChoose unit to Stand.");
-                selection = _inputManager.SelectActiveUnit();
+                selection = _inputManager.SelectActiveUnit(PromptType.Stand, 0);
                 player1.Stand(selection);
                 player2.Stand(selection);
             }
@@ -555,7 +573,7 @@ namespace VanguardEngine
             else if (check == Trigger.Over) //OVER TRIGGER
             {
                 Draw(player1, player2, 1);
-                selection = _inputManager.SelectActiveUnit();
+                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000);
                 player1.AddPower(selection, 100000000);
                 player2.AddPower(selection, 100000000);
                 if (drivecheck)

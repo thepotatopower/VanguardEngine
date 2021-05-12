@@ -9,14 +9,16 @@ namespace VanguardEngine
 {
     public class InputManager
     {
-        Player _player1;
-        Player _player2;
-        bool bool_input;
-        int int_input;
-        List<int> intlist_input = new List<int>();
-        List<Effect> _effects = null;
-        string string_input;
-        Card card_input;
+        public Player _player1;
+        public Player _player2;
+        public bool bool_input;
+        public int int_input;
+        public List<int> intlist_input = new List<int>();
+        public List<Effect> _effects = null;
+        public string string_input;
+        public int prompt;
+        public int value;
+        public Card card_input;
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -26,7 +28,7 @@ namespace VanguardEngine
             _player2 = player2;
         }
 
-        public void SwapPlayers()
+        public virtual void SwapPlayers()
         {
             Player temp = _player1;
             _player1 = _player2;
@@ -59,8 +61,9 @@ namespace VanguardEngine
             InputThread.Abort();
         }
 
-        public virtual bool YesNo()
+        public virtual bool YesNo(int request)
         {
+            prompt = request;
             WaitForInput(YesNo_Input);
             return bool_input;
         }
@@ -130,14 +133,47 @@ namespace VanguardEngine
                     for (int j = 0; j < hand.Count; j++)
                         Console.WriteLine(j + 1 + ". " + hand[j].name);
                     selection = SelectPrompt(hand.Count) - 1;
-                    if (intlist_input.Contains(selection))
+                    if (intlist_input.Contains(hand[selection].tempID))
                         Console.WriteLine("----------\nAlready choose that card.");
                     else
                     {
-                        intlist_input.Add(selection);
+                        intlist_input.Add(hand[selection].tempID);
                         break;
                     }
                 }
+            }
+            oSignalEvent.Set();
+        }
+
+        public virtual List<int> SelectCardsToMulligan()
+        {
+            WaitForInput(SelectCardsToMulligan_Input);
+            return intlist_input;
+        }
+
+        protected virtual void SelectCardsToMulligan_Input()
+        {
+            List<Card> hand = _player1.GetHand();
+            int selection = 0;
+            intlist_input.Clear();
+            while (selection != hand.Count)
+            {
+                Console.WriteLine("Choose card to mulligan.");
+                for (int j = 0; j < hand.Count; j++)
+                {
+                    if (intlist_input.Contains(hand[j].tempID))
+                        Console.WriteLine(j + 1 + ". " + hand[j].name + "(selected)");
+                    else
+                        Console.WriteLine(j + 1 + ". " + hand[j].name);
+                }
+                Console.WriteLine(hand.Count + 1 + ". End mulligan.");
+                selection = SelectPrompt(hand.Count + 1) - 1;
+                if (selection == hand.Count)
+                    break;
+                else if (intlist_input.Contains(hand[selection].tempID))
+                    intlist_input.Remove(hand[selection].tempID);
+                else
+                    intlist_input.Add(hand[selection].tempID);
             }
             oSignalEvent.Set();
         }
@@ -344,8 +380,10 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectActiveUnit()
+        public virtual int SelectActiveUnit(int request, int amount)
         {
+            prompt = request;
+            value = amount;
             WaitForInput(SelectActiveUnit_Input);
             return int_input;
         }
@@ -409,6 +447,17 @@ namespace VanguardEngine
             }
             return false;
         }
+    }
+
+    public class PromptType
+    {
+        public const int Mulligan = 0;
+        public const int Ride = 1;
+        public const int RideFromRideDeck = 2;
+        public const int Boost = 3;
+        public const int AddPower = 4;
+        public const int AddCritical = 5;
+        public const int Stand = 6;
     }
 }
 

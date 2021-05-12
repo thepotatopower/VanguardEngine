@@ -6,27 +6,37 @@ namespace VanguardEngine
 {
     public class Player
     {
-        public Field _field;
+        protected Field _field;
         protected int _damage = 0;
         protected int _turn = 1;
+        public int _playerID = 0;
 
         public event EventHandler<CardEventArgs> OnDraw;
+        public event EventHandler<CardEventArgs> OnDiscard;
+        public event EventHandler<CardEventArgs> OnReturnCardFromHandToDeck;
         public event EventHandler<CardEventArgs> OnRideFromRideDeck;
         public event EventHandler<CardEventArgs> OnRideFromHand;
         public event EventHandler<CardEventArgs> OnCallFromHand;
         public event EventHandler<CardEventArgs> OnCallFromDeck;
         public event EventHandler<CardEventArgs> OnChangeColumn;
+        public event EventHandler<CardEventArgs> OnStandUpVanguard;
 
-        public void Initialize(List<Card> deck1, List<Card> deck2, Player player2)
+        public void Initialize(List<Card> deck1, List<Card> deck2, Player player2, int playerID)
         {
             _field = new Field();
             _field.Initialize(deck1, deck2, player2);
+            _playerID = playerID;
         }
 
-        //public Field Field
-        //{
-        //    get => _field;
-        //}
+        public int PlayerDeckCount()
+        {
+            return _field.PlayerDeck.Count;
+        }
+
+        public int EnemyDeckCount()
+        {
+            return _field.EnemyDeck.Count;
+        }
 
         public int Turn
         {
@@ -56,7 +66,7 @@ namespace VanguardEngine
             }
             args.i = count;
             args.cardList = cardsAdded;
-            args.player = true;
+            args.playerID = _playerID;
             if (OnDraw != null)
             {
                 OnDraw(this, args);
@@ -75,17 +85,56 @@ namespace VanguardEngine
                 cardsAdded.Add(_field.EnemyDeck[0]);
                 _field.EnemyDeck.Remove(_field.EnemyDeck[0]);
             }
-            args.i = count;
-            args.cardList = cardsAdded;
-            args.player = false;
-            if (OnDraw != null)
+            //args.i = count;
+            //args.cardList = cardsAdded;
+            //args.player = false;
+            //if (OnDraw != null)
+            //{
+            //    OnDraw(this, args);
+            //}
+        }
+
+        public void MulliganCards(List<int> selection, bool player)
+        {
+            int i = 0;
+            int draw = 0;
+            if (player)
             {
-                OnDraw(this, args);
+                foreach (int tempID in selection)
+                {
+                    for (i = 0; i < _field.PlayerHand.Count; i++)
+                    {
+                        if (_field.PlayerHand[i].tempID == tempID)
+                        {
+                            ReturnCardFromHandToDeck(i, true);
+                            draw++;
+                            break;
+                        }
+                    }
+                }
+                Draw(draw);
+            }
+            else
+            {
+                foreach (int tempID in selection)
+                {
+                    for (i = 0; i < _field.EnemyHand.Count; i++)
+                    {
+                        if (_field.EnemyHand[i].tempID == tempID)
+                        {
+                            ReturnCardFromHandToDeck(i, false);
+                            draw++;
+                            break;
+                        }
+                    }
+                }
+                EnemyDraw(draw);
             }
         }
 
         public void ReturnCardFromHandToDeck(int selection, bool player)
         {
+            CardEventArgs args = new CardEventArgs();
             Card card;
             if (player)
             {
@@ -93,6 +142,12 @@ namespace VanguardEngine
                 _field.PlayerHand.RemoveAt(selection);
                 card.faceup = false;
                 _field.PlayerDeck.Add(card);
+                args.card = card;
+                args.playerID = _playerID;
+                if (OnReturnCardFromHandToDeck != null)
+                {
+                    OnReturnCardFromHandToDeck(this, args);
+                }
             }
             else
             {
@@ -104,31 +159,50 @@ namespace VanguardEngine
 
         public void Discard(List<int> list, bool player)
         {
+            CardEventArgs args = new CardEventArgs();
             List<Card> toDiscard = new List<Card>();
-            Card card = null;
             if (player)
             {
-                foreach (int item in list)
-                    toDiscard.Add(_field.PlayerHand[item]);
-                while (toDiscard.Count > 0)
+                foreach (int tempID in list)
                 {
-                    card = toDiscard[0];
+                    foreach(Card card in _field.PlayerHand)
+                    {
+                        if (card.tempID == tempID)
+                        {
+                            toDiscard.Add(card);
+                            break;
+                        }
+                    }
+                }
+                foreach (Card card in toDiscard)
+                {
                     _field.PlayerHand.Remove(card);
                     _field.PlayerDrop.Insert(0, card);
-                    toDiscard.Remove(card);
+                }
+                args.cardList = toDiscard;
+                args.playerID = _playerID;
+                if (OnDiscard != null)
+                {
+                    OnDiscard(this, args);
                 }
             }
             else
             {
-                foreach (int item in list)
-                    toDiscard.Add(_field.EnemyHand[item]);
-                while (toDiscard.Count > 0)
+                foreach (int tempID in list)
                 {
-                    card = toDiscard[0];
+                    foreach (Card card in _field.EnemyHand)
+                    {
+                        if (card.tempID == tempID)
+                        {
+                            toDiscard.Add(card);
+                            break;
+                        }
+                    }
+                }
+                foreach (Card card in toDiscard)
+                {
                     _field.EnemyHand.Remove(card);
-                    card.faceup = true;
                     _field.EnemyDrop.Insert(0, card);
-                    toDiscard.Remove(card);
                 }
             }
         }
@@ -170,9 +244,11 @@ namespace VanguardEngine
 
         public void StandUpVanguard()
         {
-            Draw(5);
-            EnemyDraw(5);
-            //_field.FlipVG();
+            CardEventArgs args = new CardEventArgs();
+            _field.Units[FL.PlayerVanguard].faceup = true;
+            _field.Units[FL.EnemyVanguard].faceup = true;
+            if (OnStandUpVanguard != null)
+                OnStandUpVanguard(this, args);
         }
 
         public int PrintHand()
@@ -708,6 +784,7 @@ namespace VanguardEngine
 
         public void Ride(int location, int selection, bool player)
         {
+            CardEventArgs args = new CardEventArgs();
             List<Card> list;
             Card card = null;
             if (player)
@@ -732,6 +809,23 @@ namespace VanguardEngine
                 card.soul[0].soul.Clear();
                 card.soul[0].bonusPower = 0;
                 Console.WriteLine("---------\nRide!! " + _field.Units[FL.PlayerVanguard].name + "!");
+                args.card = card;
+                args.playerID = _playerID;
+                if (location == 0)
+                {
+                    if (OnRideFromRideDeck != null)
+                    {
+                        Console.WriteLine("ridedeck event fired");
+                        OnRideFromRideDeck(this, args);
+                    }
+                }
+                else
+                {
+                    if (OnRideFromHand != null)
+                    {
+                        OnRideFromHand(this, args);
+                    }
+                }
             }
             else
             {

@@ -4,14 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MoonSharp.Interpreter;
-using MoonSharp.RemoteDebugger;
 using System.IO;
-using MoonSharp.VsCodeDebugger;
 
 namespace VanguardEngine
 {
     public class LuaInterpreter
     {
+        public string luaPath;
+        
+        public LuaInterpreter(string path)
+        {
+            luaPath = path;
+        }
         public List<Effect> CheckEffects(int effectType, Player player1, Player player2)
         {
             List<Card> cards = new List<Card>();
@@ -40,7 +44,8 @@ namespace VanguardEngine
             DynValue conditionMet;
             Effect effect = new Effect(player1, player2, card);
             string filePath = card.id.Replace("/", "");
-            filePath = "../../lua/" + filePath + ".lua";
+            filePath = luaPath + "/" + filePath + ".lua";
+            Console.WriteLine(filePath);
             if (!File.Exists(filePath))
                 return null;
             Script.DefaultOptions.ScriptLoader = new MoonSharp.Interpreter.Loaders.FileSystemScriptLoader();

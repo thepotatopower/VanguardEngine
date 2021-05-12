@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MoonSharp.Interpreter;
+using System.IO;
 
 namespace VanguardEngine
 {
@@ -19,10 +20,10 @@ namespace VanguardEngine
             //LuaTest testing = new LuaTest();
             //testing.Testing();
             Console.WriteLine("Starting CardFight.");
-            LoadCards loadCards = new LoadCards();
-            List<Card> deck1 = loadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = loadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
-            start = cardFight.Initialize(deck1, deck2, inputManager);
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt"), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            start = cardFight.Initialize(deck1, deck2, inputManager, "../../lua");
             if (!start)
             {
                 Console.WriteLine("Initialization error.");

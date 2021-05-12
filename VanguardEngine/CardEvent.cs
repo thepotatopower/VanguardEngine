@@ -11,7 +11,7 @@ namespace VanguardEngine
         public Card card { get; set; }
         public List<Card> cardList { get; set; }
         public Card[] cardArray { get; set; }
-        public bool player { get; set; }
+        public int playerID { get; set; }
         public int i { get; set; }
     }
 }
