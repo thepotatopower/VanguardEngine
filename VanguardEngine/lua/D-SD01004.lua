@@ -1,17 +1,32 @@
-﻿-- Sunrise Egg
+-- Sunrise Egg
 
-function ConditionType()
-	return e.OnRide, 0
+function NumberOfEffects()
+	return 1
 end
 
-function CheckConditionOnRide()
-	if obj.isTopSoul() and obj.Turn() > 1 then
-		return true
-	else
-		return false
+function NumberOfParams(n)
+	if n == 1 then
+		return 0
+end
+
+function ActivationRequirement(n)
+	if n == 1 then
+		return a.OnRide, l.TopSoul, false, true
 	end
 end
 
-function OnRideActivate(n)
-	obj.Draw(1)
+function CheckCondition(n)
+	if n == 1 then
+		if obj.IsTopSoul() and obj.Turn() > 1 then
+			return true
+		end
+	end
+	return false
+end
+
+function Activate(n, i)
+	if n == 1 then
+		obj.Draw(1)
+	end
+	return 0
 end

@@ -20,6 +20,13 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnCallFromDeck;
         public event EventHandler<CardEventArgs> OnChangeColumn;
         public event EventHandler<CardEventArgs> OnStandUpVanguard;
+        public event EventHandler<CardEventArgs> OnBoost;
+        public event EventHandler<CardEventArgs> OnAttack;
+        public event EventHandler<CardEventArgs> OnAttackHits;
+        public event EventHandler<CardEventArgs> OnGuard;
+        public event EventHandler<CardEventArgs> OnDriveCheck;
+        public event EventHandler<CardEventArgs> OnDamageCheck;
+        public event EventHandler<CardEventArgs> OnRetire;
 
         public void Initialize(List<Card> deck1, List<Card> deck2, Player player2, int playerID)
         {
@@ -53,6 +60,16 @@ namespace VanguardEngine
             return _field.PlayerHand;
         }
 
+        public List<Card> GetDrop()
+        {
+            return _field.PlayerDrop;
+        }
+
+        public List<Card> GetDeck()
+        {
+            return _field.PlayerDeck;
+        }
+
         public void Draw(int count)
         {
             List<Card> cardsAdded = new List<Card>();
@@ -61,6 +78,7 @@ namespace VanguardEngine
             {
                 _field.PlayerDeck[0].faceup = true;
                 _field.PlayerHand.Add(_field.PlayerDeck[0]);
+                _field.PlayerDeck[0].location = Location.Hand;
                 cardsAdded.Add(_field.PlayerDeck[0]);
                 _field.PlayerDeck.Remove(_field.PlayerDeck[0]);
             }
@@ -82,6 +100,7 @@ namespace VanguardEngine
             {
                 _field.EnemyDeck[0].faceup = true;
                 _field.EnemyHand.Add(_field.EnemyDeck[0]);
+                _field.EnemyDeck[0].location = Location.Hand;
                 cardsAdded.Add(_field.EnemyDeck[0]);
                 _field.EnemyDeck.Remove(_field.EnemyDeck[0]);
             }
@@ -141,6 +160,7 @@ namespace VanguardEngine
                 card = _field.PlayerHand[selection];
                 _field.PlayerHand.RemoveAt(selection);
                 card.faceup = false;
+                card.location = Location.Deck;
                 _field.PlayerDeck.Add(card);
                 args.card = card;
                 args.playerID = _playerID;
@@ -152,6 +172,7 @@ namespace VanguardEngine
             else
             {
                 card = _field.EnemyHand[selection];
+                card.location = Location.Deck;
                 _field.EnemyHand.RemoveAt(selection);
                 _field.EnemyDeck.Add(card);
             }
@@ -178,6 +199,7 @@ namespace VanguardEngine
                 {
                     _field.PlayerHand.Remove(card);
                     _field.PlayerDrop.Insert(0, card);
+                    card.location = Location.Drop;
                 }
                 args.cardList = toDiscard;
                 args.playerID = _playerID;
@@ -203,6 +225,7 @@ namespace VanguardEngine
                 {
                     _field.EnemyHand.Remove(card);
                     _field.EnemyDrop.Insert(0, card);
+                    card.location = Location.Drop;
                 }
             }
         }
@@ -408,7 +431,12 @@ namespace VanguardEngine
             return callableCards;
         }
 
-        public bool CheckColumn(int column)
+        public int GetShield()
+        {
+            return CalculateShield();
+        }
+
+        public bool CheckColumn(int column) //0 is left, 1 is right
         {
             if (column == 0)
             {
@@ -558,7 +586,7 @@ namespace VanguardEngine
         public int CalculatePowerOfUnit(int location)
         {
             Card[] Units = _field.Units;
-            int power = Units[location].power + Units[location].bonusPower + Units[location].bonusBattlePower;
+            int power = Units[location].power + Units[location].bonusPower + Units[location].tempPower;
             if (_field.Booster >= 0)
             {
                 if (_field.Guarding && isEnemyFrontRow(location))
@@ -762,14 +790,25 @@ namespace VanguardEngine
         {
             Card attacker = _field.Units[_field.Attacker];
             Card card = _field.Units[_field.Attacked];
+            CardEventArgs args = new CardEventArgs();
             if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield() + card.power + card.bonusPower)
             {
                 Console.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
+                if (OnAttackHits != null)
+                {
+                    args.b = true;
+                    OnAttackHits(this, args);
+                }
                 return true;
             }
             else
             {
                 Console.WriteLine("----------\n" + attacker.name + "'s attack against " + card.name + " was successfully guarded!");
+                if (OnAttackHits != null)
+                {
+                    args.b = false;
+                    OnAttackHits(this, args);
+                }
                 return false;
             }
         }
@@ -805,7 +844,9 @@ namespace VanguardEngine
                 card.faceup = true;
                 card.soul.AddRange(_field.Units[FL.PlayerVanguard].soul);
                 card.soul.Insert(0, _field.Units[FL.PlayerVanguard]);
+                _field.Units[FL.PlayerVanguard].location = Location.Soul;
                 _field.Units[FL.PlayerVanguard] = card;
+                card.location = Location.PlayerVC;
                 card.soul[0].soul.Clear();
                 card.soul[0].bonusPower = 0;
                 Console.WriteLine("---------\nRide!! " + _field.Units[FL.PlayerVanguard].name + "!");
@@ -843,38 +884,13 @@ namespace VanguardEngine
                 }
                 list.Remove(card);
                 card.faceup = true;
+                card.location = Location.EnemyVC;
                 card.soul.AddRange(_field.Units[FL.EnemyVanguard].soul);
                 card.soul.Insert(0, _field.Units[FL.EnemyVanguard]);
+                _field.Units[FL.EnemyVanguard].location = Location.Soul;
                 _field.Units[FL.EnemyVanguard] = card;
                 card.soul[0].soul.Clear();
                 card.soul[0].bonusPower = 0;
-            }
-        }
-
-        public void EnemyRide(int location, int selection)
-        {
-            List<Card> list;
-            if (location == 0)
-                list = _field.EnemyRideDeck;
-            else
-                list = _field.EnemyHand;
-            foreach (Card card in list)
-            {
-                if (card.grade == _field.Units[FL.EnemyVanguard].grade || card.grade - 1 == _field.Units[FL.EnemyVanguard].grade)
-                    selection--;
-                if (selection == 0)
-                {
-                    if (_field.Units[FL.EnemyVanguard].soul == null)
-                        _field.Units[FL.EnemyVanguard].soul = new List<Card>();
-                    _field.Units[FL.EnemyVanguard].soul.Insert(0, _field.Units[FL.EnemyVanguard]);
-                    card.soul.AddRange(_field.Units[FL.EnemyVanguard].soul);
-                    _field.Units[FL.EnemyVanguard].soul.Clear();
-                    _field.Units[FL.EnemyVanguard].bonusPower = 0;
-                    card.faceup = true;
-                    _field.Units[FL.EnemyVanguard] = card;
-                    list.Remove(card);
-                    break;
-                }
             }
         }
 
@@ -884,6 +900,8 @@ namespace VanguardEngine
             Card[] slots = _field.Units;
             Card card = null;
             Card toBeRetired = null;
+            List<Card> retired = new List<Card>();
+            CardEventArgs args;
             if (player)
             {
                 hand = _field.PlayerHand;
@@ -899,17 +917,40 @@ namespace VanguardEngine
                 if (slots[location] != null)
                 {
                     toBeRetired = slots[location];
+                    retired.Add(toBeRetired);
                     foreach (Card soul in slots[location].soul)
+                    {
                         _field.PlayerDrop.Insert(0, soul);
+                        soul.location = Location.Drop;
+                        retired.Add(soul);
+                    }
                     slots[location] = null;
                     toBeRetired.bonusPower = 0;
                     toBeRetired.upright = true;
                     slots[location].soul.Clear();
                     _field.PlayerDrop.Insert(0, slots[location]);
+                    slots[location].location = Location.Drop;
+                    retired.Add(slots[location]);
+                    if (OnRetire != null)
+                    {
+                        args = new CardEventArgs();
+                        args.playerID = _playerID;
+                        args.cardList = retired;
+                        OnRetire(this, args);
+                    }
                 }
                 hand.Remove(card);
                 slots[location] = card;
+                card.location = Location.PlayerRC;
                 Console.WriteLine("---------\nCall! " + card.name + "!");
+                if (OnCallFromHand != null)
+                {
+                    args = new CardEventArgs();
+                    args.card = card;
+                    args.i = location;
+                    args.playerID = _playerID;
+                    OnCallFromHand(this, args);
+                }
             }
             else
             {
@@ -927,26 +968,31 @@ namespace VanguardEngine
                 {
                     toBeRetired = slots[location];
                     foreach (Card soul in slots[location].soul)
+                    {
                         _field.EnemyDrop.Insert(0, soul);
+                        soul.location = Location.Drop;
+                    }
                     slots[location] = null;
                     toBeRetired.bonusPower = 0;
                     toBeRetired.upright = true;
                     slots[location].soul.Clear();
+                    slots[location].location = Location.Drop;
                     _field.EnemyDrop.Insert(0, slots[location]);
                 }
                 hand.Remove(card);
                 card.faceup = true;
                 slots[location] = card;
+                card.location = Location.EnemyRC;
             }
         }
 
-        public void SuperiorCall(int location, string name)
+        public void SuperiorCall(int location, int tempID)
         {
             Card ToBeCalled = null;
             Card[] slots = _field.Units;
             foreach (Card card in _field.PlayerDeck)
             {
-                if (card.name == "Trickstar")
+                if (card.tempID == tempID)
                 {
                     ToBeCalled = card;
                     _field.PlayerDeck.Remove(card);
@@ -969,32 +1015,83 @@ namespace VanguardEngine
             ShuffleDeck();
         }
 
-        public void EnemySuperiorCall(int location, string name)
+        public void SuperiorCall(int circle, int tempID, int loc, bool player)
         {
             Card ToBeCalled = null;
             Card[] slots = _field.Units;
-            foreach (Card card in _field.EnemyDeck)
+            List<Card> location = null;
+            if (player)
             {
-                if (card.name == "Trickstar")
+                if (loc == Location.Drop)
+                    location = _field.PlayerDrop;
+                else if (loc == Location.Deck)
+                    location = _field.PlayerDeck;
+                else if (loc == Location.Hand)
+                    location = _field.PlayerHand;
+                foreach (Card card in location)
                 {
-                    ToBeCalled = card;
-                    _field.EnemyDeck.Remove(card);
-                    break;
+                    if (card.tempID == tempID)
+                    {
+                        ToBeCalled = card;
+                        location.Remove(card);
+                        break;
+                    }
                 }
+                circle += FL.PlayerFrontLeft;
+                if (slots[circle] != null)
+                {
+                    slots[circle].bonusPower = 0;
+                    slots[circle].upright = true;
+                    foreach (Card soul in slots[circle].soul)
+                    {
+                        _field.PlayerDrop.Insert(0, soul);
+                        soul.location = Location.Drop;
+                    }
+
+                    slots[circle].soul.Clear();
+                    _field.PlayerDrop.Insert(0, slots[circle]);
+                }
+                ToBeCalled.faceup = true;
+                ToBeCalled.location = Location.PlayerRC;
+                slots[circle] = ToBeCalled;
+                Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
+                ShuffleDeck();
             }
-            location += FL.EnemyFrontLeft;
-            if (slots[location] != null)
+            else
             {
-                slots[location].bonusPower = 0;
-                slots[location].upright = true;
-                foreach (Card soul in slots[location].soul)
-                    _field.EnemyDrop.Insert(0, soul);
-                slots[location].soul.Clear();
-                _field.EnemyDrop.Insert(0, slots[location]);
+                if (loc == Location.Drop)
+                    location = _field.EnemyDrop;
+                else if (loc == Location.Deck)
+                    location = _field.EnemyDeck;
+                else if (loc == Location.Hand)
+                    location = _field.EnemyHand;
+                foreach (Card card in location)
+                {
+                    if (card.tempID == tempID)
+                    {
+                        ToBeCalled = card;
+                        location.Remove(card);
+                        break;
+                    }
+                }
+                circle += FL.EnemyFrontLeft;
+                if (slots[circle] != null)
+                {
+                    slots[circle].bonusPower = 0;
+                    slots[circle].upright = true;
+                    foreach (Card soul in slots[circle].soul)
+                    {
+                        _field.EnemyDrop.Insert(0, soul);
+                        soul.location = Location.Drop;
+                    }
+
+                    slots[circle].soul.Clear();
+                    _field.EnemyDrop.Insert(0, slots[circle]);
+                }
+                ToBeCalled.faceup = true;
+                ToBeCalled.location = Location.EnemyRC;
+                slots[circle] = ToBeCalled;
             }
-            ToBeCalled.faceup = true;
-            slots[location] = ToBeCalled;
-            EnemyShuffleDeck();
         }
 
         public void MoveRearguard(int location)
@@ -1014,6 +1111,13 @@ namespace VanguardEngine
                 slots[FL.PlayerFrontRight] = slots[FL.PlayerBackRight];
                 slots[FL.PlayerBackRight] = temp;
                 Console.WriteLine("----------\nRight column Rearguard(s) changed position.");
+            }
+            if (OnChangeColumn != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.playerID = _playerID;
+                args.i = location;
+                OnChangeColumn(this, args);
             }
         }
 
@@ -1137,6 +1241,13 @@ namespace VanguardEngine
                 _field.Booster = FL.PlayerBackRight;
                 Console.WriteLine("----------\n" + _field.Units[FL.PlayerBackRight].name + " boosts " + _field.Units[FL.PlayerFrontRight].name + "!");
             }
+            if (OnBoost != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.playerID = _playerID;
+                args.card = _field.Units[_field.Booster];
+                OnBoost(this, args);
+            }
         }
 
         public void EnemyBoost()
@@ -1205,6 +1316,14 @@ namespace VanguardEngine
                 else
                     _field.Attacked = FL.EnemyFrontRight;
                 Console.WriteLine("----------\n" + Attacker.name + " attacks " + Attacked.name + "!");
+                if (OnAttack != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.playerID = _playerID;
+                    args.card = Attacker;
+                    args.i = _field.Attacked;
+                    OnAttack(this, args);
+                }
             }
             else
             {
@@ -1260,8 +1379,16 @@ namespace VanguardEngine
                     {
                         _field.PlayerHand.Remove(card);
                         card.upright = false;
+                        card.location = Location.GC;
                         _field.GC.Insert(0, card);
                         Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
+                        if (OnGuard != null)
+                        {
+                            CardEventArgs args = new CardEventArgs();
+                            args.playerID = _playerID;
+                            args.card = card;
+                            OnGuard(this, args);
+                        }
                         return;
                     }
                 }
@@ -1274,6 +1401,7 @@ namespace VanguardEngine
                     {
                         _field.EnemyHand.Remove(card);
                         card.upright = false;
+                        card.location = Location.GC;
                         _field.GC.Insert(0, card);
                         Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
                         return;
@@ -1287,6 +1415,7 @@ namespace VanguardEngine
             foreach (Card card in _field.GC)
             {
                 card.upright = true;
+                card.location = Location.Drop;
                 _field.EnemyDrop.Insert(0, card);
             }
             _field.GC.Clear();
@@ -1297,16 +1426,18 @@ namespace VanguardEngine
             foreach (Card card in _field.GC)
             {
                 card.upright = true;
+                card.location = Location.Drop;
                 _field.PlayerDrop.Insert(0, card);
             }
             _field.GC.Clear();
         }
 
-        public int TriggerCheck()
+        public int TriggerCheck(bool drivecheck)
         {
             Card trigger = _field.PlayerDeck[0];
             trigger.upright = false;
             trigger.faceup = true;
+            trigger.location = Location.Trigger;
             _field.PlayerDeck.Remove(trigger);
             _field.PlayerTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
@@ -1323,6 +1454,14 @@ namespace VanguardEngine
                 Console.WriteLine("----------\nOver Trigger!");
             else
                 Console.WriteLine("----------\nNo Trigger.");
+            CardEventArgs args = new CardEventArgs();
+            args.playerID = _playerID;
+            args.i = trigger.trigger;
+            args.card = trigger;
+            if (drivecheck && OnDriveCheck != null)
+                OnDriveCheck(this, args);
+            if (!drivecheck && OnDamageCheck != null)
+                OnDamageCheck(this, args);
             return trigger.trigger;
         }
 
@@ -1331,6 +1470,7 @@ namespace VanguardEngine
             Card trigger = _field.EnemyDeck[0];
             trigger.upright = false;
             trigger.faceup = true;
+            trigger.location = Location.Trigger;
             _field.EnemyDeck.Remove(trigger);
             _field.EnemyTrigger = trigger;
             return trigger.trigger;
@@ -1353,18 +1493,13 @@ namespace VanguardEngine
         {
             Card target = FindActiveUnit(selection);
             target.bonusPower += power;
-            Console.WriteLine("----------\n" + power + " power to " + target.name + "!");
         }
 
-        public void AddBattleOnlyPower(int selection, int power)
+        public void AddTempPower(int selection, int power)
         {
             Card target = FindActiveUnit(selection);
-            target.bonusBattlePower += power;
-        }
-
-        public void AddBattleOnlyPower(Card card, int power)
-        {
-            card.bonusBattlePower += power;
+            target.tempPower += power;
+            Console.WriteLine("----------\n" + power + " power to " + target.name + "!");
         }
 
         public void AddCritical(int selection, int critical)
@@ -1389,6 +1524,7 @@ namespace VanguardEngine
                     {
                         card.faceup = true;
                         card.upright = true;
+                        card.location = Location.Drop;
                         _field.PlayerDamageZone.Remove(card);
                         _field.PlayerDrop.Insert(0, card);
                         Console.WriteLine("----------\nDamage healed!");
@@ -1404,6 +1540,7 @@ namespace VanguardEngine
                     {
                         card.faceup = true;
                         card.upright = true;
+                        card.location = Location.Drop;
                         _field.EnemyDamageZone.Remove(card);
                         _field.EnemyDrop.Insert(0, card);
                         Console.WriteLine("----------\nDamage healed!");
@@ -1426,6 +1563,7 @@ namespace VanguardEngine
         public void AddTriggerToHand()
         {
             Card card = _field.PlayerTrigger;
+            card.location = Location.Hand;
             _field.PlayerTrigger = null;
             card.upright = true;
             _field.PlayerHand.Add(card);
@@ -1434,6 +1572,7 @@ namespace VanguardEngine
         public void EnemyAddTriggerToHand()
         {
             Card card = _field.EnemyTrigger;
+            card.location = Location.Hand;
             _field.EnemyTrigger = null;
             card.upright = true;
             _field.EnemyHand.Add(card);
@@ -1462,6 +1601,7 @@ namespace VanguardEngine
         public void TakeDamage()
         {
             Card card = _field.PlayerTrigger;
+            card.location = Location.Damage;
             _field.PlayerTrigger = null;
             _field.PlayerDamageZone.Add(card);
             Console.WriteLine("----------\nDamage taken!");
@@ -1470,6 +1610,7 @@ namespace VanguardEngine
         public void EnemyTakeDamage()
         {
             Card card = _field.EnemyTrigger;
+            card.location = Location.Damage;
             _field.EnemyTrigger = null;
             _field.EnemyDamageZone.Add(card);
         }
@@ -1479,16 +1620,9 @@ namespace VanguardEngine
             foreach (Card card in _field.Units)
             {
                 if (card != null)
-                    card.bonusPower = 0;
-            }
-        }
-
-        public void ResetBattleOnlyPower()
-        {
-            foreach (Card card in _field.Units)
-            {
-                if (card != null)
-                    card.bonusBattlePower = 0;
+                {
+                    card.tempPower = 0;
+                }
             }
         }
 
@@ -1606,11 +1740,22 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool isTopSoul(Card card)
+        public bool IsTopSoul(Card card)
         {
             if (card == _field.Units[FL.PlayerVanguard].soul[0])
                 return true;
             return false;
+        }
+
+        public List<Card> GetCardsWithName(string name)
+        {
+            List<Card> cardsWithName = new List<Card>();
+            foreach (Card card in _field.PlayerDeck)
+            {
+                if (card.name == name)
+                    cardsWithName.Add(card);
+            }
+            return cardsWithName;
         }
     }
 
@@ -1628,6 +1773,7 @@ namespace VanguardEngine
         public const int PlayerFrontRight = 11;
         public const int PlayerBackRight = 12;
         public const int PlayerVanguard = 13;
+        public const int GuardianCircle = 14;
 
         public static int SwitchSides(int location)
         {

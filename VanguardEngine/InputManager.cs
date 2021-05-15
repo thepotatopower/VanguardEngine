@@ -15,10 +15,12 @@ namespace VanguardEngine
         public int int_input;
         public List<int> intlist_input = new List<int>();
         public List<Effect> _effects = null;
+        public List<Card> cardsToSelect;
         public string string_input;
         public int prompt;
         public int value;
         public Card card_input;
+        string _query;
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -230,7 +232,7 @@ namespace VanguardEngine
                     "5. Activate Ability\n" +
                     "6. Activate Order\n" +
                     "7. End Main Phase");
-            int_input = SelectPrompt(7);
+            int_input = SelectPrompt(9);
             oSignalEvent.Set();
         }
 
@@ -252,8 +254,9 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectCallLocation()
+        public virtual int SelectCallLocation(string query)
         {
+            _query = query;
             WaitForInput(SelectCallLocation_Input);
             return int_input;
         }
@@ -304,7 +307,7 @@ namespace VanguardEngine
                         "2. See Field\n" +
                         "3. Attack\n" +
                         "4. End Battle Phase");
-            int_input = SelectPrompt(4);
+            int_input = SelectPrompt(5);
             oSignalEvent.Set();
         }
 
@@ -358,7 +361,7 @@ namespace VanguardEngine
                         "3. See Current Shield.\n" +
                         "4. Guard.\n" +
                         "5. End Guard.\n");
-            int_input = SelectPrompt(5);
+            int_input = SelectPrompt(6);
             oSignalEvent.Set();
         }
 
@@ -446,6 +449,25 @@ namespace VanguardEngine
                     return true;
             }
             return false;
+        }
+
+        public int SelectFromList(List<Card> cards, string query)
+        {
+            _query = query;
+            cardsToSelect = cards;
+            WaitForInput(SelectFromList_Input);
+            return int_input;
+        }
+
+        protected void SelectFromList_Input()
+        {
+            Console.WriteLine(_query);
+            for (int i = 0; i < cardsToSelect.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+            }
+            int_input = cardsToSelect[SelectPrompt(cardsToSelect.Count) - 1].tempID;
+            oSignalEvent.Set();
         }
     }
 

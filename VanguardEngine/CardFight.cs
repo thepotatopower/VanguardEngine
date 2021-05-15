@@ -17,11 +17,13 @@ namespace VanguardEngine
         public InputManager _inputManager;
         public List<Card> _deck1;
         public List<Card> _deck2;
+        public List<Effect>[] _effects;
         public EventHandler<CardEventArgs> OnDrawPhase;
         public EventHandler<CardEventArgs> OnRidePhase;
         public EventHandler<CardEventArgs> OnMainPhase;
         public EventHandler<CardEventArgs> OnBattlePhase;
         public EventHandler<CardEventArgs> OnEndPhase;
+        public EventHandler<CardEventArgs> OnAttackHits;
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, InputManager inputManager, string luaPath)
         {
@@ -33,11 +35,16 @@ namespace VanguardEngine
                 card.tempID += 50;
             _player1 = new Player();
             _player2 = new Player();
-            _player1.Initialize(deck1, deck2, _player2, 1);
-            _player2.Initialize(deck2, deck1, _player1, 2);
+            _effects = new List<Effect>[deck1.Count + deck2.Count];
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
-            luaInterpreter = new LuaInterpreter(luaPath);
+            luaInterpreter = new LuaInterpreter(luaPath, _inputManager);
+            foreach (Card card in deck1)
+                _effects[card.tempID] = luaInterpreter.GetEffects(card, _player1, _player2);
+            foreach (Card card in deck2)
+                _effects[card.tempID] = luaInterpreter.GetEffects(card, _player1, _player2);
+            _player1.Initialize(deck1, deck2, _player2, 1);
+            _player2.Initialize(deck2, deck1, _player1, 2);
             ShuffleDeck(_player1, _player2);
             ShuffleDeck(_player2, _player1);
             return true;
@@ -351,6 +358,14 @@ namespace VanguardEngine
                     else
                         Console.WriteLine("No Orders can be activated.");
                 }
+                else if (selection == 7) //call specific RG (for use outside of console only)
+                {
+                    Call(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1]);
+                }
+                else if (selection == 8) //move specific column (for use outside of console only)
+                {
+                    MoveRearguard(player1, player2, _inputManager.intlist_input[1]);
+                }
                 else
                     break;
             }
@@ -408,6 +423,10 @@ namespace VanguardEngine
                         if (_gameOver)
                             return;
                     }
+                    else if (selection == 4) //for use outside of console only
+                    {
+                        Attack(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1]);
+                    }
                     else
                         break;
                 }
@@ -462,6 +481,11 @@ namespace VanguardEngine
                         player2.Guard(selection, C.Player);
                         player1.Guard(selection, C.Enemy);
                     }
+                    else if (selection == 5) //guard with specific card (for use outside of console only)
+                    {
+                        player2.Guard(_inputManager.intlist_input[0], C.Player);
+                        player1.Guard(_inputManager.intlist_input[0], C.Enemy);
+                    }
                     else
                         break;
                 }
@@ -509,8 +533,6 @@ namespace VanguardEngine
             else
                 Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
             _inputManager.SwapPlayers();
-            player1.ResetBattleOnlyPower();
-            player2.ResetBattleOnlyPower();
             player1.EndAttack();
             player2.EndAttack();
         }
@@ -524,14 +546,14 @@ namespace VanguardEngine
                 Console.WriteLine("----------\nPerforming Drive Check.");
             else
                 Console.WriteLine("----------\nPerforming Damage Check.");
-            check = player1.TriggerCheck();
+            check = player1.TriggerCheck(drivecheck);
             player2.EnemyTriggerCheck();
             if (check != Trigger.NotTrigger && check != Trigger.Over) 
             {
                 Console.WriteLine("----------\nChoose unit to give +10000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000);
-                player1.AddPower(selection, 10000);
-                player2.AddPower(selection, 10000);
+                player1.AddTempPower(selection, 10000);
+                player2.AddTempPower(selection, 10000);
             }
             if (check == Trigger.Critical) 
             {
@@ -566,16 +588,16 @@ namespace VanguardEngine
                 max = player1.PrintActiveUnits();
                 for (int i = 0; i < max; i++)
                 {
-                    player1.AddPower(i, 10000);
-                    player2.AddPower(i, 10000);
+                    player1.AddTempPower(i, 10000);
+                    player2.AddTempPower(i, 10000);
                 }
             }
             else if (check == Trigger.Over) //OVER TRIGGER
             {
                 Draw(player1, player2, 1);
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000);
-                player1.AddPower(selection, 100000000);
-                player2.AddPower(selection, 100000000);
+                player1.AddTempPower(selection, 100000000);
+                player2.AddTempPower(selection, 100000000);
                 if (drivecheck)
                 {
                     
@@ -606,7 +628,7 @@ namespace VanguardEngine
             {
                 if (effects[0].needsPrompt == false)
                 {
-                    effects[0].Activate(0);
+                    effects[0].Activate();
                     effects.RemoveAt(0);
                     continue;
                 }

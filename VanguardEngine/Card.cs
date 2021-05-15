@@ -14,7 +14,7 @@ namespace VanguardEngine
         public int grade = -1;
         public int power = -1;
         public int bonusPower = 0;
-        public int bonusBattlePower = 0;
+        public int tempPower = 0;
         public int shield = -1;
         public int critical = -1;
         public int trigger = -1;
@@ -30,6 +30,7 @@ namespace VanguardEngine
         public string effect = "";
         public bool faceup = false;
         public bool upright = true;
+        public int location = Location.Deck;
         public List<Card> soul = new List<Card>();
 
         public Card Clone()
