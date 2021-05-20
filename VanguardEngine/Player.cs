@@ -986,35 +986,6 @@ namespace VanguardEngine
             }
         }
 
-        public void SuperiorCall(int location, int tempID)
-        {
-            Card ToBeCalled = null;
-            Card[] slots = _field.Units;
-            foreach (Card card in _field.PlayerDeck)
-            {
-                if (card.tempID == tempID)
-                {
-                    ToBeCalled = card;
-                    _field.PlayerDeck.Remove(card);
-                    break;
-                }
-            }
-            location += FL.PlayerFrontLeft;
-            if (slots[location] != null)
-            {
-                slots[location].bonusPower = 0;
-                slots[location].upright = true;
-                foreach (Card soul in slots[location].soul)
-                    _field.PlayerDrop.Insert(0, soul);
-                slots[location].soul.Clear();
-                _field.PlayerDrop.Insert(0, slots[location]);
-            }
-            ToBeCalled.faceup = true;
-            slots[location] = ToBeCalled;
-            Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
-            ShuffleDeck();
-        }
-
         public void SuperiorCall(int circle, int tempID, int loc, bool player)
         {
             Card ToBeCalled = null;
@@ -1607,6 +1578,26 @@ namespace VanguardEngine
             Console.WriteLine("----------\nDamage taken!");
         }
 
+        public void CounterBlast(List<int> cardsToCB, bool player)
+        {
+            List<Card> damage = null;
+            if (player)
+                damage = _field.PlayerDamageZone;
+            else
+                damage = _field.EnemyDamageZone;
+            foreach (int tempID in cardsToCB)
+            {
+                foreach (Card card in damage)
+                {
+                    if (card.tempID == tempID)
+                    {
+                        card.faceup = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         public void EnemyTakeDamage()
         {
             Card card = _field.EnemyTrigger;
@@ -1644,16 +1635,6 @@ namespace VanguardEngine
             _field.Attacked = -1;
             _field.Booster = -1;
             _field.Guarding = false;
-    }
-
-        public List<Effect> CheckForRideEffects()
-        {
-            return null;
-        }
-
-        public List<Effect> CheckForCallEffects()
-        {
-            return null;
         }
 
         public bool isRearguard(int location)

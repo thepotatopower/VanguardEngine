@@ -14,7 +14,7 @@ namespace VanguardEngine
         public bool bool_input;
         public int int_input;
         public List<int> intlist_input = new List<int>();
-        public List<Effect> _effects = null;
+        public List<Ability> _abilities = null;
         public List<Card> cardsToSelect;
         public string string_input;
         public int prompt;
@@ -419,33 +419,33 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectEffect(List<Effect> effects)
+        public virtual int SelectAbility(List<Ability> abilities)
         {
-            _effects = effects;
-            WaitForInput(SelectEffect_Input);
+            _abilities = abilities;
+            WaitForInput(SelectAbility_Input);
             return int_input;
         }
 
-        protected virtual void SelectEffect_Input()
+        protected virtual void SelectAbility_Input()
         {
             Console.WriteLine("Select effect to activate.");
-            for (int i = 0; i < _effects.Count; i++)
-                Console.WriteLine(i + 1 + ". " + _effects[i].Name);
-            if (!CheckForMandatoryEffects(_effects))
+            for (int i = 0; i < _abilities.Count; i++)
+                Console.WriteLine(i + 1 + ". " + _abilities[i].Name);
+            if (!CheckForMandatoryEffects(_abilities))
             {
-                Console.WriteLine(_effects.Count + 2 + ". Don't activate effect.");
-                int_input = SelectPrompt(_effects.Count + 1) - 1;
+                Console.WriteLine(_abilities.Count + 2 + ". Don't activate effect.");
+                int_input = SelectPrompt(_abilities.Count + 1) - 1;
             }
             else
-                int_input = SelectPrompt(_effects.Count) - 1;
+                int_input = SelectPrompt(_abilities.Count) - 1;
             oSignalEvent.Set();
         }
 
-        public bool CheckForMandatoryEffects(List<Effect> effects)
+        public bool CheckForMandatoryEffects(List<Ability> abilities)
         {
-            foreach (Effect effect in effects)
+            foreach (Ability ability in abilities)
             {
-                if (effect.isMandatory)
+                if (ability.isMandatory)
                     return true;
             }
             return false;

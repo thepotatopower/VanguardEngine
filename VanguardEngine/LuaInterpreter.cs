@@ -11,18 +11,18 @@ namespace VanguardEngine
     public class LuaInterpreter
     {
         public string luaPath;
-        public InputManager inputManager;
+        public CardFight cardFight;
         
-        public LuaInterpreter(string path, InputManager input)
+        public LuaInterpreter(string path, CardFight cf)
         {
             luaPath = path;
-            inputManager = input;
+            cardFight = cf;
         }
 
-        public List<Effect> GetEffects(Card card, Player player1, Player player2)
+        public List<Ability> GetAbilities(Card card, Player player1, Player player2)
         {
-            List<Effect> effects = new List<Effect>();
-            Effect effect;
+            List<Ability> abilities = new List<Ability>();
+            Ability ability;
             Script script;
             string filePath = card.id.Replace("/", "");
             filePath = luaPath + "/" + filePath + ".lua";
@@ -30,11 +30,11 @@ namespace VanguardEngine
             if (!File.Exists(filePath))
             {
                 Console.WriteLine("no lua script for " + filePath);
-                return effects;
+                return abilities;
             }
             Script.DefaultOptions.ScriptLoader = new MoonSharp.Interpreter.Loaders.FileSystemScriptLoader();
             script = new Script();
-            UserData.RegisterType<Effect>();
+            UserData.RegisterType<Ability>();
             UserData.RegisterType<Location>();
             UserData.RegisterType<Activation>();
             UserData.RegisterType<ContEnd>();
@@ -52,56 +52,93 @@ namespace VanguardEngine
             script.Globals.Set("q", q);
             script.Globals.Set("t", t);
             script.DoFile(filePath);
-            DynValue numberOfEffects = script.Call(script.Globals["NumberOfEffects"]);
-            for (int i = 0; i < numberOfEffects.Number; i++)
+            DynValue numberOfAbilities = script.Call(script.Globals["NumberOfAbilities"]);
+            for (int i = 0; i < numberOfAbilities.Number; i++)
             {
-                effect = new Effect(player1, player2, inputManager, card);
-                effect.StoreEffect(script, i + 1);
-                effects.Add(effect);
+                ability = new Ability(player1, player2, cardFight, card);
+                ability.StoreAbility(script, i + 1);
+                abilities.Add(ability);
             }
-            return effects;
+            return abilities;
         }
     }
 
-    public class Effect
+    public class Abilities
+    {
+        List<Ability>[] _abilities;
+
+        public Abilities(int count)
+        {
+            _abilities = new List<Ability>[count + 10];
+        }
+
+        public void AddAbilities(int placement, List<Ability> ability)
+        {
+            _abilities[placement] = ability;
+        }
+
+        public List<Ability> GetAbilities(int activation, List<Card> cards, bool cont)
+        {
+            List<Ability> abilities = new List<Ability>();
+            foreach (Card card in cards)
+            {
+                foreach (Ability ability in _abilities[card.tempID])
+                {
+                    if (ability.Activation == activation && ability.isContinuous == cont)
+                    {
+                        foreach (int location in ability.Locations)
+                        {
+                            if (location == card.location)
+                            {
+                                abilities.Add(ability);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return abilities;
+        }
+    }
+
+    public class Ability
     {
         Player _player1;
         Player _player2;
-        InputManager _inputManager;
+        CardFight _cardFight;
         Card _card; 
         bool _isMandatory = true;
-        bool _needsPrompt = true;
+        bool _isCont = true;
         bool _isSuperiorCall = false;
         bool _activated = false;
         bool _active = true;
         int _activation;
         List<int> _location = new List<int>();
-        bool _cont;
-        int _effectType;
-        int _effectNumber;
+        int _abilityType;
+        int _abilityNumber;
         Script _script;
-        DynValue _effectActivate;
+        DynValue _abilityActivate;
         DynValue _checkCondition;
         List<Param> _params = new List<Param>();
 
-        public Effect(Player player1, Player player2, InputManager inputManager, Card card)
+        public Ability(Player player1, Player player2, CardFight cardFight, Card card)
         {
             _player1 = player1;
             _player2 = player2;
-            _inputManager = inputManager;
+            _cardFight = cardFight;
             _card = card;
         }
 
-        public void StoreEffect(Script script, int num)
+        public void StoreAbility(Script script, int num)
         {
             _script = script;
-            _effectNumber = num;
+            _abilityNumber = num;
             Param param;
-            DynValue numOfParams = script.Call(script.Globals["NumberOfParams"], _effectNumber);
+            DynValue numOfParams = script.Call(script.Globals["NumberOfParams"], _abilityNumber);
             DynValue returnedParam;
             for (int i = 0; i < numOfParams.Number; i++)
             {
-                returnedParam = script.Call(script.Globals["GetParam"], _effectNumber, i + 1);
+                returnedParam = script.Call(script.Globals["GetParam"], _abilityNumber, i + 1);
                 param = new Param();
                 for (int j = 0; j < returnedParam.Tuple.Length; j++)
                 {
@@ -128,7 +165,7 @@ namespace VanguardEngine
                 }
                 _params.Add(param);
             }
-            DynValue activationRequirement = script.Call(script.Globals["ActivationRequirement"], _effectNumber);
+            DynValue activationRequirement = script.Call(script.Globals["ActivationRequirement"], _abilityNumber);
             _activation = (int)activationRequirement.Tuple[0].Number;
             _location.Add((int)activationRequirement.Tuple[1].Number);
             int tupleLocation = 2;
@@ -140,10 +177,10 @@ namespace VanguardEngine
                     break;
                 tupleLocation++;
             }
-            _cont = activationRequirement.Tuple[tupleLocation].Boolean;
+            _isCont = activationRequirement.Tuple[tupleLocation].Boolean;
             _isMandatory = activationRequirement.Tuple[tupleLocation + 1].Boolean;
             _checkCondition = script.Globals.Get("CheckCondition");
-            _effectActivate = script.Globals.Get("Activate");
+            _abilityActivate = script.Globals.Get("Activate");
         }
 
         public void setScript(Script script)
@@ -151,27 +188,35 @@ namespace VanguardEngine
             _script = script;
         }
 
-        public void setEffect(DynValue effectActivate)
+        public void setAbility(DynValue abilityActivate)
         {
-            _effectActivate = effectActivate;
+            _abilityActivate = abilityActivate;
         }
 
         public bool isMandatory
         {
             get => _isMandatory;
-            set => _isMandatory = value;
         }
 
-        public bool needsPrompt
+        public bool isContinuous
         {
-            get => _needsPrompt;
-            set => _needsPrompt = value;
+            get => _isCont;
         }
 
         public bool isSuperiorCall
         {
             get => _isSuperiorCall;
             set => _isSuperiorCall = value;
+        }
+
+        public int Activation
+        {
+            get => _activation;
+        }
+
+        public List<int> Locations
+        {
+            get => _location;
         }
 
         public string Name
@@ -181,12 +226,12 @@ namespace VanguardEngine
 
         public void Activate()
         {
-            _script.Call(_effectActivate, _effectNumber);
+            _script.Call(_abilityActivate, _abilityNumber);
         }
 
         public bool CheckCondition()
         {
-            DynValue check = _script.Call(_checkCondition, _effectNumber);
+            DynValue check = _script.Call(_checkCondition, _abilityNumber);
             if (check.Boolean)
                 return true;
             return false;
@@ -357,30 +402,23 @@ namespace VanguardEngine
         public void SuperiorCall(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum - 1);
-            int selection = _inputManager.SelectFromList(cardsToSelect, "Choose card to Call.");
-            int location = 0;
-            foreach (Card card in cardsToSelect)
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect);
+        }
+
+        public void CounterBlast(int paramNum)
+        {
+            List<Card> canCB = new List<Card>();
+            foreach (Card card in _player1.GetDamageZone())
             {
-                if (card.tempID == selection)
-                {
-                    location = card.location;
-                    break;
-                }
+                if (card.faceup)
+                    canCB.Add(card);
             }
-            int circle = _inputManager.SelectCallLocation("Choose RC.");
-            _player1.SuperiorCall(circle, selection, location, C.Player);
-            _player1.SuperiorCall(circle, selection, location, C.Enemy);
+            _cardFight.CounterBlast(_player1, _player2, canCB, _params[paramNum - 1].Counts[0]);
         }
 
         public void Discard(int paramNum)
         {
-            List<int> cardsToDiscard = new List<int>();
-            for (int i = 0; i < _params[paramNum - 1].Counts[0]; i++)
-            {
-                cardsToDiscard.Add(_inputManager.SelectCardFromHand());
-            }
-            _player1.Discard(cardsToDiscard, C.Player);
-            _player2.Discard(cardsToDiscard, C.Enemy);
+            _cardFight.Discard(_player1, _player2, _params[paramNum - 1].Counts[0]);
         }
 
         public void AddPower(int paramNum, int power)

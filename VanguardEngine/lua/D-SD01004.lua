@@ -11,7 +11,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, l.TopSoul, false, true
+		return a.OnRide, l.Soul, false, true
 	end
 end
 
@@ -28,5 +28,4 @@ function Activate(n, i)
 	if n == 1 then
 		obj.Draw(1)
 	end
-	return 0
 end

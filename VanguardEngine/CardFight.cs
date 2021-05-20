@@ -17,7 +17,7 @@ namespace VanguardEngine
         public InputManager _inputManager;
         public List<Card> _deck1;
         public List<Card> _deck2;
-        public List<Effect>[] _effects;
+        public Abilities _abilities;
         public EventHandler<CardEventArgs> OnDrawPhase;
         public EventHandler<CardEventArgs> OnRidePhase;
         public EventHandler<CardEventArgs> OnMainPhase;
@@ -35,14 +35,14 @@ namespace VanguardEngine
                 card.tempID += 50;
             _player1 = new Player();
             _player2 = new Player();
-            _effects = new List<Effect>[deck1.Count + deck2.Count];
+            _abilities = new Abilities(deck1.Count + deck2.Count);
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
-            luaInterpreter = new LuaInterpreter(luaPath, _inputManager);
-            foreach (Card card in deck1)
-                _effects[card.tempID] = luaInterpreter.GetEffects(card, _player1, _player2);
-            foreach (Card card in deck2)
-                _effects[card.tempID] = luaInterpreter.GetEffects(card, _player1, _player2);
+            luaInterpreter = new LuaInterpreter(luaPath, this);
+            for (int i = 0; i < deck1.Count; i++)
+                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2));
+            for (int i = 0; i < deck2.Count; i++)
+                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2));
             _player1.Initialize(deck1, deck2, _player2, 1);
             _player2.Initialize(deck2, deck1, _player1, 2);
             ShuffleDeck(_player1, _player2);
@@ -281,11 +281,12 @@ namespace VanguardEngine
 
         public void Ride(Player player1, Player player2, int location, int selection)
         {
-            List<Effect> effects;
+            List<Ability> abilities;
             player1.Ride(location, selection, C.Player);
             player2.Ride(location, selection, C.Enemy);
-            effects = luaInterpreter.CheckEffects(EffectType.OnRide, player1, player2);
-            ActivateEffects(effects);
+            abilities = _abilities.GetAbilities(Activation.OnRide, _player1.GetActiveUnits(), false);
+            abilities.AddRange(_abilities.GetAbilities(Activation.OnRide, _player1.GetHand(), false));
+            ActivateEffects(Activation.OnRide);
         }
 
         public void Discard(Player player1, Player player2, int count)
@@ -320,7 +321,7 @@ namespace VanguardEngine
                     if (player1.CanCallRearguard())
                     {
                         input = _inputManager.SelectRearguardToCall();
-                        location = _inputManager.SelectCallLocation();
+                        location = _inputManager.SelectCallLocation("Select circle to call to.");
                         Call(player1, player2, location, input);
                     }
                     else
@@ -377,6 +378,23 @@ namespace VanguardEngine
             player1.Call(location, selection, C.Player);
             player2.Call(location, selection, C.Enemy);
             //Effects = player1.CheckForCallEffects();
+        }
+
+        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect)
+        {
+            int selection = _inputManager.SelectFromList(cardsToSelect, "Choose card to Call.");
+            int location = 0;
+            foreach (Card card in cardsToSelect)
+            {
+                if (card.tempID == selection)
+                {
+                    location = card.location;
+                    break;
+                }
+            }
+            int circle = _inputManager.SelectCallLocation("Choose RC.");
+            player1.SuperiorCall(circle, selection, location, C.Player);
+            player1.SuperiorCall(circle, selection, location, C.Enemy);
         }
 
         public void MoveRearguard(Player player1, Player player2, int selection)
@@ -438,14 +456,11 @@ namespace VanguardEngine
         public void Attack(Player player1, Player player2, int attacker, int target)
         {
             int selection;
-            int max;
             int drive;
             int critical;
-            List<Effect> effects = null;
             player1.InitiateAttack(attacker, target, C.Player);
             player2.InitiateAttack(attacker, target, C.Enemy);
-            effects = luaInterpreter.CheckEffects(EffectType.OnAttack, player1, player2);
-            ActivateEffects(effects);
+            ActivateEffects(Activation.OnAttack);
 
             if (player1.CanBeBoosted())
             {
@@ -617,59 +632,44 @@ namespace VanguardEngine
                 player2.EnemyTakeDamage();
             }
         }
-        public void ActivateEffects(List<Effect> effects)
+        public void ActivateEffects(int activation)
         {
-            int i = 0;
-            int selection = 0;
-            int location = 0;
+            int selection;
             bool mandatory = true;
-
-            while (effects.Count > 0)
+            List<Ability> abilities;
+            abilities = _abilities.GetAbilities(activation, _player1.GetActiveUnits(), false);
+            abilities.AddRange(_abilities.GetAbilities(activation, _player1.GetHand(), false));
+            while (abilities.Count > 0)
             {
-                if (effects[0].needsPrompt == false)
+                if (abilities[0].isContinuous)
                 {
-                    effects[0].Activate();
-                    effects.RemoveAt(0);
+                    abilities[0].Activate();
+                    abilities.RemoveAt(0);
                     continue;
                 }
-                selection = _inputManager.SelectEffect(effects);
-                if (!mandatory && selection == effects.Count)
+                selection = _inputManager.SelectAbility(abilities);
+                if (!mandatory && selection == abilities.Count)
                     return;
                 else
                 {
-                    Console.WriteLine("----------\n" + effects[selection].Name + "'s effect activates!");
-                    if (effects[selection].isSuperiorCall)
-                    {
-                        location = _inputManager.SelectCallLocation();
-                        effects[selection].Activate(location);
-                    }
-                    else
-                        effects[selection].Activate(0);
-                    effects.RemoveAt(selection);
+                    Console.WriteLine("----------\n" + abilities[selection].Name + "'s effect activates!");
+                    abilities.RemoveAt(selection);
                 }
             }
         }
 
-        public bool CheckForMandatoryEffects(List<Effect> effects)
+        public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count)
         {
-            foreach (Effect effect in effects)
+            List<int> cardsToCB = new List<int>();
+            for (int i = 0; i < count; i++)
             {
-                if (effect.isMandatory)
-                    return true;
+                cardsToCB.Add(_inputManager.SelectFromList(canCB, "Choose card to Counter Blast."));
             }
-            return false;
-        }
-
-        public bool CheckForPrompts(List<Effect> effects)
-        {
-            foreach (Effect effect in effects)
-            {
-                if (effect.needsPrompt)
-                    return true;
-            }
-            return false;
+            player1.CounterBlast(cardsToCB, C.Player);
+            player2.CounterBlast(cardsToCB, C.Enemy);
         }
     }
+
     public class C
     {
         public const bool Player = true;
