@@ -15,10 +15,12 @@ namespace VanguardEngine
         public int int_input;
         public List<int> intlist_input = new List<int>();
         public List<Ability> _abilities = null;
-        public List<Card> cardsToSelect;
+        public List<Card> cardsToSelect = new List<Card>();
         public string string_input;
         public int prompt;
         public int value;
+        public int int_value;
+        public bool bool_value;
         public Card card_input;
         string _query;
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
@@ -265,11 +267,29 @@ namespace VanguardEngine
         {
             Console.WriteLine("----------\nChoose location.\n" +
                             "1. Front left.\n" +
-                            "2. Bottom left.\n" +
+                            "2. Back left.\n" +
                             "3. Back middle.\n" +
                             "4. Front right.\n" +
                             "5. Back right.\n");
-            int_input = SelectPrompt(5) - 1;
+            int_input = SelectPrompt(5);
+            switch (int_input)
+            {
+                case 1:
+                    int_input = FL.PlayerFrontLeft;
+                    break;
+                case 2:
+                    int_input = FL.PlayerBackLeft;
+                    break;
+                case 3:
+                    int_input = FL.PlayerBackMiddle;
+                    break;
+                case 4:
+                    int_input = FL.PlayerFrontRight;
+                    break;
+                case 5:
+                    int_input = FL.PlayerBackRight;
+                    break;
+            }
             oSignalEvent.Set();
         }
 
@@ -433,7 +453,7 @@ namespace VanguardEngine
                 Console.WriteLine(i + 1 + ". " + _abilities[i].Name);
             if (!CheckForMandatoryEffects(_abilities))
             {
-                Console.WriteLine(_abilities.Count + 2 + ". Don't activate effect.");
+                Console.WriteLine(_abilities.Count + 1 + ". Don't activate effect.");
                 int_input = SelectPrompt(_abilities.Count + 1) - 1;
             }
             else
@@ -451,22 +471,42 @@ namespace VanguardEngine
             return false;
         }
 
-        public int SelectFromList(List<Card> cards, string query)
+        public List<int> SelectFromList(List<Card> cards, int count, bool upto, string query)
         {
             _query = query;
-            cardsToSelect = cards;
+            cardsToSelect.Clear();
+            cardsToSelect.AddRange(cards);
+            int_value = count;
+            bool_value = upto;
             WaitForInput(SelectFromList_Input);
-            return int_input;
+            return intlist_input;
         }
 
         protected void SelectFromList_Input()
         {
-            Console.WriteLine(_query);
-            for (int i = 0; i < cardsToSelect.Count; i++)
+            int selection;
+            int count = int_value;
+            bool upto = bool_value;
+            intlist_input.Clear();
+            for (int j = 0; j < count; j++)
             {
-                Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                Console.WriteLine(_query);
+                for (int i = 0; i < cardsToSelect.Count; i++)
+                {
+                    Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                }
+                if (upto)
+                {
+                    Console.WriteLine(cardsToSelect.Count + 1 + ". End selection.");
+                    selection = SelectPrompt(cardsToSelect.Count);
+                }
+                else
+                    selection = SelectPrompt(cardsToSelect.Count) - 1;
+                if (upto && selection == cardsToSelect.Count)
+                    oSignalEvent.Set();
+                intlist_input.Add(cardsToSelect[selection].tempID);
+                cardsToSelect.RemoveAt(selection);
             }
-            int_input = cardsToSelect[SelectPrompt(cardsToSelect.Count) - 1].tempID;
             oSignalEvent.Set();
         }
     }
@@ -480,6 +520,7 @@ namespace VanguardEngine
         public const int AddPower = 4;
         public const int AddCritical = 5;
         public const int Stand = 6;
+        public const int OverDress = 7;
     }
 }
 

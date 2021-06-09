@@ -24,31 +24,33 @@ namespace VanguardEngine
             List<Ability> abilities = new List<Ability>();
             Ability ability;
             Script script;
-            string filePath = card.id.Replace("/", "");
-            filePath = luaPath + "/" + filePath + ".lua";
-            Console.WriteLine(filePath);
+            string filePath = card.id.Replace("/", "_");
+            filePath = filePath.Replace("-", "");
+            filePath = filePath.ToLower();
+            filePath = luaPath + Path.DirectorySeparatorChar + filePath + ".lua";
             if (!File.Exists(filePath))
             {
                 Console.WriteLine("no lua script for " + filePath);
                 return abilities;
             }
+            else
+                Console.WriteLine("loading " + filePath);
             Script.DefaultOptions.ScriptLoader = new MoonSharp.Interpreter.Loaders.FileSystemScriptLoader();
             script = new Script();
             UserData.RegisterType<Ability>();
             UserData.RegisterType<Location>();
             UserData.RegisterType<Activation>();
             UserData.RegisterType<ContEnd>();
-            UserData.RegisterType<PromptType>();
+            UserData.RegisterType<Query>();
+            UserData.RegisterType<UnitType>();
             DynValue l = UserData.Create(new Location());
             DynValue a = UserData.Create(new Activation());
             DynValue c = UserData.Create(new ContEnd());
-            DynValue p = UserData.Create(new Prompt());
             DynValue q = UserData.Create(new Query());
             DynValue t = UserData.Create(new UnitType());
             script.Globals.Set("l", l);
             script.Globals.Set("a", a);
             script.Globals.Set("c", c);
-            script.Globals.Set("p", p);
             script.Globals.Set("q", q);
             script.Globals.Set("t", t);
             script.DoFile(filePath);
@@ -56,6 +58,8 @@ namespace VanguardEngine
             for (int i = 0; i < numberOfAbilities.Number; i++)
             {
                 ability = new Ability(player1, player2, cardFight, card);
+                DynValue obj = UserData.Create(ability);
+                script.Globals.Set("obj", obj);
                 ability.StoreAbility(script, i + 1);
                 abilities.Add(ability);
             }
@@ -77,6 +81,11 @@ namespace VanguardEngine
             _abilities[placement] = ability;
         }
 
+        public Ability GetAbility(int tempID, int activationNumber)
+        {
+            return _abilities[tempID][activationNumber - 1];
+        }
+
         public List<Ability> GetAbilities(int activation, List<Card> cards, bool cont)
         {
             List<Ability> abilities = new List<Ability>();
@@ -84,20 +93,46 @@ namespace VanguardEngine
             {
                 foreach (Ability ability in _abilities[card.tempID])
                 {
-                    if (ability.Activation == activation && ability.isContinuous == cont)
+                    if (ability.GetActivation == activation && ability.isContinuous == cont && ability.CheckCondition())
                     {
-                        foreach (int location in ability.Locations)
-                        {
-                            if (location == card.location)
-                            {
-                                abilities.Add(ability);
-                                break;
-                            }
-                        }
+                        //foreach (int location in ability.Locations)
+                        //{
+                        //    if (location == card.location)
+                        //    {
+                        //        abilities.Add(ability);
+                        //        break;
+                        //    }
+                        //}
+                        abilities.Add(ability);
                     }
                 }
             }
             return abilities;
+        }
+
+        public void EndTurn()
+        {
+            foreach (List<Ability> abilities in _abilities)
+            {
+                if (abilities != null)
+                {
+                    foreach (Ability ability in abilities)
+                        ability.ResetActivation();
+                }
+            }
+        }
+
+        public bool CanOverDress(int tempID, int circle)
+        {
+            foreach (Ability ability in _abilities[tempID])
+            {
+                if (ability.GetActivation == Activation.OverDress)
+                {
+                    if (ability.CanOverDress(tempID, circle))
+                        return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -116,6 +151,7 @@ namespace VanguardEngine
         List<int> _location = new List<int>();
         int _abilityType;
         int _abilityNumber;
+        int _overDressParam = -1;
         Script _script;
         DynValue _abilityActivate;
         DynValue _checkCondition;
@@ -134,11 +170,11 @@ namespace VanguardEngine
             _script = script;
             _abilityNumber = num;
             Param param;
-            DynValue numOfParams = script.Call(script.Globals["NumberOfParams"], _abilityNumber);
+            DynValue numOfParams = script.Call(script.Globals["NumberOfParams"]);
             DynValue returnedParam;
             for (int i = 0; i < numOfParams.Number; i++)
             {
-                returnedParam = script.Call(script.Globals["GetParam"], _abilityNumber, i + 1);
+                returnedParam = script.Call(script.Globals["GetParam"], i + 1);
                 param = new Param();
                 for (int j = 0; j < returnedParam.Tuple.Length; j++)
                 {
@@ -162,11 +198,25 @@ namespace VanguardEngine
                         param.AddName(returnedParam.Tuple[j + 1].String);
                         j++;
                     }
+                    else if (returnedParam.Tuple[j].Number == Query.Type)
+                    {
+                        param.AddType((int)returnedParam.Tuple[j + 1].Number);
+                        j++;
+                    }
+                    else if (returnedParam.Tuple[j].Number == Query.This)
+                    {
+                        param.This = true;
+                    }
                 }
                 _params.Add(param);
             }
             DynValue activationRequirement = script.Call(script.Globals["ActivationRequirement"], _abilityNumber);
             _activation = (int)activationRequirement.Tuple[0].Number;
+            if (_activation == Activation.OverDress)
+            {
+                _overDressParam = (int)activationRequirement.Tuple[1].Number;
+                return;
+            }
             _location.Add((int)activationRequirement.Tuple[1].Number);
             int tupleLocation = 2;
             while (true)
@@ -209,7 +259,7 @@ namespace VanguardEngine
             set => _isSuperiorCall = value;
         }
 
-        public int Activation
+        public int GetActivation
         {
             get => _activation;
         }
@@ -224,9 +274,26 @@ namespace VanguardEngine
             get => _card.name;
         }
 
-        public void Activate()
+        public int GetID()
         {
-            _script.Call(_abilityActivate, _abilityNumber);
+            return _card.tempID;
+        }
+
+        public void ResetActivation()
+        {
+            _activated = false;
+        }
+
+        public void Test()
+        {
+            Console.WriteLine("test");
+        }
+
+        public int Activate()
+        {
+            DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
+            _activated = true;
+            return (int)Then.Number;
         }
 
         public bool CheckCondition()
@@ -237,10 +304,13 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool IsTopSoul()
+        public bool IsRodeUponThisTurn()
         {
-            if (_player1.IsTopSoul(_card))
-                return true;
+            foreach (Card card in _player1.GetRiddenOnThisTurn())
+            {
+                if (_card.tempID == card.tempID)
+                    return true;
+            }
             return false;
         }
 
@@ -290,6 +360,7 @@ namespace VanguardEngine
             Param param = _params[paramNum - 1];
             List<Card> currentPool = new List<Card>();
             List<Card> newPool = new List<Card>();
+            List<Card> cards;
             foreach (int location in param.Locations)
             {
                 if (location == Location.Deck)
@@ -300,19 +371,43 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetHand());
                 else if (location == Location.PlayerRC)
                 {
-                    foreach (Card card in _player1.GetActiveUnits())
-                        currentPool.Add(card);
+                    cards = _player1.GetAllUnitsOnField();
+                    foreach (Card card in cards)
+                    {
+                        if (card.location == Location.PlayerRC)
+                            currentPool.Add(card);
+                    }
+                }
+                else if (location == Location.EnemyRC)
+                {
+                    cards = _player1.GetAllUnitsOnField();
+                    foreach (Card card in cards)
+                    {
+                        if (card.location == Location.EnemyRC)
+                            currentPool.Add(card);
+                    }
                 }
                 else if (location == Location.PlayerVC)
                     currentPool.Add(_player1.Vanguard());
             }
             if (currentPool.Count == 0)
                 return null;
+            if (param.This)
+            {
+                foreach (Card card in currentPool)
+                {
+                    if (card.tempID == _card.tempID)
+                    {
+                        newPool.Add(card);
+                        return newPool;
+                    }
+                }
+            }
             if (param.Names.Count > 0)
             {
                 for (int i = 0; i < currentPool.Count; i++)
                 {
-                    if (param.Names.Contains(currentPool[i].name))
+                    if (param.Names.Contains(currentPool[i].name) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
                 if (newPool.Count == 0)
@@ -325,7 +420,7 @@ namespace VanguardEngine
             {
                 for (int i = 0; i < currentPool.Count; i++)
                 {
-                    if (param.Grades.Contains(currentPool[i].grade))
+                    if (param.Grades.Contains(currentPool[i].grade) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
                 if (newPool.Count == 0)
@@ -338,7 +433,7 @@ namespace VanguardEngine
             {
                 for (int i = 0; i < currentPool.Count; i++)
                 {
-                    if (param.Types.Contains(currentPool[i].unitType))
+                    if (param.Types.Contains(currentPool[i].unitType) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
                 if (newPool.Count == 0)
@@ -348,6 +443,25 @@ namespace VanguardEngine
                 newPool.Clear();
             }
             return currentPool;
+        }
+
+        public bool CanOverDress(int tempID, int circle)
+        {
+            if (_overDressParam < 0)
+                return false;
+            Param param = _params[_overDressParam - 1];
+            Card card = _player1.GetUnitAt(circle);
+            if (card == null)
+                return false;
+            if (param.Names.Count != 0)
+            {
+                foreach (string name in param.Names)
+                {
+                    if (card.name == name)
+                        return true;
+                }
+            }
+            return false;
         }
 
         public bool CanCB(int paramNum)
@@ -364,17 +478,81 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanSB(int paramNum)
+        {
+            List<Card> soul = _player1.GetSoul();
+            int faceupCards = 0;
+            foreach (Card card in soul)
+            {
+                    faceupCards++;
+            }
+            if (faceupCards >= _params[paramNum - 1].Counts[0])
+                return true;
+            return false;
+        }
+
+        public bool CanRetire(int paramNum)
+        {
+            List<Card> units = ValidCards(paramNum);
+            if (units == null || units.Count <= _params[paramNum - 1].Counts[0])
+                return false;
+            return true;
+        }
+
         public bool IsAttackingUnit()
         {
-            if (_card == _player1.AttackingUnit())
+            if (_player1.AttackingUnit() != null && _card.tempID == _player1.AttackingUnit().tempID)
                 return true;
             return false;
         }
 
         public bool IsVanguard()
         {
-            if (_card == _player1.Vanguard())
+            if (_card.tempID == _player1.Vanguard().tempID)
                 return true;
+            return false;
+        }
+
+        public bool TargetIsPlayerVanguard()
+        {
+            if (_player1.TargetIsVanguard(C.Player))
+                return true;
+            return false;
+        }
+
+        public bool TargetIsEnemyVanguard()
+        {
+            if (_player1.TargetIsVanguard(C.Enemy))
+                return true;
+            return false;
+        }
+
+        public bool InOverDress()
+        {
+            List<Card> Units = _player1.GetActiveUnits();
+            foreach (Card card in Units)
+            {
+                if (card.tempID == _card.tempID && card.overDress)
+                    return true;
+            }
+            return false;
+        }
+
+        public bool VanguardIs(string name)
+        {
+            if (_player1.Vanguard().name == name)
+                return true;
+            return false;
+        }
+
+        public bool OpponentHasRearguards()
+        {
+            List<Card> Units = _player1.GetAllUnitsOnField();
+            for (int i = FL.EnemyFrontLeft; i <= FL.EnemyVanguard - 1; i++)
+            {
+                if (Units[i] != null)
+                    return true;
+            }
             return false;
         }
 
@@ -390,6 +568,7 @@ namespace VanguardEngine
 
         public int Turn()
         {
+            Console.WriteLine("turn: " + _player1.Turn);
             return _player1.Turn;
         }
 
@@ -401,7 +580,7 @@ namespace VanguardEngine
 
         public void SuperiorCall(int paramNum)
         {
-            List<Card> cardsToSelect = ValidCards(paramNum - 1);
+            List<Card> cardsToSelect = ValidCards(paramNum);
             _cardFight.SuperiorCall(_player1, _player2, cardsToSelect);
         }
 
@@ -416,9 +595,31 @@ namespace VanguardEngine
             _cardFight.CounterBlast(_player1, _player2, canCB, _params[paramNum - 1].Counts[0]);
         }
 
+        public void SoulBlast(int paramNum)
+        {
+            List<Card> canSB = new List<Card>();
+            foreach (Card card in _player1.GetSoul())
+            {
+                canSB.Add(card);
+            }
+            _cardFight.SoulBlast(_player1, _player2, canSB, _params[paramNum - 1].Counts[0]);
+        }
+
+        public void Search(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            _cardFight.Search(_player1, _player2, cardsToSelect);
+        }
+
         public void Discard(int paramNum)
         {
             _cardFight.Discard(_player1, _player2, _params[paramNum - 1].Counts[0]);
+        }
+
+        public void Retire(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            _cardFight.SelectCardToRetire(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], false); 
         }
 
         public void AddPower(int paramNum, int power)
@@ -432,15 +633,31 @@ namespace VanguardEngine
             }
         }
 
+        public void AddAbilityPower(int paramNum, int power)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+            {
+                _player1.AddAbilityPower(_card.tempID, _abilityNumber, card.tempID, power);
+                _player2.AddAbilityPower(_card.tempID, _abilityNumber, card.tempID, power);
+                card.tempPower += power;
+            }
+        }
+
         public void AddTempPower(int paramNum, int power)
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.AddTempPower(card.tempID, power);
-                _player2.AddTempPower(card.tempID, power);
+                _player1.AddTempPower(card.tempID, power, C.Player);
+                _player2.AddTempPower(card.tempID, power, C.Enemy);
                 card.tempPower += power;
             }
+        }
+
+        public void OnRideAbilityResolved()
+        {
+            _player1.OnRideAbilityResolved(_card.tempID);
         }
 
         public bool Activated()
@@ -456,6 +673,7 @@ namespace VanguardEngine
         List<string> _name = new List<string>();
         List<int> _grade = new List<int>();
         List<int> _type = new List<int>();
+        bool _this = false;
 
         public void AddLocation(int location)
         {
@@ -506,6 +724,12 @@ namespace VanguardEngine
         {
             get => _type;
         }
+
+        public bool This
+        {
+            get => _this;
+            set => _this = value;
+        }
     }
 
     class Activation
@@ -513,11 +737,10 @@ namespace VanguardEngine
         public const int OnRide = 1;
         public const int OnAttack = 2;
         public const int OnOverDress = 3;
-    }
-
-    class Prompt
-    {
-        public const int SuperiorCall = 1;
+        public const int OnACT = 4;
+        public const int OnBattleEnds = 5;
+        public const int OverDress = 6;
+        public const int Then = 7;
     }
 
     class ContEnd
@@ -545,6 +768,7 @@ namespace VanguardEngine
         public const int PlayerVC = 16;
         public const int EnemyRC = 17;
         public const int EnemyVC = 18;
+        public const int originalDress = 19;
     }
 
     class Query
@@ -554,5 +778,6 @@ namespace VanguardEngine
         public const int Location = 3;
         public const int Count = 4;
         public const int Type = 5;
+        public const int This = 6;
     }
 }

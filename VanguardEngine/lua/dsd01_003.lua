@@ -1,19 +1,17 @@
--- Blaze Maiden, Reiyu
+-- Blaze Maiden, Rino
 
 function NumberOfAbilities()
 	return 3
 end
 
-function NumberOfParams(n)
-	return 3
+function NumberOfParams()
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Name, "Vairina"
+		return q.Location, l.Deck, q.Name, "Trickstar"
 	elseif n == 2 then
-		return q.Count, 1
-	elseif n == 3 then
 		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.This
 	end
 end
@@ -31,7 +29,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Blaze Maiden, Reiyu") and obj.CanSuperiorCall(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -48,13 +46,12 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SoulBlast(2)
-		obj.Search(1)
+		obj.SuperiorCall(1)
 		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.AddPower(3, 2000)
+		obj.AddPower(2, 2000)
 	elseif n == 3 then
-		obj.AddPower(3, -2000)
+		obj.AddPower(2, -2000)
 	end
 	return 0
 end

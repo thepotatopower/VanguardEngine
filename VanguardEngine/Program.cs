@@ -23,7 +23,7 @@ namespace VanguardEngine
             List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt"), "Data Source=./cards.db;Version=3;");
             List<Card> deck2 = LoadCards.GenerateCards("testDeck.txt", "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
-            start = cardFight.Initialize(deck1, deck2, inputManager, "../../lua");
+            start = cardFight.Initialize(deck1, deck2, inputManager, ".." + Path.DirectorySeparatorChar + "lua");
             if (!start)
             {
                 Console.WriteLine("Initialization error.");

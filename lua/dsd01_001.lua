@@ -1,21 +1,21 @@
 -- Chakrabarthi Divine Dragon, Nirvana
 
-function NumberOfAbilities()
+function NumberOfEffects()
 	return 2
 end
 
 function NumberOfParams()
-	return 4
+	return 5
 end
 
 function GetParam(n)
-	if n == 1 then
+	if n == 1
 		return q.Count, 1
-	elseif n == 2 then
+	else if n == 2
 		return q.Location, l.Drop, q.Grade, 0
-	elseif n == 3 then
+	else if n == 3
 		return q.Location, l.PlayerRC, q.Type, t.overDress
-	elseif n == 4 then
+	else if n == 4
 		return q.Location, l.PlayerVC
 	end
 end
@@ -23,18 +23,16 @@ end
 function ActivationRequirement(n)
 	if n == 1 then
 		return a.OnACT, l.VG, false, false
-	elseif n == 2 then
+	else if n == 2 then
 		return a.OnAttack, l.VG, false, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if not obj.Activated(n) and obj.IsVanguard() and obj.CanDiscard(1) and obj.CanSuperiorCall(2) then
+		if !obj.Activated(n) and obj.IsVanguard() and obj.IsAttackingUnit() and obj.CanDiscard(1) and obj.CanSuperiorCall(2) then
 			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.CanCB(1) then 
+		else if obj.IsVanguard() and obj.IsAttackingUnit() and obj.CanCB(1) 
 			return true
 		end
 	end
@@ -45,10 +43,9 @@ function Activate(n)
 	if n == 1 then
 		obj.Discard(1)
 		obj.SuperiorCall(2)
-	elseif n == 2 then
+	else if n == 2 then
 		obj.CounterBlast(1)
 		obj.AddTempPower(3, 10000)
 		obj.AddTempPower(4, 10000)
 	end
-	return 0
 end

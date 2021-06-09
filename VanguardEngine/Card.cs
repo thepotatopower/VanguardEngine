@@ -31,6 +31,7 @@ namespace VanguardEngine
         public string effect = "";
         public bool faceup = false;
         public bool upright = true;
+        public bool overDress = false;
         public int location = Location.Deck;
         public List<Card> soul = new List<Card>();
 
