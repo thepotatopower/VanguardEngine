@@ -337,17 +337,6 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool CanDiscard(int paramNum)
-        {
-            Param param = _params[paramNum - 1];
-            if (param.Counts.Count > 0)
-            {
-                if (_player1.GetHand().Count < param.Counts[0])
-                    return false;
-            }
-            return true;
-        }
-
         public bool CanSuperiorCall(int paramNum)
         {
             if (ValidCards(paramNum) != null)
@@ -367,8 +356,10 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetDeck());
                 else if (location == Location.Drop)
                     currentPool.AddRange(_player1.GetDrop());
-                else if (location == Location.Hand)
+                else if (location == Location.PlayerHand)
                     currentPool.AddRange(_player1.GetHand());
+                else if (location == Location.EnemyHand)
+                    currentPool.AddRange(_player2.GetHand());
                 else if (location == Location.PlayerRC)
                 {
                     cards = _player1.GetAllUnitsOnField();
@@ -464,6 +455,22 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool LastPlacedOnGC()
+        {
+            return _player1.IsPlacedOnGC(_card.tempID);
+        }
+
+        public bool OnGC()
+        {
+            List<Card> GC = _player1.GetGC();
+            foreach (Card card in GC)
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
+        }
+
         public bool CanCB(int paramNum)
         {
             List<Card> damage = _player1.GetDamageZone();
@@ -494,7 +501,15 @@ namespace VanguardEngine
         public bool CanRetire(int paramNum)
         {
             List<Card> units = ValidCards(paramNum);
-            if (units == null || units.Count <= _params[paramNum - 1].Counts[0])
+            if (units == null || units.Count < _params[paramNum - 1].Counts[0])
+                return false;
+            return true;
+        }
+
+        public bool CanDiscard(int paramNum)
+        {
+            List<Card> hand = _player1.GetHand();
+            if (hand.Count < _params[paramNum - 1].Counts[0])
                 return false;
             return true;
         }
@@ -622,6 +637,11 @@ namespace VanguardEngine
             _cardFight.SelectCardToRetire(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], false); 
         }
 
+        public void PerfectGuard()
+        {
+            _cardFight.PerfectGuard(_player1, _player2);
+        }
+
         public void AddPower(int paramNum, int power)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -741,6 +761,7 @@ namespace VanguardEngine
         public const int OnBattleEnds = 5;
         public const int OverDress = 6;
         public const int Then = 7;
+        public const int PlacedOnGC = 8;
     }
 
     class ContEnd
@@ -754,7 +775,7 @@ namespace VanguardEngine
         public const int VG = 2;
         public const int FaceupUnit = 3;
         public const int Drop = 4;
-        public const int Hand = 5;
+        public const int PlayerHand = 5;
         public const int Deck = 6;
         public const int Field = 7;
         public const int Soul = 8;
@@ -769,6 +790,7 @@ namespace VanguardEngine
         public const int EnemyRC = 17;
         public const int EnemyVC = 18;
         public const int originalDress = 19;
+        public const int EnemyHand = 20;
     }
 
     class Query

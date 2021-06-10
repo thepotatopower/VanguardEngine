@@ -10,6 +10,7 @@ namespace VanguardEngine
         protected int _damage = 0;
         protected int _turn = 1;
         protected List<Card> _riddenOnThisTurn = new List<Card>();
+        protected List<Card> _lastPlacedOnGC = new List<Card>();
         public int _playerID = 0;
 
         public event EventHandler<CardEventArgs> OnDraw;
@@ -66,6 +67,11 @@ namespace VanguardEngine
             return _field.Units[FL.PlayerVanguard].soul;
         }
 
+        public List<Card> GetGC()
+        {
+            return _field.GC;
+        }
+
         public List<Card> GetDrop()
         {
             return _field.PlayerDrop;
@@ -94,7 +100,7 @@ namespace VanguardEngine
             {
                 _field.PlayerDeck[0].faceup = true;
                 _field.PlayerHand.Add(_field.PlayerDeck[0]);
-                _field.PlayerDeck[0].location = Location.Hand;
+                _field.PlayerDeck[0].location = Location.PlayerHand;
                 cardsAdded.Add(_field.PlayerDeck[0]);
                 _field.PlayerDeck.Remove(_field.PlayerDeck[0]);
             }
@@ -116,7 +122,7 @@ namespace VanguardEngine
             {
                 _field.EnemyDeck[0].faceup = true;
                 _field.EnemyHand.Add(_field.EnemyDeck[0]);
-                _field.EnemyDeck[0].location = Location.Hand;
+                _field.EnemyDeck[0].location = Location.EnemyHand;
                 cardsAdded.Add(_field.EnemyDeck[0]);
                 _field.EnemyDeck.Remove(_field.EnemyDeck[0]);
             }
@@ -668,7 +674,7 @@ namespace VanguardEngine
             Card VG = _field.Units[FL.PlayerVanguard];
             foreach (Card card in rideDeck)
             {
-                if (card.grade == VG.grade || card.grade - 1 == VG.grade)
+                if (VG.grade + 1 == card.grade)
                     return true;
             }
             return false;
@@ -772,6 +778,16 @@ namespace VanguardEngine
                 Vanguard = FL.EnemyVanguard;
             if (_field.Attacked == Vanguard)
                 return true;
+            return false;
+        }
+
+        public bool IsPlacedOnGC(int tempID)
+        {
+            foreach (Card card in _lastPlacedOnGC)
+            {
+                if (card.tempID == tempID)
+                    return true;
+            }
             return false;
         }
 
@@ -1062,7 +1078,7 @@ namespace VanguardEngine
                     location = _field.PlayerDrop;
                 else if (loc == Location.Deck)
                     location = _field.PlayerDeck;
-                else if (loc == Location.Hand)
+                else if (loc == Location.PlayerHand)
                     location = _field.PlayerHand;
                 foreach (Card card in location)
                 {
@@ -1099,7 +1115,7 @@ namespace VanguardEngine
                     location = _field.EnemyDrop;
                 else if (loc == Location.Deck)
                     location = _field.EnemyDeck;
-                else if (loc == Location.Hand)
+                else if (loc == Location.EnemyHand)
                     location = _field.EnemyHand;
                 foreach (Card card in location)
                 {
@@ -1408,6 +1424,7 @@ namespace VanguardEngine
 
         public void Guard(int selection, bool player)
         {
+            _lastPlacedOnGC.Clear();
             if (player)
             {
                 _field.Guarding = true;
@@ -1419,6 +1436,7 @@ namespace VanguardEngine
                         card.upright = false;
                         card.location = Location.GC;
                         _field.GC.Insert(0, card);
+                        _lastPlacedOnGC.Add(card);
                         Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
                         if (OnGuard != null)
                         {
@@ -1441,11 +1459,16 @@ namespace VanguardEngine
                         card.upright = false;
                         card.location = Location.GC;
                         _field.GC.Insert(0, card);
-                        Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
+                        _lastPlacedOnGC.Add(card);
                         return;
                     }
                 }
             }
+        }
+
+        public void PerfectGuard()
+        {
+            _field.Sentinel = true;
         }
 
         public void Retire(int tempID)
@@ -1652,7 +1675,7 @@ namespace VanguardEngine
         public void AddTriggerToHand()
         {
             Card card = _field.PlayerTrigger;
-            card.location = Location.Hand;
+            card.location = Location.PlayerHand;
             _field.PlayerTrigger = null;
             card.upright = true;
             _field.PlayerHand.Add(card);
@@ -1661,7 +1684,7 @@ namespace VanguardEngine
         public void EnemyAddTriggerToHand()
         {
             Card card = _field.EnemyTrigger;
-            card.location = Location.Hand;
+            card.location = Location.EnemyHand;
             _field.EnemyTrigger = null;
             card.upright = true;
             _field.EnemyHand.Add(card);
@@ -1757,15 +1780,18 @@ namespace VanguardEngine
         {
             List<Card> hand = null;
             List<Card> deck = null;
+            int handLocation = 0;
             if (player)
             {
                 hand = _field.PlayerHand;
                 deck = _field.PlayerDeck;
+                handLocation = Location.PlayerHand;
             }
             else
             {
                 hand = _field.EnemyHand;
                 deck = _field.EnemyDeck;
+                handLocation = Location.EnemyHand;
             }
             foreach (int tempID in cardsToSearch)
             {
@@ -1777,7 +1803,7 @@ namespace VanguardEngine
                         if (player)
                             card.faceup = true;
                         hand.Add(card);
-                        card.location = Location.Hand;
+                        card.location = handLocation;
                         if (player)
                             ShuffleDeck();
                         else

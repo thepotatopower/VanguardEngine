@@ -19,6 +19,7 @@ namespace VanguardEngine
         public List<Card> _deck2;
         public Abilities _abilities;
         public List<Ability> _abilityQueue = new List<Ability>();
+        public List<Ability> _activatedAbilities = new List<Ability>();
         public EventHandler<CardEventArgs> OnDrawPhase;
         public EventHandler<CardEventArgs> OnRidePhase;
         public EventHandler<CardEventArgs> OnMainPhase;
@@ -276,6 +277,8 @@ namespace VanguardEngine
                     else
                         break;
                 }
+                else
+                    break;
             }
         }
 
@@ -284,7 +287,7 @@ namespace VanguardEngine
             player1.Ride(location, selection, C.Player);
             player2.Ride(location, selection, C.Enemy);
             AddAbilitiesToQueue(player1, player2, Activation.OnRide);
-            ActivateAbilities(player1, player2);
+            ActivateAbilities(player1, player2, Activation.OnRide);
         }
 
         public void Discard(Player player1, Player player2, int count)
@@ -355,7 +358,7 @@ namespace VanguardEngine
                     //else
                     //    Console.WriteLine("No abilites can be activated.");
                     AddAbilitiesToQueue(player1, player2, Activation.OnACT);
-                    ActivateAbilities(player1, player1);
+                    ActivateAbilities(player1, player1, Activation.OnACT);
                 }
                 else if (selection == 6)
                 {
@@ -472,7 +475,7 @@ namespace VanguardEngine
             player1.InitiateAttack(attacker, target, C.Player);
             player2.InitiateAttack(attacker, target, C.Enemy);
             AddAbilitiesToQueue(player1, player2, Activation.OnAttack);
-            ActivateAbilities(player1, player2);
+            ActivateAbilities(player1, player2, Activation.OnAttack);
 
             if (player1.CanBeBoosted())
             {
@@ -507,14 +510,21 @@ namespace VanguardEngine
                         selection = _inputManager.SelectCardToGuardWith();
                         player2.Guard(selection, C.Player);
                         player1.Guard(selection, C.Enemy);
+                        AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
+                        ActivateAbilities(player2, player1, Activation.PlacedOnGC);
                     }
-                    else if (selection == 5) //guard with specific card (for use outside of console only)
+                    else if (selection == 5) //end guard
+                    {
+                        break;
+                    }
+                    else if (selection == 6) //guard with specific card (for use outside of console only)
                     {
                         player2.Guard(_inputManager.intlist_input[0], C.Player);
                         player1.Guard(_inputManager.intlist_input[0], C.Enemy);
+                        AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
+                        ActivateAbilities(player2, player1, Activation.PlacedOnGC);
+
                     }
-                    else
-                        break;
                 }
              }
             if (player1.AttackerIsVanguard())
@@ -564,7 +574,7 @@ namespace VanguardEngine
                 player1.EnemyRetireGC();
             }
             AddAbilitiesToQueue(player1, player2, Activation.OnBattleEnds);
-            ActivateAbilities(player1, player2);
+            ActivateAbilities(player1, player2, Activation.OnBattleEnds);
             if (player1 == _player1)
                 Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             else
@@ -656,18 +666,34 @@ namespace VanguardEngine
             }
         }
 
+        public void PerfectGuard(Player player1, Player player2)
+        {
+            player1.PerfectGuard();
+            player2.PerfectGuard();
+        }
+
         public void AddAbilitiesToQueue(Player player1, Player player2, int activation)
         {
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), true));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), true));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), true));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), true));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), false));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), false));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), false));
-            _abilityQueue.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), false));
+            List<Ability> abilities = new List<Ability>();
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), true));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), true));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), true));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), true));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC(), true));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), false));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), false));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), false));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), false));
+            abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC(), false));
+            foreach (Ability ability in _activatedAbilities)
+            {
+                if (abilities.Contains(ability))
+                    abilities.Remove(ability);
+            }
+            _abilityQueue.AddRange(abilities);
         }
-        public void ActivateAbilities(Player player1, Player player2)
+
+        public void ActivateAbilities(Player player1, Player player2, int activation)
         {
             int selection;
             List<Ability> abilities = _abilityQueue;
@@ -703,6 +729,7 @@ namespace VanguardEngine
                 {
                     Console.WriteLine("----------\n" + abilities[selection].Name + "'s effect activates!");
                     ThenNum = abilities[selection].Activate();
+                    _activatedAbilities.Add(abilities[selection]);
                     ThenID = abilities[selection].GetID();
                     abilities.RemoveAt(selection);
                     if (ThenNum > 0)
@@ -719,9 +746,14 @@ namespace VanguardEngine
                                 ThenAbility.Activate();
                         }
                     }
+                    abilities.Clear();
+                    if (activation == Activation.OnACT)
+                        break;
+                    AddAbilitiesToQueue(player1, player2, activation);
                 }
             }
             abilities.Clear();
+            _activatedAbilities.Clear();
         }
 
         public bool CanOverDress(int tempID, int circle)
