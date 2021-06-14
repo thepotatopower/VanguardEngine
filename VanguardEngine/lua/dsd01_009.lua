@@ -10,13 +10,13 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerRC, q.This
+		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, l.PlayerRC, true, true
+		return a.PlacedOnRC, true, true
 	end
 end
 
@@ -29,9 +29,12 @@ function CheckCondition(n)
 	return false
 end
 
+function Cost(n)
+end
+
 function Activate(n)
 	if n == 1 then
-		obj.TargetImmunity();
+		obj.TargetImmunity(1);
 	end
 	return 0
 end

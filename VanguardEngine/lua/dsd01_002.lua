@@ -10,28 +10,28 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Name, "Vairina"
+		return q.Location, l.Deck, q.Name, "Vairina", q.Count, 1
 	elseif n == 2 then
-		return q.Count, 1
+		return q.Location, l.Soul, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.This
+		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, l.TopSoul, false, false
+		return a.OnRide, false, false
 	elseif n == 2 then
-		return a.OnAttack, l.PlayerVC, l.PlayerRC, true, true
+		return a.OnAttack, true, true
 	elseif n == 3 then
-		return a.OnBattleEnds, l.PlayerVC, l.PlayerRC, true, true
+		return a.OnBattleEnds, true, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) and obj.CanSearch(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -46,9 +46,14 @@ function CheckCondition(n)
 	return false
 end
 
-function Activate(n)
+function Cost(n)
 	if n == 1 then
 		obj.SoulBlast(2)
+	end
+end
+
+function Activate(n)
+	if n == 1 then
 		obj.Search(1)
 		obj.OnRideAbilityResolved()
 	elseif n == 2 then

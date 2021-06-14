@@ -10,30 +10,33 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerRC, q.This
+		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, l.PlayerRC, true, true
+		return a.OnAttack, true, true
 	elseif n == 2 then
-		return a.OnBattleEnds, l.PlayerRC, true, true
+		return a.OnBattleEnds, true, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() then
+		if obj.IsAttackingUnit() and not obj.IsVanguard() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() then
+		if obj.IsAttackingUnit() and not obj.IsVanguard() then
 			return true
 		end
 	end
 	return false
+end
+
+function Cost(n)
 end
 
 function Activate(n)

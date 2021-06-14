@@ -12,18 +12,18 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Deck, q.Name, "Trickstar"
 	elseif n == 2 then
-		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.This
+		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, l.TopSoul, false, false
+		return a.OnRide, false, false
 	elseif n == 2 then
-		return a.OnAttack, l.PlayerVC, l.PlayerRC, true, true
+		return a.OnAttack, true, true
 	elseif n == 3 then
-		return a.OnBattleEnds, l.PlayerVC, l.PlayerRC, true, true
+		return a.OnBattleEnds, true, true
 	end
 end
 
@@ -42,6 +42,9 @@ function CheckCondition(n)
 		end
 	end
 	return false
+end
+
+function Cost(n)
 end
 
 function Activate(n)

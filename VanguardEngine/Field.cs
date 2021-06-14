@@ -10,6 +10,7 @@ namespace VanguardEngine
         protected List<Card> _enemyHand = new List<Card>();
         protected List<Card> _playerDeck = new List<Card>();
         protected List<Card> _enemyDeck = new List<Card>();
+        protected List<Card> _cardCatalog = new List<Card>();
         //protected Card _playerVG;
         //protected Card _enemyVG;
         //protected Card[] _playerRG = new Card[5];
@@ -49,6 +50,12 @@ namespace VanguardEngine
             set => _enemyDeck = value;
         }
 
+        public List<Card> CardCatalog
+        {
+            get => _cardCatalog;
+            set => _cardCatalog = value;
+        }
+
         public int[] ShuffleKey
         {
             get => _shuffleKey;
@@ -63,28 +70,6 @@ namespace VanguardEngine
         {
             get => _enemyHand;
         }
-
-        //public Card PlayerVG
-        //{
-        //    get => _playerVG;
-        //    set => _playerVG = value;
-        //}
-
-        //public Card EnemyVG
-        //{
-        //    get => _enemyVG;
-        //    set => _enemyVG = value;
-        //}
-
-        //public Card[] PlayerRG
-        //{
-        //    get => _playerRG;
-        //}
-
-        //public Card[] EnemyRG
-        //{
-        //    get => _enemyRG;
-        //}
 
         public Card[] Units
         {
@@ -194,6 +179,20 @@ namespace VanguardEngine
                 _playerDeck.Add(deck1[i].Clone());
                 _enemyDeck.Add(deck2[i].Clone());
             }
+            for (int i = 0; i < deck1.Count + deck2.Count; i++)
+            {
+                _cardCatalog.Add(null);
+            }
+            foreach (Card card in _playerDeck)
+                _cardCatalog[card.tempID] = card;
+            foreach (Card card in _playerRideDeck)
+                _cardCatalog[card.tempID] = card;
+            foreach (Card card in _enemyDeck)
+                _cardCatalog[card.tempID] = card;
+            foreach (Card card in _enemyRideDeck)
+                _cardCatalog[card.tempID] = card;
+            _cardCatalog[_units[FL.PlayerVanguard].tempID] = _units[FL.PlayerVanguard];
+            _cardCatalog[_units[FL.EnemyVanguard].tempID] = _units[FL.EnemyVanguard];
         }
 
         static public class FisherYates

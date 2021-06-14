@@ -10,13 +10,13 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Count, 1
+		return q.Location, l.PlayerHand, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnGC, l.GC, false, false
+		return a.PlacedOnGC, false, false
 	end
 end
 
@@ -29,9 +29,14 @@ function CheckCondition(n)
 	return false
 end
 
-function Activate(n)
+function Cost(n)
 	if n == 1 then
 		obj.Discard(1)
+	end
+end
+
+function Activate(n)
+	if n == 1 then
 		obj.PerfectGuard()
 	end
 	return 0
