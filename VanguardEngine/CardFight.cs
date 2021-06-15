@@ -209,6 +209,7 @@ namespace VanguardEngine
             while (true)
             {
                 max = player1.PrintHand();
+                Console.WriteLine(max + ". Go back.");
                 selection = SelectPrompt(max);
                 if (selection == max)
                     break;
@@ -256,6 +257,8 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnRidePhase(this, args);
             }
+            AddAbilitiesToQueue(player1, player2, Activation.OnRidePhase);
+            ActivateAbilities(player1, player2, Activation.OnRidePhase);
             while (true)
             {
                 if (CanRideFromRideDeck || CanRideFromHand)
@@ -294,6 +297,7 @@ namespace VanguardEngine
             player1.Ride(location, selection, C.Player);
             player2.Ride(location, selection, C.Enemy);
             AddAbilitiesToQueue(player1, player2, Activation.OnRide);
+            AddAbilitiesToQueue(player1, player2, Activation.PlacedOnVC);
             ActivateAbilities(player1, player2, Activation.OnRide);
         }
 
@@ -390,10 +394,11 @@ namespace VanguardEngine
             ActivateAbilities(player1, player2, Activation.PlacedOnRC);
         }
 
-        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect)
+        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int circle)
         {
-            int selection = _inputManager.SelectFromList(cardsToSelect, 1, false, "Choose card to Call.")[0];
+            int selection = _inputManager.SelectFromList(cardsToSelect, 1, 1, "Choose card to Call.")[0];
             int location = 0;
+            int selectedCircle = 0;
             foreach (Card card in cardsToSelect)
             {
                 if (card.tempID == selection)
@@ -402,9 +407,12 @@ namespace VanguardEngine
                     break;
                 }
             }
-            int circle = _inputManager.SelectCallLocation("Choose RC.");
-            player1.SuperiorCall(circle, selection, location, C.Player);
-            player2.SuperiorCall(circle, selection, location, C.Enemy);
+            if (circle < 0)
+                selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
+            else
+                selectedCircle = circle;
+            player1.SuperiorCall(selectedCircle, selection, location, C.Player);
+            player2.SuperiorCall(selectedCircle, selection, location, C.Enemy);
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
         }
 
@@ -692,6 +700,8 @@ namespace VanguardEngine
             abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop()));
             abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul()));
             abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC()));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetActiveUnits()));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetGC()));
             foreach (Ability ability in _activatedAbilities)
             {
                 if (abilities.Contains(ability))
@@ -782,54 +792,80 @@ namespace VanguardEngine
 
         public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count)
         {
-            List<int> cardsToCB = _inputManager.SelectFromList(canCB, count, false, "Choose card(s) to Counter Blast.");
+            List<int> cardsToCB = _inputManager.SelectFromList(canCB, count, count, "Choose card(s) to Counter Blast.");
             player1.CounterBlast(cardsToCB, C.Player);
             player2.CounterBlast(cardsToCB, C.Enemy);
         }
 
         public void SoulBlast(Player player1, Player player2, List<Card> canSB, int count)
         {
-            List<int> cardsToSB = _inputManager.SelectFromList(canSB, count, false, "Choose card(s) to Soul Blast.");
+            List<int> cardsToSB = _inputManager.SelectFromList(canSB, count, count, "Choose card(s) to Soul Blast.");
             player1.SoulBlast(cardsToSB, C.Player);
             player2.SoulBlast(cardsToSB, C.Enemy);
         }
 
+        public void SoulCharge(Player player1, Player player2, int count)
+        {
+            player1.SoulCharge(count, C.Player);
+            player2.SoulCharge(count, C.Enemy);
+        }
+
         public void Search(Player player1, Player player2, List<Card> canSearch)
         {
-            List<int> cardsToSearch = _inputManager.SelectFromList(canSearch, 1, false, "Choose card(s) to search.");
+            List<int> cardsToSearch = _inputManager.SelectFromList(canSearch, 1, 1, "Choose card(s) to search.");
             player1.Search(cardsToSearch, C.Player);
             player2.Search(cardsToSearch, C.Enemy);
         }
 
         public void Stand(Player player1, Player player2, List<Card> canStand, int count, bool select)
         {
-            List<int> cardsToStand = _inputManager.SelectFromList(canStand, count, false, "Choose card(s) to stand.");
+            List<int> cardsToStand = _inputManager.SelectFromList(canStand, count, count, "Choose card(s) to stand.");
             player1.Stand(cardsToStand);
             player2.Stand(cardsToStand);
         }
 
+        public void AutoStand(Player player1, Player player2, List<int> canStand)
+        {
+            player1.Stand(canStand);
+            player2.Stand(canStand);
+        }
+
         public void ChooseAddTempPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
         {
-            List<int> cardsToAddPower = _inputManager.SelectFromList(canAdd, count, false, "Choose card(s) to give +" + power + " to.");
+            List<int> cardsToAddPower = _inputManager.SelectFromList(canAdd, count, count, "Choose card(s) to give +" + power + " to.");
             player1.AddTempPower(cardsToAddPower, power, C.Player);
             player2.AddTempPower(cardsToAddPower, power, C.Enemy);
         }
 
-        public void AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, bool upto)
+        public void AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
-            List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, upto, "Choose card(s) to add to hand.");
+            List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to hand.");
             player1.AddToHand(cardsToAddToHand, C.Player);
             player2.AddToHand(cardsToAddToHand, C.Enemy);
         }
 
+        public void AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
+        {
+            List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to soul.");
+            player1.AddToSoul(cardsToAddToHand, C.Player);
+            player2.AddToSoul(cardsToAddToHand, C.Enemy);
+        }
+
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
         {
-            List<int> cardsToRetire = _inputManager.SelectFromList(canRetire, count, upto, "Choose card(s) to retire.");
+            List<int> cardsToRetire = _inputManager.SelectFromList(canRetire, count, count, "Choose card(s) to retire.");
             foreach (int tempID in cardsToRetire)
             {
                 player1.Retire(tempID);
                 player2.Retire(tempID);
             }
+        }
+
+        public void FinalRush(Player player1, Player player2)
+        {
+            player1.FinalRush(C.Player);
+            player1.FinalRush(C.Enemy);
+            Console.WriteLine("----------\nEntered Final Rush!");
         }
 
         public void PlayOrder(Player player1, Player player2, int tempID)

@@ -15,10 +15,11 @@ namespace VanguardEngine
         public int power = -1;
         public int bonusPower = 0;
         public int tempPower = 0;
-        public Dictionary<Tuple<int, int>, bool> abilityPower = new Dictionary<Tuple<int, int>, bool>();
+        public Dictionary<Tuple<int, int>, int> abilityPower = new Dictionary<Tuple<int, int>, int>();
         public int shield = -1;
         public int critical = -1;
         public int trigger = -1;
+        public int triggerPower = 0;
         public int unitType = -1;
         public int orderType = -1;
         public int skill = -1;
@@ -27,7 +28,7 @@ namespace VanguardEngine
         public int tempID = 0;
         public string id = "";
         public int no = -1;
-        public int persona = -1;
+        public int personaRide = -1;
         public string effect = "";
         public bool faceup = false;
         public bool upright = true;
@@ -48,12 +49,13 @@ namespace VanguardEngine
             card.name = name;
             card.nation = nation;
             card.orderType = orderType;
-            card.persona = persona;
+            card.personaRide = personaRide;
             card.power = power;
             card.race = race;
             card.shield = shield;
             card.skill = skill;
             card.trigger = trigger;
+            card.triggerPower = triggerPower;
             card.unitType = unitType;
             card.tempID = tempID;
             return card;

@@ -20,6 +20,7 @@ namespace VanguardEngine
         public int prompt;
         public int value;
         public int int_value;
+        public int int_value2;
         public bool bool_value;
         public Card card_input;
         string _query;
@@ -281,7 +282,7 @@ namespace VanguardEngine
                     int_input = FL.PlayerBackLeft;
                     break;
                 case 3:
-                    int_input = FL.PlayerBackMiddle;
+                    int_input = FL.PlayerBackCenter;
                     break;
                 case 4:
                     int_input = FL.PlayerFrontRight;
@@ -471,13 +472,13 @@ namespace VanguardEngine
             return false;
         }
 
-        public List<int> SelectFromList(List<Card> cards, int count, bool upto, string query)
+        public List<int> SelectFromList(List<Card> cards, int count, int min, string query)
         {
             _query = query;
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cards);
             int_value = count;
-            bool_value = upto;
+            int_value2 = min;
             WaitForInput(SelectFromList_Input);
             return intlist_input;
         }
@@ -486,7 +487,7 @@ namespace VanguardEngine
         {
             int selection;
             int count = int_value;
-            bool upto = bool_value;
+            int min = int_value2;
             intlist_input.Clear();
             for (int j = 0; j < count; j++)
             {
@@ -495,14 +496,14 @@ namespace VanguardEngine
                 {
                     Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
                 }
-                if (upto)
+                if (intlist_input.Count > min)
                 {
                     Console.WriteLine(cardsToSelect.Count + 1 + ". End selection.");
                     selection = SelectPrompt(cardsToSelect.Count);
                 }
                 else
                     selection = SelectPrompt(cardsToSelect.Count) - 1;
-                if (upto && selection == cardsToSelect.Count)
+                if (intlist_input.Count > min && selection == cardsToSelect.Count)
                     oSignalEvent.Set();
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);

@@ -12,6 +12,7 @@ namespace VanguardEngine
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
+        protected bool _finalRush = false;
         public int _playerID = 0;
 
         public event EventHandler<CardEventArgs> OnDraw;
@@ -327,16 +328,16 @@ namespace VanguardEngine
                 pstand = "R";
             output = "----------\nEnemy Hand: " + hand.Count + " Enemy Soul: " + Units[FL.EnemyVanguard].soul.Count + " Player Soul: " + Units[FL.PlayerVanguard].soul.Count + " Player Damage: " + _field.PlayerDamageZone.Count + " Enemy Damage: " + _field.EnemyDamageZone.Count + "\n" +
                 "Choose circle to examine.\n" +
-                "1. " + PrintRGData(FL.EnemyBackRight) + " | " + "2. " + PrintRGData(FL.EnemyBackMiddle) + " | " + "3. " + PrintRGData(FL.EnemyBackLeft) + "\n" +
+                "1. " + PrintRGData(FL.EnemyBackRight) + " | " + "2. " + PrintRGData(FL.EnemyBackCenter) + " | " + "3. " + PrintRGData(FL.EnemyBackLeft) + "\n" +
                 "4. " + PrintRGData(FL.EnemyFrontRight) + " | " + "5. " + CalculatePowerOfUnit(FL.EnemyVanguard) + " G" + Units[FL.EnemyVanguard].grade + " " + estand + " | 6. " + PrintRGData(FL.EnemyFrontLeft) + "\n" +
                 "7.                 (to-do)\n" +
                 "8. " + PrintRGData(FL.PlayerFrontLeft) + " | 9. " + CalculatePowerOfUnit(FL.PlayerVanguard) + " G" + Units[FL.PlayerVanguard].grade + " " + pstand + " | 10. " + PrintRGData(FL.PlayerFrontRight) + "\n" +
-                "11. " + PrintRGData(FL.PlayerBackLeft) + " | 12. " + PrintRGData(FL.PlayerBackMiddle) + " | 13. " + PrintRGData(FL.PlayerBackRight) + "\n" +
-                "14. Display Drop." +
-                "15. Display Soul." +
+                "11. " + PrintRGData(FL.PlayerBackLeft) + " | 12. " + PrintRGData(FL.PlayerBackCenter) + " | 13. " + PrintRGData(FL.PlayerBackRight) + "\n" +
+                "14. Display Drop.\n" +
+                "15. Display Soul.\n" +
                 "16. Go back.";
             Console.WriteLine(output);
-            return 14;
+            return 16;
         }
 
         public string PrintRGData(int location)
@@ -391,14 +392,30 @@ namespace VanguardEngine
 
         public void DisplayDrop()
         {
-            foreach (Card card in _field.PlayerDrop)
-                DisplayCard(card);
+            if (_field.PlayerDrop.Count == 0)
+            {
+                Console.WriteLine("----------No cards in Drop.");
+                return;
+            }
+            Console.WriteLine("----------");
+            for (int i = 0; i < _field.PlayerDrop.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + _field.PlayerDrop[i].name);
+            }
         }
 
         public void DisplaySoul()
         {
-            foreach (Card card in _field.Units[FL.PlayerVanguard].soul)
-                DisplayCard(card);
+            if (_field.Units[FL.PlayerVanguard].soul.Count == 0)
+            {
+                Console.WriteLine("----------No cards in Drop.");
+                return;
+            }
+            Console.WriteLine("----------");
+            for (int i = 0; i < _field.Units[FL.PlayerVanguard].soul.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + _field.Units[FL.PlayerVanguard].soul[i].name);
+            }
         }
 
         public void DisplayVanguard(bool player)
@@ -414,7 +431,7 @@ namespace VanguardEngine
             if (selection == 1)
                 DisplayCard(_field.Units[FL.EnemyBackRight]);
             else if (selection == 2)
-                DisplayCard(_field.Units[FL.EnemyBackMiddle]);
+                DisplayCard(_field.Units[FL.EnemyBackCenter]);
             else if (selection == 3)
                 DisplayCard(_field.Units[FL.EnemyBackLeft]);
             else if (selection == 4)
@@ -428,7 +445,7 @@ namespace VanguardEngine
             else if (selection == 11)
                 DisplayCard(_field.Units[FL.PlayerBackRight]);
             else if (selection == 12)
-                DisplayCard(_field.Units[FL.PlayerBackMiddle]);
+                DisplayCard(_field.Units[FL.PlayerBackCenter]);
             else if (selection == 13)
                 DisplayCard(_field.Units[FL.PlayerBackRight]);
         }
@@ -583,6 +600,28 @@ namespace VanguardEngine
             return cards;
         }
 
+        public List<Card> GetRearguards(bool player)
+        {
+            List<Card> rearguards = new List<Card>();
+            if (player)
+            {
+                for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+                {
+                    if (_field.Units[i] != null)
+                        rearguards.Add(_field.Units[i]);
+                }
+            }
+            else
+            {
+                for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+                {
+                    if (_field.Units[i] != null)
+                        rearguards.Add(_field.Units[i]);
+                }
+            }
+            return rearguards;
+        }
+
         public List<Card> GetDamageZone()
         {
             return _field.PlayerDamageZone;
@@ -622,6 +661,8 @@ namespace VanguardEngine
         {
             Card[] Units = _field.Units;
             int power = Units[location].power + Units[location].bonusPower + Units[location].tempPower;
+            foreach (Tuple<int, int> key in Units[location].abilityPower.Keys)
+                power += Units[location].abilityPower[key];
             if (_field.Booster >= 0)
             {
                 if (_field.Guarding && isEnemyFrontRow(location))
@@ -648,16 +689,16 @@ namespace VanguardEngine
                 Console.WriteLine(output);
             }
             max++;
-            output = max + ". FrontMiddle " + _field.Units[FL.PlayerVanguard].name + " ";
+            output = max + ". FrontCenter " + _field.Units[FL.PlayerVanguard].name + " ";
             if (!_field.Guarding && _field.Booster == 1)
-                output += (_field.Units[FL.PlayerVanguard].power + _field.Units[FL.PlayerVanguard].bonusPower + _field.Units[FL.PlayerBackMiddle].power + _field.Units[FL.PlayerBackMiddle].bonusPower);
+                output += (_field.Units[FL.PlayerVanguard].power + _field.Units[FL.PlayerVanguard].bonusPower + _field.Units[FL.PlayerBackCenter].power + _field.Units[FL.PlayerBackCenter].bonusPower);
             else
                 output += (_field.Units[FL.PlayerVanguard].power + _field.Units[FL.PlayerVanguard].bonusPower);
             Console.WriteLine(output);
             if (_field.Units[FL.PlayerFrontRight] != null)
             {
                 max++;
-                output = max + ". FrontMiddle " + _field.Units[FL.PlayerFrontRight].name + " ";
+                output = max + ". FrontCenter " + _field.Units[FL.PlayerFrontRight].name + " ";
                 if (!_field.Guarding && _field.Booster == 2)
                     output += (_field.Units[FL.PlayerFrontRight].power + _field.Units[FL.PlayerFrontRight].bonusPower + _field.Units[FL.PlayerBackRight].power + _field.Units[FL.PlayerBackRight].bonusPower);
                 else
@@ -756,7 +797,7 @@ namespace VanguardEngine
             }
             else if (_field.Attacker == FL.PlayerVanguard)
             {
-                if (_field.Units[FL.PlayerBackMiddle] != null && _field.Units[FL.PlayerBackMiddle].upright)
+                if (_field.Units[FL.PlayerBackCenter] != null && _field.Units[FL.PlayerBackCenter].upright)
                     return true;
             }
             else
@@ -1108,6 +1149,8 @@ namespace VanguardEngine
                     location = _field.PlayerDeck;
                 else if (loc == Location.PlayerHand)
                     location = _field.PlayerHand;
+                else if (loc == Location.Soul)
+                    location = _field.Units[FL.PlayerVanguard].soul;
                 foreach (Card card in location)
                 {
                     if (card.tempID == tempID)
@@ -1146,6 +1189,8 @@ namespace VanguardEngine
                     location = _field.EnemyDeck;
                 else if (loc == Location.EnemyHand)
                     location = _field.EnemyHand;
+                else if (loc == Location.Soul)
+                    location = _field.Units[FL.EnemyVanguard].soul;
                 foreach (Card card in location)
                 {
                     if (card.tempID == tempID)
@@ -1315,9 +1360,9 @@ namespace VanguardEngine
             }
             else if (_field.Attacker == FL.PlayerVanguard)
             {
-                _field.Units[FL.PlayerBackMiddle].upright = false;
-                _field.Booster = FL.PlayerBackMiddle;
-                Console.WriteLine("----------\n" + _field.Units[FL.PlayerBackMiddle].name + " boosts " + _field.Units[FL.PlayerVanguard].name + "!");
+                _field.Units[FL.PlayerBackCenter].upright = false;
+                _field.Booster = FL.PlayerBackCenter;
+                Console.WriteLine("----------\n" + _field.Units[FL.PlayerBackCenter].name + " boosts " + _field.Units[FL.PlayerVanguard].name + "!");
             }
             else if (_field.Attacker == FL.PlayerFrontRight)
             {
@@ -1336,17 +1381,17 @@ namespace VanguardEngine
 
         public void EnemyBoost()
         {
-            if (_field.Attacker == FL.PlayerFrontLeft)
+            if (_field.Attacker == FL.EnemyFrontLeft)
             {
                 _field.Units[FL.EnemyBackLeft].upright = false;
                 _field.Booster = FL.EnemyBackLeft;
             }
-            else if (_field.Attacker == FL.PlayerVanguard)
+            else if (_field.Attacker == FL.EnemyVanguard)
             {
-                _field.Units[FL.EnemyBackMiddle].upright = false;
-                _field.Booster = FL.EnemyBackMiddle;
+                _field.Units[FL.EnemyBackCenter].upright = false;
+                _field.Booster = FL.EnemyBackCenter;
             }
-            else if (_field.Attacker == FL.PlayerFrontRight)
+            else if (_field.Attacker == FL.EnemyFrontRight)
             {
                 _field.Units[FL.EnemyBackRight].upright = false;
                 _field.Booster = FL.EnemyBackRight;
@@ -1411,6 +1456,7 @@ namespace VanguardEngine
             }
             else
             {
+                _field.Guarding = true;
                 list = GetEnemyStandingFrontRow();
                 foreach (Card card in list)
                 {
@@ -1457,7 +1503,6 @@ namespace VanguardEngine
             _lastPlacedOnGC.Clear();
             if (player)
             {
-                _field.Guarding = true;
                 foreach (Card card in _field.PlayerHand)
                 {
                     if (card.tempID == selection)
@@ -1527,6 +1572,7 @@ namespace VanguardEngine
                     toBeRetired.location = Location.Drop;
                     toBeRetired.overDress = false;
                     drop.Insert(0, toBeRetired);
+                    ResetCardValues(toBeRetired);
                     return;
                 }
             }
@@ -1540,6 +1586,7 @@ namespace VanguardEngine
                     toBeRetired.location = Location.Drop;
                     toBeRetired.overDress = false;
                     drop.Insert(0, toBeRetired);
+                    ResetCardValues(toBeRetired);
                     return;
                 }
             }
@@ -1648,22 +1695,15 @@ namespace VanguardEngine
             }
         }
 
-        public void AddAbilityPower(int tempID, int abilityNum, int selection, int power)
+        public void SetAbilityPower(int tempID, int abilityNum, int selection, int power)
         {
             Card target = FindActiveUnit(selection);
             if (!target.abilityPower.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
             {
-                target.abilityPower.Add(new Tuple<int, int>(tempID, abilityNum), true);
-                target.bonusPower += power;
+                target.abilityPower.Add(new Tuple<int, int>(tempID, abilityNum), power);
             }
             else
-            {
-                if (!target.abilityPower[new Tuple<int, int>(tempID, abilityNum)])
-                {
-                    target.abilityPower[new Tuple<int, int>(tempID, abilityNum)] = true;
-                    target.bonusPower += power;
-                }
-            }
+                target.abilityPower[new Tuple<int, int>(tempID, abilityNum)] = power;
         }
 
         public void AddCritical(int selection, int critical)
@@ -1784,6 +1824,40 @@ namespace VanguardEngine
                 Console.WriteLine(selections.Count + " card(s) added to hand.");
         }
 
+        public void AddToSoul(List<int> selections, bool player)
+        {
+            Card cardToAdd;
+            List<Card> location = null;
+            foreach (int tempID in selections)
+            {
+                cardToAdd = _field.CardCatalog[tempID];
+                if (cardToAdd.location == Location.PlayerRC)
+                {
+                    for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+                    {
+                        if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
+                            _field.Units[i] = null;
+                    }
+                }
+                else if (cardToAdd.location == Location.EnemyRC)
+                {
+                    for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+                    {
+                        if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
+                            _field.Units[i] = null;
+                    }
+                }
+                cardToAdd.location = Location.Soul;
+                cardToAdd.faceup = true;
+                cardToAdd.upright = true;
+                ResetCardValues(cardToAdd);
+                if (player)
+                    _field.Units[FL.PlayerVanguard].soul.Add(cardToAdd);
+                else
+                    _field.Units[FL.EnemyVanguard].soul.Add(cardToAdd);
+            }
+        }
+
         public void EnemyAddToHand(Card card)
         {
 
@@ -1875,6 +1949,31 @@ namespace VanguardEngine
             }
         }
 
+        public void SoulCharge(int count, bool player)
+        {
+            Card card;
+            int location = 0;
+            List<Card> deck = null;
+            if (player)
+            {
+                location = FL.PlayerVanguard;
+                deck = _field.PlayerDeck;
+            }
+            else
+            {
+                location = FL.EnemyVanguard;
+                deck = _field.EnemyDeck;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                card = deck[0];
+                deck.RemoveAt(0);
+                _field.Units[location].soul.Add(card);
+                card.location = Location.Soul;
+                card.faceup = true;
+            }
+        }
+
         public void Search(List<int> cardsToSearch, bool player)
         {
             List<Card> hand = null;
@@ -1956,14 +2055,8 @@ namespace VanguardEngine
         {
             ResetPower();
             EnemyResetPower();
-            foreach (Card card in GetActiveUnits())
-            {
-                foreach (var key in card.abilityPower.Keys)
-                {
-                    card.abilityPower[key] = false;
-                }
-            }
             _riddenOnThisTurn.Clear();
+            _finalRush = false;
             _turn++;
         }
 
@@ -1972,7 +2065,18 @@ namespace VanguardEngine
             card.bonusPower = 0;
             foreach (Tuple<int, int> tuple in card.abilityPower.Keys)
             {
-                card.abilityPower[tuple] = false;
+                card.abilityPower[tuple] = 0;
+            }
+            foreach (Card item in _field.Units)
+            {
+                if (item != null)
+                {
+                    foreach (Tuple<int, int> key in item.abilityPower.Keys)
+                    {
+                        if (key.Item1 == card.tempID)
+                            SetAbilityPower(key.Item1, key.Item2, item.tempID, 0);
+                    }
+                }
             }
             card.targetImmunity = false;
             card.overDress = false;
@@ -2086,6 +2190,17 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool InFinalRush()
+        {
+            return _finalRush;
+        }
+
+        public void FinalRush(bool player)
+        {
+            if (player)
+                _finalRush = true;
+        }
+
         public List<Card> GetCardsWithName(string name)
         {
             List<Card> cardsWithName = new List<Card>();
@@ -2098,17 +2213,17 @@ namespace VanguardEngine
         }
     }
 
-    public static class FL //FieldLocation
+    public class FL //FieldLocation
     {
         public const int EnemyFrontLeft = 1;
         public const int EnemyBackLeft = 2;
-        public const int EnemyBackMiddle = 3;
+        public const int EnemyBackCenter = 3;
         public const int EnemyFrontRight = 4;
         public const int EnemyBackRight = 5;
         public const int EnemyVanguard = 6;
         public const int PlayerFrontLeft = 8;
         public const int PlayerBackLeft = 9;
-        public const int PlayerBackMiddle = 10;
+        public const int PlayerBackCenter = 10;
         public const int PlayerFrontRight = 11;
         public const int PlayerBackRight = 12;
         public const int PlayerVanguard = 13;
