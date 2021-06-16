@@ -481,8 +481,6 @@ namespace VanguardEngine
             int critical;
             player1.InitiateAttack(attacker, target, C.Player);
             player2.InitiateAttack(attacker, target, C.Enemy);
-            AddAbilitiesToQueue(player1, player2, Activation.OnAttack);
-            ActivateAbilities(player1, player2, Activation.OnAttack);
 
             if (player1.CanBeBoosted())
             {
@@ -495,6 +493,8 @@ namespace VanguardEngine
                     player2.EnemyBoost();
                 }
             }
+            AddAbilitiesToQueue(player1, player2, Activation.OnAttack);
+            ActivateAbilities(player1, player2, Activation.OnAttack);
             if (player1 == _player1)
                 Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
             else
@@ -851,6 +851,12 @@ namespace VanguardEngine
             player2.AddToSoul(cardsToAddToHand, C.Enemy);
         }
 
+        public void AutoAddToDrop(Player player1, Player player2, List<int> cardsToDrop)
+        {
+            player1.AddToDrop(cardsToDrop, C.Player);
+            player2.AddToDrop(cardsToDrop, C.Enemy);
+        }
+
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
         {
             List<int> cardsToRetire = _inputManager.SelectFromList(canRetire, count, count, "Choose card(s) to retire.");
@@ -872,6 +878,25 @@ namespace VanguardEngine
         {
             player1.PlayOrder(tempID, C.Player);
             player2.PlayOrder(tempID, C.Enemy);
+        }
+
+        public void ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
+        {
+            List<int> cardsToReveal = _inputManager.SelectFromList(canReveal, max, min, "Choose card(s) to reveal.");
+            _player1.Reveal(cardsToReveal, C.Player);
+            _player2.Reveal(cardsToReveal, C.Enemy);
+        }
+
+        public void RevealFromDeck(Player player1, Player player2, int count)
+        {
+            _player1.RevealFromDeck(count, C.Player);
+            _player2.RevealFromDeck(count, C.Enemy);
+        }
+
+        public void EndReveal(Player player1, Player player2)
+        {
+            _player1.EndReveal(C.Player);
+            _player2.EndReveal(C.Enemy);
         }
     }
 

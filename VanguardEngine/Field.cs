@@ -35,6 +35,8 @@ namespace VanguardEngine
         protected Card _enemyOrder;
         protected List<Card> _playerRideDeck = new List<Card>();
         protected List<Card> _enemyRideDeck = new List<Card>();
+        protected List<Card> _playerRevealed = new List<Card>();
+        protected List<Card> _enemyRevealed = new List<Card>();
         protected Player _enemyPlayer;
         protected int[] _shuffleKey;
 
@@ -110,6 +112,16 @@ namespace VanguardEngine
         public List<Card> EnemyDrop
         {
             get => _enemyDrop;
+        }
+
+        public List<Card> PlayerRevealed
+        {
+            get => _playerRevealed;
+        }
+
+        public List<Card> EnemyRevealed
+        {
+            get => _enemyRevealed;
         }
 
         public int Attack

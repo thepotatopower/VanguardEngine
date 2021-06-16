@@ -1,7 +1,7 @@
--- Time-fissuring Fist Colossus
+-- Steam Gunner, Brody
 
 function NumberOfAbilities()
-	return 2
+	return 1
 end
 
 function NumberOfParams()
@@ -12,25 +12,19 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Damage, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+		return q.Location, l.GC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, false, true
-	elseif n == 2 then
-		return a.Then, false, false
+		return a.PlacedOnGC, false, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.InFinalRush() and obj.CanCB(1) then
+		if obj.LastPlacedOnGC() and obj.CanCB(1) then
 			return true
 		end
 	end
@@ -38,17 +32,14 @@ function CheckCondition(n)
 end
 
 function Cost(n)
-	if n == 2 then
+	if n == 1 then
 		obj.CounterBlast(1)
 	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.SoulCharge(1)
-		return 2
-	elseif n == 2 then
-		obj.AddTempPower(2, 15000)
+		obj.AddTempShield(2, 5000)
 	end
 	return 0
 end

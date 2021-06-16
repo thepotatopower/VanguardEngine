@@ -308,6 +308,10 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool NotActivatedYet()
+        {
+            return _activated;
+        }
         public bool IsRodeUponThisTurn()
         {
             foreach (Card card in _player1.GetRiddenOnThisTurn())
@@ -344,7 +348,7 @@ namespace VanguardEngine
         public bool CanSuperiorCall(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
-            if (cards.Count >= _params[paramNum - 1].Counts[0])
+            if (cards != null && cards.Count >= _params[paramNum - 1].Counts[0])
                 return true;
             return false;
         }
@@ -388,6 +392,10 @@ namespace VanguardEngine
                     currentPool.Add(_player1.Vanguard());
                 else if (location == Location.Damage)
                     currentPool.AddRange(_player1.GetDamageZone());
+                else if (location == Location.GC)
+                    currentPool.AddRange(_player1.GetGC());
+                else if (location == Location.Revealed)
+                    currentPool.AddRange(_player1.GetRevealed());
             }
             if (currentPool.Count == 0)
                 return null;
@@ -419,9 +427,23 @@ namespace VanguardEngine
                             if (card.tempID == _card.tempID)
                             {
                                 newPool.Add(card);
-                                return newPool;
+                                break;
                             }
                         }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
+                    else if (other == Other.Unit)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.unitType >= 0)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
                     }
                 }
             }
@@ -515,6 +537,14 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanAddPower(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            if (cards != null && cards.Count >= _params[paramNum - 1].Counts[0])
+                return true;
+            return false;
+        }
+
         public bool CanCB(int paramNum)
         {
             List<Card> damage = _player1.GetDamageZone();
@@ -604,9 +634,24 @@ namespace VanguardEngine
             return true;
         }
 
+        public bool CanReveal(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            if (cards != null && cards.Count >= _params[paramNum - 1].Counts[0])
+                return true;
+            return false;
+        }
+
         public bool IsAttackingUnit()
         {
             if (_player1.AttackingUnit() != null && _card.tempID == _player1.AttackingUnit().tempID)
+                return true;
+            return false;
+        }
+
+        public bool IsBooster()
+        {
+            if (_player1.Booster() != null && _card.tempID == _player1.Booster().tempID)
                 return true;
             return false;
         }
@@ -755,6 +800,15 @@ namespace VanguardEngine
             _cardFight.AddToSoul(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
         }
 
+        public void AutoAddToDrop(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            List<int> cardsToDrop = new List<int>();
+            foreach (Card card in cardsToSelect)
+                cardsToDrop.Add(card.tempID);
+            _cardFight.AutoAddToDrop(_player1, _player2, cardsToDrop);
+        }
+
         public void Discard(int paramNum)
         {
             _cardFight.Discard(_player1, _player2, _params[paramNum - 1].Counts[0]);
@@ -794,6 +848,22 @@ namespace VanguardEngine
                     canStand.Add(card.tempID);
             }
             _cardFight.AutoStand(_player1, _player2, canStand);
+        }
+
+        public void ChooseReveal(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            _cardFight.ChooseReveal(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
+        }
+
+        public void RevealFromDeck(int count)
+        {
+            _cardFight.RevealFromDeck(_player1, _player2, count);
+        }
+
+        public void EndReveal()
+        {
+            _cardFight.EndReveal(_player1, _player2);
         }
 
         public void FinalRush()
@@ -848,6 +918,16 @@ namespace VanguardEngine
             {
                 _player1.AddTempPower(card.tempID, power, C.Player);
                 _player2.AddTempPower(card.tempID, power, C.Enemy);
+            }
+        }
+
+        public void AddTempShield(int paramNum, int shield)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+            {
+                _player1.AddTempShield(card.tempID, shield, C.Player);
+                _player2.AddTempShield(card.tempID, shield, C.Enemy);
             }
         }
 
@@ -984,6 +1064,7 @@ namespace VanguardEngine
         public const int originalDress = 19;
         public const int EnemyHand = 20;
         public const int OrderZone = 21;
+        public const int Revealed = 22;
     }
 
     class Query
@@ -1000,5 +1081,6 @@ namespace VanguardEngine
     class Other
     {
         public const int This = 1;
+        public const int Unit = 2;
     }
 }
