@@ -15,6 +15,7 @@ namespace VanguardEngine
         public int power = -1;
         public int bonusPower = 0;
         public int tempPower = 0;
+        public int battleOnlyPower = 0;
         public Dictionary<Tuple<int, int>, int> abilityPower = new Dictionary<Tuple<int, int>, int>();
         public int tempShield = 0;
         public int shield = -1;

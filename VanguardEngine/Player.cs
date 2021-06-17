@@ -9,9 +9,12 @@ namespace VanguardEngine
         protected Field _field;
         protected int _damage = 0;
         protected int _turn = 1;
+        protected int _startingTurn = -1;
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
+        protected List<Card> _lastRevealedTriggers = new List<Card>();
+        protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>();
         protected bool _finalRush = false;
         public int _playerID = 0;
 
@@ -37,6 +40,10 @@ namespace VanguardEngine
             _field = new Field();
             _field.Initialize(deck1, deck2, player2);
             _playerID = playerID;
+            if (_playerID == 1)
+                _startingTurn = 1;
+            else
+                _startingTurn = 2;
         }
 
         public int PlayerDeckCount()
@@ -62,6 +69,18 @@ namespace VanguardEngine
         public List<Card> GetHand()
         {
             return _field.PlayerHand;
+        }
+
+        public List<Card> GetOrderableCards()
+        {
+            List<Card> hand = _field.PlayerHand;
+            List<Card> orderableCards = new List<Card>();
+            foreach (Card card in hand)
+            {
+                if (card.orderType >= 0 && card.grade <= _field.Units[FL.PlayerVanguard].grade)
+                    orderableCards.Add(card);
+            }
+            return orderableCards;
         }
 
         public List<Card> GetSoul()
@@ -108,6 +127,11 @@ namespace VanguardEngine
                     return circle;
             }
             return -1;
+        }
+
+        public List<Card> GetRevealedTriggers()
+        {
+            return _lastRevealedTriggers;
         }
 
         public void Draw(int count)
@@ -650,6 +674,15 @@ namespace VanguardEngine
             return rearguards;
         }
 
+        public bool IsPlayerTurn()
+        {
+            if (_startingTurn == 1 && _turn % 2 != 0)
+                return true;
+            if (_startingTurn == 2 && _turn % 2 == 0)
+                return false;
+            return false;
+        }
+
         public List<Card> GetDamageZone()
         {
             return _field.PlayerDamageZone;
@@ -688,7 +721,7 @@ namespace VanguardEngine
         public int CalculatePowerOfUnit(int location)
         {
             Card[] Units = _field.Units;
-            int power = Units[location].power + Units[location].bonusPower + Units[location].tempPower;
+            int power = Units[location].power + Units[location].bonusPower + Units[location].tempPower + Units[location].battleOnlyPower;
             foreach (Tuple<int, int> key in Units[location].abilityPower.Keys)
                 power += Units[location].abilityPower[key];
             if (_field.Booster >= 0)
@@ -820,17 +853,27 @@ namespace VanguardEngine
         {
             if (_field.Attacker == FL.PlayerFrontLeft)
             {
-                if (_field.Units[FL.PlayerBackRight] != null && _field.Units[FL.PlayerBackRight].upright)
+                if (_field.Units[FL.PlayerBackRight] != null && CanBoost(_field.Units[FL.PlayerBackRight]))
                     return true;
             }
             else if (_field.Attacker == FL.PlayerVanguard)
             {
-                if (_field.Units[FL.PlayerBackCenter] != null && _field.Units[FL.PlayerBackCenter].upright)
+                if (_field.Units[FL.PlayerBackCenter] != null && CanBoost(_field.Units[FL.PlayerBackCenter]))
                     return true;
             }
             else
             {
-                if (_field.Units[FL.PlayerBackRight] != null && _field.Units[FL.PlayerBackRight].upright)
+                if (_field.Units[FL.PlayerBackRight] != null && CanBoost(_field.Units[FL.PlayerBackRight]))
+                    return true;
+            }
+            return false;
+        }
+
+        public bool CanBoost(Card card)
+        {
+            if (card.upright)
+            {
+                if (card.skill == 0 || (_bonusSkills.ContainsKey(card.tempID) && _bonusSkills[card.tempID].Contains(0)))
                     return true;
             }
             return false;
@@ -975,7 +1018,7 @@ namespace VanguardEngine
                 _field.Units[FL.PlayerVanguard] = card;
                 card.location = Location.PlayerVC;
                 card.soul[0].soul.Clear();
-                card.soul[0].bonusPower = 0;
+                ResetCardValues(card.soul[0]);
                 Console.WriteLine("---------\nRide!! " + _field.Units[FL.PlayerVanguard].name + "!");
                 args.card = card;
                 args.playerID = _playerID;
@@ -1645,6 +1688,7 @@ namespace VanguardEngine
             trigger.location = Location.Trigger;
             _field.PlayerDeck.Remove(trigger);
             _field.PlayerTrigger = trigger;
+            _lastRevealedTriggers.Add(trigger);
             if (trigger.trigger == Trigger.Critical)
                 Console.WriteLine("----------\nCritical Trigger!");
             else if (trigger.trigger == Trigger.Draw)
@@ -1678,6 +1722,7 @@ namespace VanguardEngine
             trigger.location = Location.Trigger;
             _field.EnemyDeck.Remove(trigger);
             _field.EnemyTrigger = trigger;
+            _lastRevealedTriggers.Add(trigger);
             return trigger.trigger;
         }
 
@@ -1700,10 +1745,13 @@ namespace VanguardEngine
             target.bonusPower += power;
         }
 
-        public void AddTempPower(int selection, int power, bool player)
+        public void AddTempPower(int selection, int power, bool battleOnly, bool player)
         {
             Card target = FindActiveUnit(selection);
-            target.tempPower += power;
+            if (battleOnly)
+                target.battleOnlyPower += power;
+            else
+                target.tempPower += power;
             if (player)
                 Console.WriteLine("----------\n" + power + " power to " + target.name + "!");
         }
@@ -2160,6 +2208,20 @@ namespace VanguardEngine
             }
         }
 
+        public void AddSkill(int tempID, int skill)
+        {
+            if (!_bonusSkills.ContainsKey(tempID))
+                _bonusSkills[tempID] = new List<int>();
+            if (!_bonusSkills[tempID].Contains(skill))
+                _bonusSkills[tempID].Add(skill);
+        }
+
+        public void RemoveSkill(int tempID, int skill)
+        {
+            if (_bonusSkills.ContainsKey(skill) && _bonusSkills[tempID].Contains(skill))
+                _bonusSkills[tempID].Remove(skill);
+        }
+
         public void ResetPower()
         {
             foreach (Card card in _field.Units)
@@ -2189,6 +2251,12 @@ namespace VanguardEngine
             _field.Attacked = -1;
             _field.Booster = -1;
             _field.Guarding = false;
+            _lastRevealedTriggers.Clear();
+            foreach (Card unit in _field.Units)
+            {
+                if (unit != null)
+                    unit.battleOnlyPower = 0;
+            }
         }
 
         public void EndTurn()
@@ -2203,12 +2271,10 @@ namespace VanguardEngine
         public void ResetCardValues(Card card)
         {
             card.bonusPower = 0;
+            card.battleOnlyPower = 0;
             card.tempPower = 0;
             card.tempShield = 0;
-            foreach (Tuple<int, int> tuple in card.abilityPower.Keys)
-            {
-                card.abilityPower[tuple] = 0;
-            }
+            card.abilityPower.Clear();
             foreach (Card item in _field.Units)
             {
                 if (item != null)
@@ -2222,6 +2288,8 @@ namespace VanguardEngine
             }
             card.targetImmunity = false;
             card.overDress = false;
+            if (_bonusSkills.ContainsKey(card.tempID))
+                _bonusSkills[card.tempID].Clear();
         }
 
         public void OnRideAbilityResolved(int tempID)
@@ -2359,6 +2427,11 @@ namespace VanguardEngine
                     cardsWithName.Add(card);
             }
             return cardsWithName;
+        }
+
+        public Card GetCard(int tempID)
+        {
+            return _field.CardCatalog[tempID];
         }
     }
 
