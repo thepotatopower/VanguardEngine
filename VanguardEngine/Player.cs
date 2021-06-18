@@ -88,6 +88,18 @@ namespace VanguardEngine
             return _field.Units[FL.PlayerVanguard].soul;
         }
 
+        public List<Card> GetBackRow()
+        {
+            List<Card> backRow = new List<Card>();
+            if (_field.Units[FL.PlayerBackLeft] != null)
+                backRow.Add(_field.Units[FL.PlayerBackLeft]);
+            if (_field.Units[FL.PlayerBackRight] != null)
+                backRow.Add(_field.Units[FL.PlayerBackRight]);
+            if (_field.Units[FL.PlayerBackCenter] != null)
+                backRow.Add(_field.Units[FL.PlayerBackCenter]);
+            return backRow;
+        }
+
         public List<Card> GetGC()
         {
             return _field.GC;
@@ -1926,6 +1938,13 @@ namespace VanguardEngine
                             _field.Units[i] = null;
                     }
                 }
+                else if (cardToAdd.location == Location.Deck)
+                {
+                    if (player)
+                        _field.PlayerDeck.Remove(cardToAdd);
+                    else
+                        _field.EnemyDeck.Remove(cardToAdd);
+                }
                 cardToAdd.location = Location.Soul;
                 cardToAdd.faceup = true;
                 cardToAdd.upright = true;
@@ -1976,6 +1995,66 @@ namespace VanguardEngine
                     _field.EnemyDrop.Add(cardToAdd);
             }
         }
+
+        //public void ChangeLocation(int destination, List<int> selections, bool player)
+        //{
+        //    List<Card> drop = null;
+        //    List<Card> hand = null;
+        //    List<Card> soul = null;
+        //    List<Card> deck = null;
+        //    Card cardToAdd;
+        //    foreach (int tempID in selections)
+        //    {
+        //        cardToAdd = _field.CardCatalog[tempID];
+        //        if (cardToAdd.location == Location.PlayerRC)
+        //        {
+        //            for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+        //            {
+        //                if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
+        //                    _field.Units[i] = null;
+        //            }
+        //        }
+        //        else if (cardToAdd.location == Location.EnemyRC)
+        //        {
+        //            for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+        //            {
+        //                if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
+        //                    _field.Units[i] = null;
+        //            }
+        //        }
+        //        else if (cardToAdd.location == Location.Deck)
+        //        {
+        //            if (player)
+        //                _field.PlayerDeck.Remove(cardToAdd);
+        //            else
+        //                _field.EnemyDeck.Remove(cardToAdd);
+        //        }
+        //        if (destination == Location.PlayerHand || destination == Location.EnemyHand)
+        //        {
+        //            cardToAdd.faceup = true;
+        //            cardToAdd.upright = true;
+        //            if (player)
+        //            {
+        //                cardToAdd.location = Location.PlayerHand;
+        //                _field.PlayerHand.Add(cardToAdd);
+        //            }
+        //            else
+        //            {
+        //                cardToAdd.location = Location.EnemyHand;
+        //                _field.EnemyHand.Add(cardToAdd);
+        //            }
+
+        //        }
+        //        cardToAdd.location = Location.Drop;
+        //        cardToAdd.faceup = true;
+        //        cardToAdd.upright = true;
+        //        ResetCardValues(cardToAdd);
+        //        if (player)
+        //            _field.PlayerDrop.Add(cardToAdd);
+        //        else
+        //            _field.EnemyDrop.Add(cardToAdd);
+        //    }
+        //}
 
         public void EnemyAddToHand(Card card)
         {

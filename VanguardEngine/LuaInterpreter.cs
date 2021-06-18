@@ -421,6 +421,8 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetRevealedTriggers());
                 else if (location == Location.PreviouslySelected)
                     currentPool.AddRange(_selected);
+                else if (location == Location.BackRow)
+                    currentPool.AddRange(_player1.GetBackRow());
             }
             if (currentPool.Count == 0)
                 return currentPool;
@@ -1156,6 +1158,7 @@ namespace VanguardEngine
         public const int Revealed = 22;
         public const int RevealedTriggers = 23;
         public const int PreviouslySelected = 24;
+        public const int BackRow = 25;
     }
 
     class Query

@@ -101,10 +101,10 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player2, player1, false);
             while (true)
             {
                 player1.StandAll();
