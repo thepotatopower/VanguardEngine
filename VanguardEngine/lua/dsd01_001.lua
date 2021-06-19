@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 4
+	return 5
 end
 
 function GetParam(n)
@@ -18,7 +18,7 @@ function GetParam(n)
 	elseif n == 4 then
 		return q.Location, l.PlayerVC
 	elseif n == 5 then
-		return q.Location, l.Damge, q.Count, 1
+		return q.Location, l.Damage, q.Count, 1
 	end
 end
 

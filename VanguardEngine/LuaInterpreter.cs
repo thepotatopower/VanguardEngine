@@ -557,7 +557,7 @@ namespace VanguardEngine
         {
             int count = GetCount(paramNum);
             List<Card> cards = ValidCards(paramNum);
-            if (cards != null && cards.Count >= count)
+            if (cards.Count > 0 && cards.Count >= count)
                 return true;
             return false;
         }
@@ -704,7 +704,7 @@ namespace VanguardEngine
             List<Card> units = _player1.GetAllUnitsOnField();
             foreach (Card card in units)
             {
-                if (card.tempID == _card.tempID && card.location == Location.PlayerRC)
+                if (card.tempID == _card.tempID && card.location == Location.RC)
                     return true;
             }
             return false;
@@ -782,7 +782,6 @@ namespace VanguardEngine
         public void Draw(int count)
         {
             _player1.Draw(count);
-            _player2.EnemyDraw(count);
         }
 
         public void SuperiorCall(int paramNum)
@@ -833,6 +832,15 @@ namespace VanguardEngine
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             _cardFight.AddToHand(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
+        }
+
+        public void AutoAddToHand(int paramNum)
+        {
+            List<Card> cardsToAdd = ValidCards(paramNum);
+            List<int> IDs = new List<int>();
+            foreach (Card card in cardsToAdd)
+                IDs.Add(card.tempID);
+            _player1.ChangeLocation(Location.Hand, IDs);
         }
 
         public void AddToSoul(int paramNum)
@@ -941,7 +949,6 @@ namespace VanguardEngine
             foreach (Card card in cards)
             {
                 _player1.AddPower(card.tempID, power);
-                _player2.AddPower(card.tempID, power);
             }
         }
 
@@ -957,7 +964,6 @@ namespace VanguardEngine
             foreach (Card card in cards)
             {
                 _player1.SetAbilityPower(_card.tempID, _abilityNumber, card.tempID, power);
-                _player2.SetAbilityPower(_card.tempID, _abilityNumber, card.tempID, power);
             }
         }
 
@@ -966,8 +972,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.AddTempPower(card.tempID, power, false, C.Player);
-                _player2.AddTempPower(card.tempID, power, false, C.Enemy);
+                _player1.AddTempPower(card.tempID, power, false);
             }
         }
 
@@ -976,8 +981,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.AddTempPower(card.tempID, power, true, C.Player);
-                _player2.AddTempPower(card.tempID, power, true, C.Enemy);
+                _player1.AddTempPower(card.tempID, power, true);
             }
         }
 
@@ -986,8 +990,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.AddTempShield(card.tempID, shield, C.Player);
-                _player2.AddTempShield(card.tempID, shield, C.Enemy);
+                _player1.AddTempShield(card.tempID, shield);
             }
         }
 
@@ -1159,6 +1162,9 @@ namespace VanguardEngine
         public const int RevealedTriggers = 23;
         public const int PreviouslySelected = 24;
         public const int BackRow = 25;
+        public const int Hand = 26;
+        public const int RC = 27;
+        public const int VC = 28;
     }
 
     class Query

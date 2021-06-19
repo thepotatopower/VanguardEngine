@@ -10,7 +10,7 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Name, "Trickstar"
+		return q.Location, l.Deck, q.Name, "Trickstar", q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end

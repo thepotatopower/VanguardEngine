@@ -33,6 +33,7 @@ namespace VanguardEngine
         {
             List<Card> deck1;
             List<Card> deck2;
+            Field field = new Field();
             deck1 = Deck1;
             deck2 = Deck2;
             foreach (Card card in deck2)
@@ -43,14 +44,13 @@ namespace VanguardEngine
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
             luaInterpreter = new LuaInterpreter(luaPath, this);
-            _player1.Initialize(deck1, deck2, _player2, 1);
-            _player2.Initialize(deck2, deck1, _player1, 2);
+            field.Initialize(deck1, deck2);
+            _player1.Initialize(1, field);
+            _player2.Initialize(2, field);
             for (int i = 0; i < deck1.Count; i++)
                 _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2));
             for (int i = 0; i < deck2.Count; i++)
                 _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player2, _player1));
-            ShuffleDeck(_player1, _player2);
-            ShuffleDeck(_player2, _player1);
             return true;
         }
 
@@ -108,7 +108,6 @@ namespace VanguardEngine
             while (true)
             {
                 player1.StandAll();
-                player2.EnemyStandAll();
                 if (_turn > 1)
                 {
                     Console.WriteLine("----------\nSTAND AND DRAW");
@@ -176,7 +175,6 @@ namespace VanguardEngine
         public void Draw(Player player1, Player player2, int count)
         {
             player1.Draw(count);
-            player2.EnemyDraw(count);
         }
 
         public void Mulligan(Player player1, Player player2)
@@ -185,8 +183,7 @@ namespace VanguardEngine
             for (int i = 0; i < 2; i++)
             {
                 selection = _inputManager.SelectCardsToMulligan();
-                player1.MulliganCards(selection, true);
-                player2.MulliganCards(selection, false);
+                player1.MulliganCards(selection);
                 Console.WriteLine("----------\nNew hand: ");
                 player1.PrintHand();
                 if (player1 == _player1)
@@ -244,12 +241,6 @@ namespace VanguardEngine
             }
         }
 
-        public void ShuffleDeck(Player player1, Player player2)
-        {
-            player1.ShuffleDeck();
-            player2.EnemyShuffleDeck();
-        }
-
         public void RidePhaseMenu(Player player1, Player player2)
         {
             int input;
@@ -298,8 +289,7 @@ namespace VanguardEngine
 
         public void Ride(Player player1, Player player2, int location, int selection)
         {
-            player1.Ride(location, selection, C.Player);
-            player2.Ride(location, selection, C.Enemy);
+            player1.Ride(location, selection);
             AddAbilitiesToQueue(player1, player2, Activation.OnRide);
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnVC);
             ActivateAbilities(player1, player2, Activation.OnRide);
@@ -309,8 +299,7 @@ namespace VanguardEngine
         {
             List<int> list;
             list = _inputManager.SelectCardsFromHand(count);
-            player1.Discard(list, C.Player);
-            player2.Discard(list, C.Enemy);
+            player1.Discard(list);
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -392,8 +381,7 @@ namespace VanguardEngine
 
         public void Call(Player player1, Player player2, int location, int selection, bool overDress)
         {
-            player1.Call(location, selection, C.Player, overDress);
-            player2.Call(location, selection, C.Enemy, overDress);
+            player1.Call(location, selection, overDress);
             _abilities.ResetActivation(selection);
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
             ActivateAbilities(player1, player2, Activation.PlacedOnRC);
@@ -417,8 +405,7 @@ namespace VanguardEngine
                 selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
             else
                 selectedCircle = circle;
-            player1.SuperiorCall(selectedCircle, selection, location, C.Player);
-            player2.SuperiorCall(selectedCircle, selection, location, C.Enemy);
+            player1.SuperiorCall(selectedCircle, selection, location);
             _abilities.ResetActivation(selection);
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
         }
@@ -426,7 +413,6 @@ namespace VanguardEngine
         public void MoveRearguard(Player player1, Player player2, int selection)
         {
             player1.MoveRearguard(selection);
-            player2.EnemyMoveRearguard(selection);
         }
 
         public void ActivateACT(Player player1, int selection)
@@ -486,8 +472,7 @@ namespace VanguardEngine
             int selection;
             int drive;
             int critical;
-            player1.InitiateAttack(attacker, target, C.Player);
-            player2.InitiateAttack(attacker, target, C.Enemy);
+            player1.InitiateAttack(attacker, target);
 
             if (player1.CanBeBoosted())
             {
@@ -497,7 +482,6 @@ namespace VanguardEngine
                 if (_inputManager.YesNo(PromptType.Boost))
                 {
                     player1.Boost();
-                    player2.EnemyBoost();
                 }
             }
             AddAbilitiesToQueue(player1, player2, Activation.OnAttack);
@@ -522,8 +506,7 @@ namespace VanguardEngine
                     else if (selection == 4)
                     {
                         selection = _inputManager.SelectCardToGuardWith();
-                        player2.Guard(selection, C.Player);
-                        player1.Guard(selection, C.Enemy);
+                        player2.Guard(selection);
                         AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
                         ActivateAbilities(player2, player1, Activation.PlacedOnGC);
                     }
@@ -533,8 +516,7 @@ namespace VanguardEngine
                     }
                     else if (selection == 6) //guard with specific card (for use outside of console only)
                     {
-                        player2.Guard(_inputManager.intlist_input[0], C.Player);
-                        player1.Guard(_inputManager.intlist_input[0], C.Enemy);
+                        player2.Guard(_inputManager.intlist_input[0]);
                         AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
                         ActivateAbilities(player2, player1, Activation.PlacedOnGC);
 
@@ -582,11 +564,9 @@ namespace VanguardEngine
                 else
                 {
                     player2.Retire(player1.AttackedUnit().tempID);
-                    player1.Retire(player1.AttackedUnit().tempID);
                 }
-                player2.RetireGC();
-                player1.EnemyRetireGC();
             }
+            player2.RetireGC();
             AddAbilitiesToQueue(player1, player2, Activation.OnBattleEnds);
             ActivateAbilities(player1, player2, Activation.OnBattleEnds);
             if (player1 == _player1)
@@ -609,13 +589,11 @@ namespace VanguardEngine
             else
                 Console.WriteLine("----------\nPerforming Damage Check.");
             check = player1.TriggerCheck(drivecheck);
-            player2.EnemyTriggerCheck();
             if (check != Trigger.NotTrigger && check != Trigger.Over && check != Trigger.Front) 
             {
                 Console.WriteLine("----------\nChoose unit to give +10000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000);
-                player1.AddTempPower(selection, 10000, false, C.Player);
-                player2.AddTempPower(selection, 10000, false, C.Enemy);
+                player1.AddTempPower(selection, 10000, false);
             }
             if (check == Trigger.Critical) 
             {
@@ -641,8 +619,7 @@ namespace VanguardEngine
                 {
                     max = player1.PrintDamageZone();
                     selection = SelectPrompt(max);
-                    player1.Heal(selection, C.Player);
-                    player2.Heal(selection, C.Enemy);
+                    player1.Heal(selection);
                 }
             }
             else if (check == Trigger.Front) //FRONT TRIGGER
@@ -650,19 +627,16 @@ namespace VanguardEngine
                 cards = player1.GetPlayerFrontRow();
                 foreach (Card card in cards)
                 {
-                    player1.AddTempPower(card.tempID, 10000, false, C.Player);
-                    player2.AddTempPower(card.tempID, 10000, false, C.Enemy);
+                    player1.AddTempPower(card.tempID, 10000, false);
                 }
             }
             else if (check == Trigger.Over) //OVER TRIGGER
             {
                 player1.RemoveTrigger();
-                player2.RemoveEnemyTrigger();
                 Draw(player1, player2, 1);
                 Console.WriteLine("Choose unit to give 1000000000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000);
-                player1.AddTempPower(selection, 100000000, false, C.Player);
-                player2.AddTempPower(selection, 100000000, false, C.Enemy);
+                player1.AddTempPower(selection, 100000000, false);
                 if (drivecheck)
                 {
                     AddAbilitiesToQueue(player1, player2, Activation.OnDriveCheck);
@@ -673,12 +647,10 @@ namespace VanguardEngine
             if (drivecheck)
             {
                 player1.AddTriggerToHand();
-                player2.EnemyAddTriggerToHand();
             }
             else
             {
                 player1.TakeDamage();
-                player2.EnemyTakeDamage();
             }
         }
 
@@ -807,28 +779,24 @@ namespace VanguardEngine
         public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count)
         {
             List<int> cardsToCB = _inputManager.SelectFromList(canCB, count, count, "Choose card(s) to Counter Blast.");
-            player1.CounterBlast(cardsToCB, C.Player);
-            player2.CounterBlast(cardsToCB, C.Enemy);
+            player1.CounterBlast(cardsToCB);
         }
 
         public void SoulBlast(Player player1, Player player2, List<Card> canSB, int count)
         {
             List<int> cardsToSB = _inputManager.SelectFromList(canSB, count, count, "Choose card(s) to Soul Blast.");
-            player1.SoulBlast(cardsToSB, C.Player);
-            player2.SoulBlast(cardsToSB, C.Enemy);
+            player1.SoulBlast(cardsToSB);
         }
 
         public void SoulCharge(Player player1, Player player2, int count)
         {
-            player1.SoulCharge(count, C.Player);
-            player2.SoulCharge(count, C.Enemy);
+            player1.SoulCharge(count);
         }
 
         public void Search(Player player1, Player player2, List<Card> canSearch)
         {
             List<int> cardsToSearch = _inputManager.SelectFromList(canSearch, 1, 1, "Choose card(s) to search.");
-            player1.Search(cardsToSearch, C.Player);
-            player2.Search(cardsToSearch, C.Enemy);
+            player1.Search(cardsToSearch);
         }
 
         public void Stand(Player player1, Player player2, List<Card> canStand, int count, bool select)
@@ -847,8 +815,7 @@ namespace VanguardEngine
         public void ChooseAddTempPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
         {
             List<int> cardsToAddPower = _inputManager.SelectFromList(canAdd, count, count, "Choose card(s) to give +" + power + " to.");
-            player1.AddTempPower(cardsToAddPower, power, C.Player);
-            player2.AddTempPower(cardsToAddPower, power, C.Enemy);
+            player1.AddTempPower(cardsToAddPower, power);
         }
 
         public void AddSkill(Player player1, Player player2, Card card, int skill)
@@ -866,27 +833,23 @@ namespace VanguardEngine
         public void AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
             List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to hand.");
-            player1.AddToHand(cardsToAddToHand, C.Player);
-            player2.AddToHand(cardsToAddToHand, C.Enemy);
+            player1.AddToHand(cardsToAddToHand);
         }
 
         public void AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
             List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to soul.");
-            player1.AddToSoul(cardsToAddToHand, C.Player);
-            player2.AddToSoul(cardsToAddToHand, C.Enemy);
+            player1.AddToSoul(cardsToAddToHand);
         }
 
         public void AutoAddToSoul(Player player1, Player player2, List<int> cardsToSoul)
         {
-            player1.AddToSoul(cardsToSoul, C.Player);
-            player2.AddToSoul(cardsToSoul, C.Enemy);
+            player1.AddToSoul(cardsToSoul);
         }
 
         public void AutoAddToDrop(Player player1, Player player2, List<int> cardsToDrop)
         {
-            player1.AddToDrop(cardsToDrop, C.Player);
-            player2.AddToDrop(cardsToDrop, C.Enemy);
+            player1.AddToDrop(cardsToDrop);
         }
 
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
@@ -901,34 +864,29 @@ namespace VanguardEngine
 
         public void FinalRush(Player player1, Player player2)
         {
-            player1.FinalRush(C.Player);
-            player1.FinalRush(C.Enemy);
+            player1.FinalRush();
             Console.WriteLine("----------\nEntered Final Rush!");
         }
 
         public void PlayOrder(Player player1, Player player2, int tempID)
         {
-            player1.PlayOrder(tempID, C.Player);
-            player2.PlayOrder(tempID, C.Enemy);
+            player1.PlayOrder(tempID);
         }
 
         public void ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
         {
             List<int> cardsToReveal = _inputManager.SelectFromList(canReveal, max, min, "Choose card(s) to reveal.");
-            player1.Reveal(cardsToReveal, C.Player);
-            player2.Reveal(cardsToReveal, C.Enemy);
+            player1.Reveal(cardsToReveal);
         }
 
         public void RevealFromDeck(Player player1, Player player2, int count)
         {
-            player1.RevealFromDeck(count, C.Player);
-            player2.RevealFromDeck(count, C.Enemy);
+            player1.RevealFromDeck(count);
         }
 
         public void EndReveal(Player player1, Player player2)
         {
-            player1.EndReveal(C.Player);
-            player2.EndReveal(C.Enemy);
+            player1.EndReveal();
         }
 
         public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min)

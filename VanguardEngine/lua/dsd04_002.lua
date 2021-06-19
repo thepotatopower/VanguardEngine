@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 4
 end
 
 function GetParam(n)
@@ -30,7 +30,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Sylvan Horned Beast King, Magnolia") then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Sylvan Horned Beast King, Magnolia") and obj.CanSB(1) then
 			return true
 		end
 	elseif n == 2 then
