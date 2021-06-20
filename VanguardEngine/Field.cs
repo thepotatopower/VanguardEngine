@@ -14,11 +14,11 @@ namespace VanguardEngine
         protected Card[] _units = new Card[14];
         protected List<Card> _GC = new List<Card>();
         protected bool _sentinel = false;
-        protected int _attack = -1;
         protected int _attacker = -1;
         protected int _attacked = -1;
         protected int _booster = -1;
-        protected bool _guarding = false;
+        protected bool _player1PersonaRide = false;
+        protected bool _player2PersonaRide = false;
         protected List<Card> _player1Drop = new List<Card>();
         protected List<Card> _player2Drop = new List<Card>();
         protected List<Card> _player1Damage = new List<Card>();
@@ -96,11 +96,6 @@ namespace VanguardEngine
             set => _sentinel = value;
         }
 
-        public bool Guarding
-        {
-            get => _guarding;
-            set => _guarding = value;
-        }
         public List<Card> Player1Drop
         {
             get => _player1Drop;
@@ -139,12 +134,6 @@ namespace VanguardEngine
         public List<Card> Player2Revealed
         {
             get => _player2Revealed;
-        }
-
-        public int Attack
-        {
-            get => _attack;
-            set => _attack = value;
         }
 
         public int Attacker
@@ -278,6 +267,22 @@ namespace VanguardEngine
         //        list[_shuffleKey[n]] = temp;
         //    }
         //}
+
+        public bool GetPersonaRide(int playerID)
+        {
+            if (playerID == 1)
+                return _player1PersonaRide;
+            else
+                return _player2PersonaRide;
+        }
+
+        public void SetPersonaRide(bool active, int playerID)
+        {
+            if (playerID == 1)
+                _player1PersonaRide = active;
+            else
+                _player2PersonaRide = active;
+        }
     }
 
     public class FL //FieldLocation

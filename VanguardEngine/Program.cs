@@ -20,7 +20,7 @@ namespace VanguardEngine
             //LuaTest testing = new LuaTest();
             //testing.Testing();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("dsd01.txt"), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("dsd04.txt"), "Data Source=./cards.db;Version=3;");
             List<Card> deck2 = LoadCards.GenerateCards("dsd04.txt", "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
             start = cardFight.Initialize(deck1, deck2, inputManager, ".." + Path.DirectorySeparatorChar + "lua");

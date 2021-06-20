@@ -24,7 +24,7 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OnRide, false, false
 	elseif n == 2 then
-		return a.OnAttack, false, true
+		return a.OnAttack, false, false
 	end
 end
 

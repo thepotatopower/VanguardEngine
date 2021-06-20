@@ -101,10 +101,10 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player2, player1, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
+            TriggerCheck(player2, player1, false);
             while (true)
             {
                 player1.StandAll();
@@ -137,7 +137,6 @@ namespace VanguardEngine
                     OnEndPhase(this, args);
                 }
                 player1.EndTurn();
-                player2.EndTurn();
                 _abilities.EndTurn();
                 _activatedOrder = false;
                 _turn++;
@@ -476,9 +475,7 @@ namespace VanguardEngine
 
             if (player1.CanBeBoosted())
             {
-                Console.WriteLine("----------\nBoost?\n" +
-                    "1. Yes\n" +
-                    "2. No");
+                Console.WriteLine("----------\nBoost?");
                 if (_inputManager.YesNo(PromptType.Boost))
                 {
                     player1.Boost();
@@ -510,11 +507,21 @@ namespace VanguardEngine
                         AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
                         ActivateAbilities(player2, player1, Activation.PlacedOnGC);
                     }
-                    else if (selection == 5) //end guard
+                    else if (selection == 5) 
+                    {
+                        if (!_activatedOrder)
+                        {
+                            AddAbilitiesToQueue(player2, player1, Activation.OnBlitzOrder);
+                            ActivateAbilities(player2, player1, Activation.OnBlitzOrder);
+                        }
+                        else
+                            Console.WriteLine("Already activated order this turn.");
+                    }
+                    else if (selection == 6) // end guard
                     {
                         break;
                     }
-                    else if (selection == 6) //guard with specific card (for use outside of console only)
+                    else if (selection == 7) //guard with specific card (for use outside of console only)
                     {
                         player2.Guard(_inputManager.intlist_input[0]);
                         AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
@@ -698,7 +705,7 @@ namespace VanguardEngine
                 if (!_abilityQueue.Contains(ability))
                     _abilityQueue.Add(ability);
             }
-            if (activation != Activation.OnACT && activation != Activation.OnOrder && !_currentActivations.Contains(activation))
+            if (activation != Activation.OnACT && activation != Activation.OnOrder && activation != Activation.OnBlitzOrder && !_currentActivations.Contains(activation))
                 _currentActivations.Add(activation);
         }
 
@@ -727,7 +734,7 @@ namespace VanguardEngine
                 else
                 {
                     Console.WriteLine("----------\n" + abilities[selection].Name + "'s effect activates!");
-                    if (activation == Activation.OnOrder)
+                    if (activation == Activation.OnOrder || activation == Activation.OnBlitzOrder)
                     {
                         PlayOrder(player1, player2, abilities[selection].GetID());
                     }

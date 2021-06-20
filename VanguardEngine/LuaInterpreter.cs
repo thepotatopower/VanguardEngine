@@ -197,6 +197,11 @@ namespace VanguardEngine
                         param.AddCount((int)returnedParam.Tuple[j + 1].Number);
                         j++;
                     }
+                    else if (returnedParam.Tuple[j].Number == Query.Min)
+                    {
+                        param.AddMin((int)returnedParam.Tuple[j + 1].Number);
+                        j++;
+                    }
                     else if (returnedParam.Tuple[j].Number == Query.Location)
                     {
                         param.AddLocation((int)returnedParam.Tuple[j + 1].Number);
@@ -303,6 +308,17 @@ namespace VanguardEngine
             return -1;
         }
 
+        public int GetMin(int paramNum)
+        {
+            int i = paramNum - 1;
+            if (_params.Count >= i)
+            {
+                if (_params[i].Mins.Count >= 1)
+                    return _params[i].Mins[0];
+            }
+            return -1;
+        }
+
         public void ResetActivation()
         {
             _activated = false;
@@ -366,6 +382,11 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool PersonaRode()
+        {
+            return _player1.PersonaRode();
+        }
+
         public bool CanSuperiorCall(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -419,7 +440,7 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetRevealed());
                 else if (location == Location.RevealedTriggers)
                     currentPool.AddRange(_player1.GetRevealedTriggers());
-                else if (location == Location.PreviouslySelected)
+                else if (location == Location.Selected)
                     currentPool.AddRange(_selected);
                 else if (location == Location.BackRow)
                     currentPool.AddRange(_player1.GetBackRow());
@@ -481,8 +502,6 @@ namespace VanguardEngine
                     if (param.Names.Contains(currentPool[i].name) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
-                if (newPool.Count == 0)
-                    return null;
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
                 newPool.Clear();
@@ -494,8 +513,6 @@ namespace VanguardEngine
                     if (param.Grades.Contains(currentPool[i].grade) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
-                if (newPool.Count == 0)
-                    return null;
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
                 newPool.Clear();
@@ -507,8 +524,6 @@ namespace VanguardEngine
                     if (param.Types.Contains(currentPool[i].unitType) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
-                if (newPool.Count == 0)
-                    return null;
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
                 newPool.Clear();
@@ -556,7 +571,10 @@ namespace VanguardEngine
         public bool Exists(int paramNum)
         {
             int count = GetCount(paramNum);
+            int min = GetMin(paramNum);
             List<Card> cards = ValidCards(paramNum);
+            if (cards.Count > 0 && cards.Count >= min)
+                return true;
             if (cards.Count > 0 && cards.Count >= count)
                 return true;
             return false;
@@ -1012,10 +1030,20 @@ namespace VanguardEngine
             }
         }
 
+        public void AllowBackRowAttack(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.AllowBackRowAttack(card.tempID);
+        }
+
         public void Select(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            List<int> selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), GetCount(paramNum));
+            int min = GetMin(paramNum);
+            if (min < 0)
+                min = GetCount(paramNum);
+            List<int> selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), min);
             foreach (int tempID in selectedCards)
                 _selected.Add(_player1.GetCard(tempID));
         }
@@ -1045,6 +1073,7 @@ namespace VanguardEngine
         List<int> _type = new List<int>();
         List<int> _other = new List<int>();
         List<int> _FL = new List<int>();
+        List<int> _min = new List<int>();
 
         public void AddLocation(int location)
         {
@@ -1081,6 +1110,11 @@ namespace VanguardEngine
             _FL.Add(fl);
         }
 
+        public void AddMin(int min)
+        {
+            _min.Add(min);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -1115,6 +1149,11 @@ namespace VanguardEngine
         {
             get => _FL;
         }
+
+        public List<int> Mins
+        {
+            get => _min;
+        }
     }
 
     class Activation
@@ -1133,6 +1172,7 @@ namespace VanguardEngine
         public const int Cont = 12;
         public const int PlacedOnVC = 13;
         public const int OnRidePhase = 14;
+        public const int OnBlitzOrder = 15;
     }
 
     public class Location
@@ -1160,7 +1200,7 @@ namespace VanguardEngine
         public const int OrderZone = 21;
         public const int Revealed = 22;
         public const int RevealedTriggers = 23;
-        public const int PreviouslySelected = 24;
+        public const int Selected = 24;
         public const int BackRow = 25;
         public const int Hand = 26;
         public const int RC = 27;
@@ -1176,6 +1216,7 @@ namespace VanguardEngine
         public const int Type = 5;
         public const int Other = 6;
         public const int FL = 7;
+        public const int Min = 8;
     }
 
     class Other

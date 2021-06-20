@@ -18,7 +18,7 @@ function GetParam(n)
 	elseif n == 4 then
 		return q.Location, l.PlayerRC, q.Count, 1
 	elseif n == 5 then
-		return q.Location, l.PreviouslySelected
+		return q.Location, l.Selected
 	end
 end
 

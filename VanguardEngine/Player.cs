@@ -8,12 +8,13 @@ namespace VanguardEngine
     {
         protected Field _field;
         protected int _damage = 0;
-        protected int _turn = 1;
         protected int _startingTurn = -1;
+        protected bool _guarding = false;
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
+        protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>();
         protected bool _finalRush = false;
         protected List<Card> PlayerHand;
@@ -49,6 +50,7 @@ namespace VanguardEngine
         int EnemyBackRight;
 
         public int _playerID = 0;
+        public int _enemyID = 0;
 
         public event EventHandler<CardEventArgs> OnDraw;
         public event EventHandler<CardEventArgs> OnDiscard;
@@ -71,6 +73,10 @@ namespace VanguardEngine
         {
             _field = field;
             _playerID = playerID;
+            if (playerID == 1)
+                _enemyID = 2;
+            else
+                _enemyID = 1;
             if (_playerID == 1)
             {
                 _startingTurn = 1;
@@ -141,12 +147,7 @@ namespace VanguardEngine
 
         public int Turn
         {
-            get => _turn;
-        }
-
-        public void IncrementTurn()
-        {
-            _turn++;
+            get => _field.Turn;
         }
 
         public List<Card> GetHand()
@@ -556,7 +557,7 @@ namespace VanguardEngine
             return 0;
         }
 
-        public List<Card> GetStandingFrontRow()
+        public List<Card> GetCardsToAttackWith()
         {
             List<Card> cards = new List<Card>();
             if (_field.Units[PlayerFrontLeft] != null && _field.Units[PlayerFrontLeft].upright)
@@ -565,18 +566,11 @@ namespace VanguardEngine
                 cards.Add(_field.Units[PlayerVanguard]);
             if (_field.Units[PlayerFrontRight] != null && _field.Units[PlayerFrontRight].upright)
                 cards.Add(_field.Units[PlayerFrontRight]);
-            return cards;
-        }
-
-        public List<Card> GetEnemyStandingFrontRow()
-        {
-            List<Card> cards = new List<Card>();
-            if (_field.Units[EnemyFrontLeft] != null && _field.Units[EnemyFrontLeft].upright)
-                cards.Add(_field.Units[EnemyFrontLeft]);
-            if (_field.Units[EnemyVanguard].upright)
-                cards.Add(_field.Units[EnemyVanguard]);
-            if (_field.Units[EnemyFrontRight] != null && _field.Units[EnemyFrontRight].upright)
-                cards.Add(_field.Units[EnemyFrontRight]);
+            foreach (Card card in _canAttackFromBackRow)
+            {
+                if (card.upright)
+                    cards.Add(card);
+            }
             return cards;
         }
 
@@ -676,9 +670,9 @@ namespace VanguardEngine
 
         public bool IsPlayerTurn()
         {
-            if (_startingTurn == 1 && _turn % 2 != 0)
+            if (_startingTurn == 1 && _field.Turn % 2 != 0)
                 return true;
-            if (_startingTurn == 2 && _turn % 2 == 0)
+            if (_startingTurn == 2 && _field.Turn % 2 == 0)
                 return false;
             return false;
         }
@@ -686,6 +680,11 @@ namespace VanguardEngine
         public List<Card> GetDamageZone()
         {
             return PlayerDamage;
+        }
+
+        public bool PersonaRode()
+        {
+            return _field.GetPersonaRide(_playerID);
         }
 
         public int CalculateShield()
@@ -722,14 +721,15 @@ namespace VanguardEngine
         {
             Card[] Units = _field.Units;
             int power = Units[location].power + Units[location].bonusPower + Units[location].tempPower + Units[location].battleOnlyPower;
+            if (IsFrontRow(location) && IsPlayer(location) && _field.GetPersonaRide(_playerID))
+                power += 10000;
+            else if (IsFrontRow(location) && !IsPlayer(location) && _field.GetPersonaRide(_enemyID))
+                power += 10000;
             foreach (Tuple<int, int> key in Units[location].abilityPower.Keys)
                 power += Units[location].abilityPower[key];
-            if (_field.Booster >= 0)
+            if (_field.Booster >= 0 && location == _field.Attacker)
             {
-                if (_field.Guarding && isEnemyFrontRow(location))
-                    power += CalculatePowerOfUnit(_field.Booster);
-                else if (!_field.Guarding && isPlayerFrontRow(location))
-                    power += CalculatePowerOfUnit(_field.Booster);
+                power += CalculatePowerOfUnit(_field.Booster);
             }
             return power;
         }
@@ -743,7 +743,7 @@ namespace VanguardEngine
             {
                 max++;
                 output = max + ". FrontLeft " + _field.Units[PlayerFrontLeft].name + " ";
-                if (!_field.Guarding && _field.Booster == 0)
+                if (!_guarding && _field.Booster == 0)
                     output += (_field.Units[PlayerFrontLeft].power + _field.Units[PlayerFrontLeft].bonusPower + _field.Units[PlayerBackLeft].power + _field.Units[PlayerBackLeft].bonusPower);
                 else
                     output += (_field.Units[PlayerFrontLeft].power + _field.Units[PlayerFrontLeft].bonusPower);
@@ -751,7 +751,7 @@ namespace VanguardEngine
             }
             max++;
             output = max + ". FrontCenter " + _field.Units[PlayerVanguard].name + " ";
-            if (!_field.Guarding && _field.Booster == 1)
+            if (!_guarding && _field.Booster == 1)
                 output += (_field.Units[PlayerVanguard].power + _field.Units[PlayerVanguard].bonusPower + _field.Units[PlayerBackCenter].power + _field.Units[PlayerBackCenter].bonusPower);
             else
                 output += (_field.Units[PlayerVanguard].power + _field.Units[PlayerVanguard].bonusPower);
@@ -760,7 +760,7 @@ namespace VanguardEngine
             {
                 max++;
                 output = max + ". FrontCenter " + _field.Units[PlayerFrontRight].name + " ";
-                if (!_field.Guarding && _field.Booster == 2)
+                if (!_guarding && _field.Booster == 2)
                     output += (_field.Units[PlayerFrontRight].power + _field.Units[PlayerFrontRight].bonusPower + _field.Units[PlayerBackRight].power + _field.Units[PlayerBackRight].bonusPower);
                 else
                     output += (_field.Units[PlayerBackRight].power + _field.Units[PlayerBackRight].bonusPower);
@@ -846,6 +846,19 @@ namespace VanguardEngine
         {
             if (_field.Units[PlayerVanguard].upright || (_field.Units[PlayerFrontLeft] != null && _field.Units[PlayerFrontLeft].upright) || (_field.Units[PlayerFrontRight] != null && _field.Units[PlayerFrontRight].upright))
                 return true;
+            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+            {
+                if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
+                {
+                    if (_field.Units[i] != null && _field.Units[i].upright)
+                        return true;
+                }
+                else if (_canAttackFromBackRow.Contains(_field.Units[i]))
+                {
+                    if (_field.Units[i] != null && _field.Units[i].upright)
+                        return true;
+                }
+            }
             return false;
         }
 
@@ -861,7 +874,7 @@ namespace VanguardEngine
                 if (_field.Units[PlayerBackCenter] != null && CanBoost(_field.Units[PlayerBackCenter]))
                     return true;
             }
-            else
+            else if (_field.Attacker == PlayerFrontRight)
             {
                 if (_field.Units[PlayerBackRight] != null && CanBoost(_field.Units[PlayerBackRight]))
                     return true;
@@ -950,11 +963,6 @@ namespace VanguardEngine
             return EnemyTrigger;
         }
 
-        public void RecognizeAttack(int attack)
-        {
-            _field.Attack = attack;
-        }
-
         public bool AttackHits()
         {
             Card attacker = _field.Units[_field.Attacker];
@@ -1008,6 +1016,11 @@ namespace VanguardEngine
                     break;
                 }
             }
+            if (card.name == _field.Units[PlayerVanguard].name && _field.Units[PlayerVanguard].personaRide == 1)
+            {
+                _field.SetPersonaRide(true, _playerID);
+                Draw(1);
+            }
             list.Remove(card);
             card.faceup = true;
             card.soul.AddRange(_field.Units[PlayerVanguard].soul);
@@ -1017,7 +1030,10 @@ namespace VanguardEngine
             card.location = Location.VC;
             card.soul[0].soul.Clear();
             ResetCardValues(card.soul[0]);
-            Console.WriteLine("---------\nRide!! " + _field.Units[PlayerVanguard].name + "!");
+            if (_field.GetPersonaRide(_playerID))
+                Console.WriteLine("---------\nPersona Ride!! " + _field.Units[PlayerVanguard].name + "!");
+            else
+                Console.WriteLine("---------\nRide!! " + _field.Units[PlayerVanguard].name + "!");
             args.card = card;
             args.playerID = _playerID;
             if (location == 0)
@@ -1312,48 +1328,11 @@ namespace VanguardEngine
 
         public void InitiateAttack(int selection, int target)
         {
-            Card Attacker = null;
-            Card Attacked = null;
-            List<Card> list = null;
-            list = GetStandingFrontRow();
-            foreach (Card card in list)
-            {
-                if (card.tempID == selection)
-                {
-                    Attacker = card;
-                    break;
-                }
-            }
-            list = GetEnemyFrontRow();
-            foreach (Card card in list)
-            {
-                if (card.tempID == target)
-                {
-                    Attacked = card;
-                    break;
-                }
-            }
-            if (Attacker == _field.Units[PlayerFrontLeft])
-            {
-                _field.Attacker = PlayerFrontLeft;
-                _field.Units[PlayerFrontLeft].upright = false;
-            }
-            else if (Attacker == _field.Units[PlayerVanguard])
-            {
-                _field.Attacker = PlayerVanguard;
-                _field.Units[PlayerVanguard].upright = false;
-            }
-            else
-            {
-                _field.Attacker = PlayerFrontRight;
-                _field.Units[PlayerFrontRight].upright = false;
-            }
-            if (Attacked == _field.Units[EnemyFrontLeft])
-                _field.Attacked = EnemyFrontLeft;
-            else if (Attacked == _field.Units[EnemyVanguard])
-                _field.Attacked = EnemyVanguard;
-            else
-                _field.Attacked = EnemyFrontRight;
+            Card Attacker = _field.CardCatalog[selection];
+            Card Attacked = _field.CardCatalog[target];
+            Attacker.upright = false;
+            _field.Attacker = GetCircle(Attacker);
+            _field.Attacked = GetCircle(Attacked);
             Console.WriteLine("----------\n" + Attacker.name + " attacks " + Attacked.name + "!");
             if (OnAttack != null)
             {
@@ -1872,6 +1851,11 @@ namespace VanguardEngine
                 _bonusSkills[tempID].Remove(skill);
         }
 
+        public void AllowBackRowAttack(int tempID)
+        {
+            _canAttackFromBackRow.Add(_field.CardCatalog[tempID]);
+        }
+
         public void ResetPower()
         {
             foreach (Card card in _field.Units)
@@ -1886,11 +1870,9 @@ namespace VanguardEngine
         public void EndAttack()
         {
             _field.Sentinel = false;
-            _field.Attack = -1;
             _field.Attacker = -1;
             _field.Attacked = -1;
             _field.Booster = -1;
-            _field.Guarding = false;
             _lastRevealedTriggers.Clear();
             foreach (Card unit in _field.Units)
             {
@@ -1904,7 +1886,11 @@ namespace VanguardEngine
             ResetPower();
             _riddenOnThisTurn.Clear();
             _finalRush = false;
-            _turn++;
+            _field.IncrementTurn();
+            _field.SetPersonaRide(false, _playerID);
+            _field.SetPersonaRide(false, _enemyID);
+            _canAttackFromBackRow.Clear();
+            _bonusSkills.Clear();
         }
 
         public void ResetCardValues(Card card)
@@ -2078,6 +2064,25 @@ namespace VanguardEngine
                 return fl;
             else
                 return FL.SwitchSides(fl);
+        }
+
+        public bool IsPlayer(int circle)
+        {
+            if (circle >= PlayerFrontLeft && circle <= PlayerVanguard)
+                return true;
+            return false;
+        }
+
+        public bool IsFrontRow(int circle)
+        {
+            if (circle == FL.PlayerFrontLeft ||
+                circle == FL.PlayerVanguard ||
+                circle == FL.PlayerFrontRight ||
+                circle == FL.EnemyFrontLeft ||
+                circle == FL.EnemyVanguard ||
+                circle == FL.EnemyFrontRight)
+                return true;
+            return false;
         }
     }
 }

@@ -341,7 +341,7 @@ namespace VanguardEngine
         protected virtual void SelectAttackingUnit_Input()
         {
             int selection = 0;
-            List<Card> cards = _player1.GetStandingFrontRow();
+            List<Card> cards = _player1.GetCardsToAttackWith();
             Console.WriteLine("Choose unit to attack with.");
             for (int i = 0; i < cards.Count; i++)
                 Console.WriteLine(i + 1 + ". " + cards[i].name);
@@ -381,7 +381,8 @@ namespace VanguardEngine
                         "2. See Field.\n" +
                         "3. See Current Shield.\n" +
                         "4. Guard.\n" +
-                        "5. End Guard.\n");
+                        "5. Use Blitz Order.\n" +
+                        "6. End Guard.\n");
             int_input = SelectPrompt(6);
             oSignalEvent.Set();
         }
@@ -455,7 +456,7 @@ namespace VanguardEngine
 
         protected virtual void SelectAbility_Input()
         {
-            Console.WriteLine("Select effect to activate.");
+            Console.WriteLine("----------\nSelect effect to activate.");
             for (int i = 0; i < _abilities.Count; i++)
                 Console.WriteLine(i + 1 + ". " + _abilities[i].Name);
             if (!CheckForMandatoryEffects(_abilities))
@@ -483,6 +484,8 @@ namespace VanguardEngine
             _query = query;
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cards);
+            if (cardsToSelect.Count < count)
+                count = cardsToSelect.Count;
             int_value = count;
             int_value2 = min;
             WaitForInput(SelectFromList_Input);
