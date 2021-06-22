@@ -13,9 +13,11 @@ namespace VanguardEngine
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
+        protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>();
+        protected Card _playedOrder;
         protected bool _finalRush = false;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
@@ -35,6 +37,10 @@ namespace VanguardEngine
         protected List<Card> EnemyRideDeck;
         protected List<Card> PlayerRevealed;
         protected List<Card> EnemyRevealed;
+        protected Card PlayerPrison;
+        protected Card EnemyPrison;
+        protected List<Card> PlayerPrisoners;
+        protected List<Card> EnemyPrisoners;
 
         int PlayerFrontLeft;
         int PlayerBackLeft;
@@ -98,6 +104,10 @@ namespace VanguardEngine
                 EnemyRideDeck = _field.Player2RideDeck;
                 PlayerRevealed = _field.Player1Revealed;
                 EnemyRevealed = _field.Player2Revealed;
+                PlayerPrison = _field.Player1Prison;
+                EnemyPrison = _field.Player2Prison;
+                PlayerPrisoners = _field.Player1Prisoners;
+                EnemyPrisoners = _field.Player2Prisoners;
             }
             else
             {
@@ -120,6 +130,10 @@ namespace VanguardEngine
                 EnemyRideDeck = _field.Player1RideDeck;
                 PlayerRevealed = _field.Player2Revealed;
                 EnemyRevealed = _field.Player1Revealed;
+                PlayerPrison = _field.Player2Prison;
+                EnemyPrison = _field.Player1Prison;
+                PlayerPrisoners = _field.Player2Prisoners;
+                EnemyPrisoners = _field.Player1Prisoners;
             }
             PlayerFrontLeft = Convert(FL.PlayerFrontLeft);
             PlayerBackLeft = Convert(FL.PlayerBackLeft);
@@ -194,6 +208,27 @@ namespace VanguardEngine
             return PlayerRevealed;
         }
 
+        public Card GetPlayerPrison()
+        {
+            return PlayerPrison;
+        }
+
+        public Card GetEnemyPrison()
+        {
+            return EnemyPrison;
+        }
+
+        public List<Card> GetPlayerPrisoners()
+        {
+            return PlayerPrisoners;
+        }
+
+        public List<Card> GetEnemyPrisoners()
+        {
+            return EnemyPrisoners;
+        }
+
+    
         public List<Card> GetDrop()
         {
             return PlayerDrop;
@@ -823,10 +858,9 @@ namespace VanguardEngine
 
         public bool CanMoveRearguard()
         {
-            Card[] slots = _field.Units;
-            foreach (Card card in slots)
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
             {
-                if (card != null && card != slots[PlayerVanguard])
+                if (_field.Units[i] != null)
                     return true;
             }
             return false;
@@ -941,6 +975,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsLastPlacedOnVC(int tempID)
+        {
+            foreach (Card card in _lastPlacedOnVC)
+            {
+                if (card.tempID == tempID)
+                    return true;
+            }
+            return false;
+        }
+
         public int Drive()
         {
             return _field.Units[PlayerVanguard].drive;
@@ -1004,6 +1048,7 @@ namespace VanguardEngine
             List<Card> list;
             Card card = null;
             _riddenOnThisTurn.Add(_field.Units[PlayerVanguard]);
+            _lastPlacedOnVC.Clear();
             if (location == 0)
                 list = PlayerRideDeck;
             else
@@ -1034,6 +1079,7 @@ namespace VanguardEngine
                 Console.WriteLine("---------\nPersona Ride!! " + _field.Units[PlayerVanguard].name + "!");
             else
                 Console.WriteLine("---------\nRide!! " + _field.Units[PlayerVanguard].name + "!");
+            _lastPlacedOnVC.Add(card);
             args.card = card;
             args.playerID = _playerID;
             if (location == 0)
@@ -1139,12 +1185,14 @@ namespace VanguardEngine
                     OnCallFromHand(this, args);
                 }
             }
+            card.upright = true;
             _lastPlacedOnRC.Add(card);
         }
 
-        public void SuperiorCall(int circle, int tempID, int loc)
+        public void SuperiorCall(int circle, int tempID)
         {
-            Card ToBeCalled = null;
+            Card ToBeCalled = _field.CardCatalog[tempID];
+            int loc = ToBeCalled.location;
             Card[] slots = _field.Units;
             List<Card> location = null;
             _lastPlacedOnRC.Clear();
@@ -1157,15 +1205,11 @@ namespace VanguardEngine
                 location = PlayerHand;
             else if (loc == Location.Soul)
                 location = _field.Units[PlayerVanguard].soul;
-            foreach (Card card in location)
-            {
-                if (card.tempID == tempID)
-                {
-                    ToBeCalled = card;
-                    location.Remove(card);
-                    break;
-                }
-            }
+            else if (loc == Location.Prison)
+                location = EnemyPrisoners;
+            location.Remove(ToBeCalled);
+            if (location == EnemyPrisoners)
+                EnemyOrder.Remove(ToBeCalled);
             if (slots[circle] != null)
             {
                 slots[circle].bonusPower = 0;
@@ -1181,6 +1225,7 @@ namespace VanguardEngine
                 PlayerDrop.Insert(0, slots[circle]);
             }
             ToBeCalled.faceup = true;
+            ToBeCalled.upright = true;
             ToBeCalled.location = Location.RC;
             slots[circle] = ToBeCalled;
             Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
@@ -1695,14 +1740,51 @@ namespace VanguardEngine
 
         public void PlayOrder(int tempID)
         {
-            List<Card> hand;
-            List<Card> drop;
             Card card = _field.CardCatalog[tempID];
-            hand = PlayerHand;
-            drop = PlayerDrop;
-            hand.Remove(card);
-            drop.Add(card);
-            card.location = Location.Drop;
+            _playedOrder = card;
+            PlayerHand.Remove(card);
+            PlayerOrder.Add(card);
+            card.location = Location.Order;
+        }
+
+        public void EndOrder()
+        {
+            if (_playedOrder != null)
+            {
+                PlayerOrder.Remove(_playedOrder);
+                PlayerDrop.Add(_playedOrder);
+                _playedOrder.location = Location.Drop;
+                _playedOrder = null;
+            }
+        }
+
+        public void SetPrison()
+        {
+            PlayerPrison = _playedOrder;
+            _playedOrder = null;
+        }
+
+        public void Imprison(List<int> cardsToImprison)
+        {
+            Card card;
+            foreach (int tempID in cardsToImprison)
+            {
+                card = _field.CardCatalog[tempID];
+                if (card.location == Location.Hand)
+                {
+                    EnemyHand.Remove(card);
+                }
+                card.location = Location.Prison;
+                PlayerPrisoners.Add(card);
+                PlayerOrder.Add(card);
+            }
+        }
+
+        public bool HasPrison()
+        {
+            if (PlayerPrison != null)
+                return true;
+            return false;
         }
 
         public void CounterBlast(List<int> cardsToCB)
@@ -1791,6 +1873,14 @@ namespace VanguardEngine
             foreach (int tempID in cardsToStand)
             {
                 _field.CardCatalog[tempID].upright = true;
+            }
+        }
+
+        public void Rest(List<int> cardsToRest)
+        {
+            foreach (int tempID in cardsToRest)
+            {
+                _field.CardCatalog[tempID].upright = false;
             }
         }
 

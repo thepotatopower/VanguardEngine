@@ -1,7 +1,7 @@
 -- Blaze Maiden, Rino
 
 function NumberOfAbilities()
-	return 3
+	return 2
 end
 
 function NumberOfParams()
@@ -22,8 +22,6 @@ function ActivationRequirement(n)
 		return a.OnRide, false, false
 	elseif n == 2 then
 		return a.OnAttack, true, true
-	elseif n == 3 then
-		return a.OnBattleEnds, true, true
 	end
 end
 
@@ -33,10 +31,6 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() then
-			return true
-		end
-	elseif n == 3 then
 		if obj.IsAttackingUnit() then
 			return true
 		end
@@ -52,9 +46,7 @@ function Activate(n)
 		obj.SuperiorCall(1)
 		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.AddPower(2, 2000)
-	elseif n == 3 then
-		obj.AddPower(2, -2000)
+		obj.AddBattleOnlyPower(2, 2000)
 	end
 	return 0
 end

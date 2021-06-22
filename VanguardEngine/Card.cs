@@ -149,8 +149,8 @@ namespace VanguardEngine
 
     class Format
     {
-        public const int Premium = 0;
-        public const int VStandard = 1;
-        public const int Standard = 2;
+        public const int Original = 0;
+        public const int V = 1;
+        public const int D = 2;
     }
 }

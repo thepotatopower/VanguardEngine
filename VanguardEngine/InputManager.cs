@@ -24,6 +24,7 @@ namespace VanguardEngine
         public bool bool_value;
         public Card card_input;
         string _query;
+        string[] _list;
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -231,11 +232,12 @@ namespace VanguardEngine
                     "1. See Hand\n" +
                     "2. See Field\n" +
                     "3. Call Rearguard\n" +
-                    "4. Move Rearguard(s)\n" +
-                    "5. Activate Ability\n" +
-                    "6. Activate Order\n" +
-                    "7. End Main Phase");
-            int_input = SelectPrompt(9);
+                    "4. Call from Prison\n" +
+                    "5. Move Rearguard(s)\n" +
+                    "6. Activate Ability\n" +
+                    "7. Activate Order\n" +
+                    "8. End Main Phase");
+            int_input = SelectPrompt(10);
             oSignalEvent.Set();
         }
 
@@ -517,6 +519,26 @@ namespace VanguardEngine
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);
             }
+            oSignalEvent.Set();
+        }
+
+        public int SelectOption(string[] list)
+        {
+            _list = list;
+            WaitForInput(SelectOption_Input);
+            return int_input;
+        }
+
+        protected void SelectOption_Input()
+        {
+            int selection;
+            Console.WriteLine("Choose an option.");
+            for (int i = 0; i < _list.Length; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + _list[i]);
+            }
+            selection = SelectPrompt(_list.Length);
+            int_input = selection;
             oSignalEvent.Set();
         }
     }

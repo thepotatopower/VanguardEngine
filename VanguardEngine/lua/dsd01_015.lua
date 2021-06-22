@@ -43,7 +43,7 @@ function Activate(n)
 	if n == 1 then
 		obj.ChooseAddTempPower(2, 5000)
 		if (obj.CanAddToHand(3)) then
-			obj.AddToHand(3)
+			obj.ChooseAddToHand(3)
 		end
 	end
 	return 0

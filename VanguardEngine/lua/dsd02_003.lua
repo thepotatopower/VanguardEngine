@@ -45,7 +45,7 @@ function Activate(n)
 		obj.SuperiorCall(1, FL.PlayerBackCenter)
 		obj.SoulCharge(1)
 	elseif n == 2 then
-		if (obj.InFinalRush()) then
+		if obj.InFinalRush() then
 			obj.SetAbilityPower(2, 5000)
 		else 
 			obj.SetAbilityPower(2, 0)

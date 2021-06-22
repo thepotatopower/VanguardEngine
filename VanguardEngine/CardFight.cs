@@ -15,7 +15,7 @@ namespace VanguardEngine
         public bool _gameOver = false;
         public bool _activatedOrder = false;
         public LuaInterpreter luaInterpreter;
-        public InputManager _inputManager;
+        protected InputManager _inputManager;
         public List<Card> _deck1;
         public List<Card> _deck2;
         public Abilities _abilities;
@@ -48,9 +48,15 @@ namespace VanguardEngine
             _player1.Initialize(1, field);
             _player2.Initialize(2, field);
             for (int i = 0; i < deck1.Count; i++)
-                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2));
+            {
+                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2, true));
+                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player2, _player1, false));
+            }
             for (int i = 0; i < deck2.Count; i++)
-                _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player2, _player1));
+            {
+                _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player2, _player1, true));
+                _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player1, _player2, false));
+            }
             return true;
         }
 
@@ -342,6 +348,11 @@ namespace VanguardEngine
                 }
                 else if (selection == 4)
                 {
+                    AddAbilitiesToQueue(player1, player2, Activation.OnCallFromPrison);
+                    ActivateAbilities(player1, player2, Activation.OnCallFromPrison);
+                }
+                else if (selection == 5)
+                {
                     if (player1.CanMoveRearguard())
                     {
                         selection = _inputManager.SelectRearguardColumn();
@@ -350,12 +361,12 @@ namespace VanguardEngine
                     else
                         Console.WriteLine("No Rearguards can be moved.");
                 }
-                else if (selection == 5) //ACT
+                else if (selection == 6) //ACT
                 {
                     AddAbilitiesToQueue(player1, player2, Activation.OnACT);
                     ActivateAbilities(player1, player1, Activation.OnACT);
                 }
-                else if (selection == 6) //Order
+                else if (selection == 7) //Order
                 {
                     if (!_activatedOrder)
                     {
@@ -365,13 +376,13 @@ namespace VanguardEngine
                     else
                         Console.WriteLine("Already activated order this turn.");
                 }
-                else if (selection == 7)
+                else if (selection == 8)
                     break;
-                else if (selection == 8) //call specific RG (for use outside of console only)
+                else if (selection == 9) //call specific RG (for use outside of console only)
                 {
                     Call(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1], false);
                 }
-                else if (selection == 9) //move specific column (for use outside of console only)
+                else if (selection == 10) //move specific column (for use outside of console only)
                 {
                     MoveRearguard(player1, player2, _inputManager.intlist_input[1]);
                 }
@@ -390,21 +401,12 @@ namespace VanguardEngine
         public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int circle)
         {
             int selection = _inputManager.SelectFromList(cardsToSelect, 1, 1, "Choose card to Call.")[0];
-            int location = 0;
             int selectedCircle = 0;
-            foreach (Card card in cardsToSelect)
-            {
-                if (card.tempID == selection)
-                {
-                    location = card.location;
-                    break;
-                }
-            }
             if (circle < 0)
                 selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
             else
                 selectedCircle = circle;
-            player1.SuperiorCall(selectedCircle, selection, location);
+            player1.SuperiorCall(selectedCircle, selection);
             _abilities.ResetActivation(selection);
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
         }
@@ -681,6 +683,12 @@ namespace VanguardEngine
             {
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetOrderableCards()));
             }
+            else if (activation == Activation.OnCallFromPrison)
+            {
+                cards.Add(player2.GetPlayerPrison());
+                abilities.AddRange(_abilities.GetAbilities(activation, cards));
+                cards.Clear();
+            }
             else
             {
                 cards.Add(player1.GetTrigger(C.Player));
@@ -705,7 +713,7 @@ namespace VanguardEngine
                 if (!_abilityQueue.Contains(ability))
                     _abilityQueue.Add(ability);
             }
-            if (activation != Activation.OnACT && activation != Activation.OnOrder && activation != Activation.OnBlitzOrder && !_currentActivations.Contains(activation))
+            if (activation != Activation.OnACT && activation != Activation.OnOrder && activation != Activation.OnBlitzOrder && activation != Activation.OnCallFromPrison && !_currentActivations.Contains(activation))
                 _currentActivations.Add(activation);
         }
 
@@ -813,10 +821,11 @@ namespace VanguardEngine
             player2.Stand(cardsToStand);
         }
 
-        public void AutoStand(Player player1, Player player2, List<int> canStand)
+        public void Rest(Player player1, Player player2, List<Card> canRest, int count, bool select)
         {
-            player1.Stand(canStand);
-            player2.Stand(canStand);
+            List<int> cardsToRest = _inputManager.SelectFromList(canRest, count, count, "Choose card(s) to rest.");
+            player1.Rest(cardsToRest);
+            player2.Rest(cardsToRest);
         }
 
         public void ChooseAddTempPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
@@ -896,9 +905,28 @@ namespace VanguardEngine
             player1.EndReveal();
         }
 
+        public void EnemyChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
+        {
+            bool swapped = false;
+            if (_inputManager._player1._playerID != player1._playerID)
+            {
+                _inputManager.SwapPlayers();
+                swapped = true;
+            }
+            List<int> cardsToImprison = _inputManager.SelectFromList(cardsToSelect, count, min, "Choose card(s) to imprison.");
+            player1.Imprison(cardsToImprison);
+            if (swapped)
+                _inputManager.SwapPlayers();
+        }
+
         public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min)
         {
             return _inputManager.SelectFromList(cardsToSelect, max, min, "Select card(s).");
+        }
+
+        public int SelectOption(string[] list)
+        {
+            return _inputManager.SelectOption(list);
         }
     }
 

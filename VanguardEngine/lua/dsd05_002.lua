@@ -1,35 +1,38 @@
--- Fire Slash Dragon, Inferno Sword
+-- Aurora Battle Princess, Risatt Pink
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 1
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
+		return q.Location, l.EnemyHand, q.Count, 1
+	elseif n == 2 then
+		return q.Location, l.PlayerPrisoners, q.Count, 1
+	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
-
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, true, true
+		return a.PlacedOnVC, false, true
 	elseif n == 2 then
-		return a.OnBattleEnds, true, true
+		return a.Cont, true, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() and not obj.IsVanguard() then
+		if obj.LastPlacedOnVC() and obj.HasPrison() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() and not obj.IsVanguard() then
+		if obj.IsRearguard() then
 			return true
 		end
 	end
@@ -41,9 +44,13 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.AddTempPower(2, 2000)
+		obj.EnemyChooseImprison(1)
 	elseif n == 2 then
-		obj.AddTempPower(2, -2000)
+		if obj.Exists(2) then
+			obj.SetAbilityPower(3, 2000)
+		else
+			obj.SetAbilityPower(3, 0)
+		end
 	end
 	return 0
 end
