@@ -24,9 +24,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, true, true
+		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	elseif n == 2 then
-		return a.OnBattleEnds, false, false
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 

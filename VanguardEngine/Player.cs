@@ -16,9 +16,12 @@ namespace VanguardEngine
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
-        protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>();
+        protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Card _playedOrder;
         protected bool _finalRush = false;
+        protected bool _enemyRetired = false;
+        protected bool _playerRetired = false;
+        protected bool _enemyRetiredThisTurn = false;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
         protected List<Card> PlayerDeck;
@@ -37,6 +40,7 @@ namespace VanguardEngine
         protected List<Card> EnemyRideDeck;
         protected List<Card> PlayerRevealed;
         protected List<Card> EnemyRevealed;
+        protected List<Card> PlayerLooking;
         protected Card PlayerPrison;
         protected Card EnemyPrison;
         protected List<Card> PlayerPrisoners;
@@ -104,6 +108,7 @@ namespace VanguardEngine
                 EnemyRideDeck = _field.Player2RideDeck;
                 PlayerRevealed = _field.Player1Revealed;
                 EnemyRevealed = _field.Player2Revealed;
+                PlayerLooking = _field.Player1Looking;
                 PlayerPrison = _field.Player1Prison;
                 EnemyPrison = _field.Player2Prison;
                 PlayerPrisoners = _field.Player1Prisoners;
@@ -130,6 +135,7 @@ namespace VanguardEngine
                 EnemyRideDeck = _field.Player1RideDeck;
                 PlayerRevealed = _field.Player2Revealed;
                 EnemyRevealed = _field.Player1Revealed;
+                PlayerLooking = _field.Player2Looking;
                 PlayerPrison = _field.Player2Prison;
                 EnemyPrison = _field.Player1Prison;
                 PlayerPrisoners = _field.Player2Prisoners;
@@ -208,6 +214,11 @@ namespace VanguardEngine
             return PlayerRevealed;
         }
 
+        public List<Card> GetLooking()
+        {
+            return PlayerLooking;
+        }
+
         public Card GetPlayerPrison()
         {
             return PlayerPrison;
@@ -259,6 +270,17 @@ namespace VanguardEngine
                     return circle;
             }
             return -1;
+        }
+
+        public int NumEnemyOpenCircles()
+        {
+            int count = 0;
+            for (int i = EnemyFrontLeft; i < EnemyVanguard; i++)
+            {
+                if (_field.Units[i] != null)
+                    count++;
+            }
+            return 5 - count;
         }
 
         public List<Card> GetRevealedTriggers()
@@ -461,7 +483,7 @@ namespace VanguardEngine
                 return;
             }
             string output = card.name + "\n" +
-                "Grade: " + card.grade + " Power: " + card.power + " Shield: " + card.shield + "\n" +
+                "Grade: " + card.grade + " Power: " + card.power + " Shield: " + card.shield + " " + card.id + "\n" +
                 card.effect;
             Console.WriteLine("----------" + output);
         }
@@ -728,7 +750,11 @@ namespace VanguardEngine
             if (_field.Sentinel)
                 return 1000000000;
             foreach (Card card in _field.GC)
+            {
                 shield += card.shield + card.tempShield;
+                foreach (Tuple<int, int> key in card.abilityShield.Keys)
+                    shield += card.abilityShield[key];
+            }
             return shield;
         }
 
@@ -987,12 +1013,17 @@ namespace VanguardEngine
 
         public int Drive()
         {
-            return _field.Units[PlayerVanguard].drive;
+            int drive = _field.Units[PlayerVanguard].drive;
+            foreach (Tuple<int, int> key in _field.Units[PlayerVanguard].abilityDrive.Keys)
+            {
+                drive += _field.Units[PlayerVanguard].abilityDrive[key];
+            }
+            return drive;
         }
 
         public int Critical()
         {
-            return _field.Units[PlayerVanguard].critical; 
+            return _field.Units[PlayerVanguard].critical + _field.Units[PlayerVanguard].tempCritical;
         }
 
         public int Damage()
@@ -1207,6 +1238,8 @@ namespace VanguardEngine
                 location = _field.Units[PlayerVanguard].soul;
             else if (loc == Location.Prison)
                 location = EnemyPrisoners;
+            if (PlayerLooking.Contains(ToBeCalled))
+                PlayerLooking.Remove(ToBeCalled);
             location.Remove(ToBeCalled);
             if (location == EnemyPrisoners)
                 EnemyOrder.Remove(ToBeCalled);
@@ -1229,6 +1262,12 @@ namespace VanguardEngine
             ToBeCalled.location = Location.RC;
             slots[circle] = ToBeCalled;
             Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
+            if (ToBeCalled.orderType >= 0)
+            {
+                ResetCardValues(ToBeCalled);
+                ToBeCalled.location = Location.Drop;
+                PlayerDrop.Add(ToBeCalled);
+            }
             _field.Shuffle(PlayerDeck);
             _lastPlacedOnRC.Add(ToBeCalled);
         }
@@ -1429,38 +1468,68 @@ namespace VanguardEngine
             }
         }
 
-        public void Retire(int tempID)
+        public void Retire(List<int> tempIDs)
         {
             List<Card> drop;
             Card toBeRetired;
-            for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
+            _playerRetired = false;
+            _enemyRetired = false;
+            foreach (int tempID in tempIDs)
             {
-                if (_field.Units[i] != null && _field.Units[i].tempID == tempID)
+                for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
                 {
-                    drop = EnemyDrop;
-                    toBeRetired = _field.Units[i];
-                    _field.Units[i] = null;
-                    toBeRetired.location = Location.Drop;
-                    toBeRetired.overDress = false;
-                    drop.Insert(0, toBeRetired);
-                    ResetCardValues(toBeRetired);
-                    return;
+                    if (_field.Units[i] != null && _field.Units[i].tempID == tempID)
+                    {
+                        drop = EnemyDrop;
+                        toBeRetired = _field.Units[i];
+                        _field.Units[i] = null;
+                        toBeRetired.location = Location.Drop;
+                        toBeRetired.overDress = false;
+                        drop.Insert(0, toBeRetired);
+                        ResetCardValues(toBeRetired);
+                        _enemyRetired = true;
+                        _enemyRetiredThisTurn = true;
+                        break;
+                    }
+                }
+                for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+                {
+                    if (_field.Units[i] != null && _field.Units[i].tempID == tempID)
+                    {
+                        drop = PlayerDrop;
+                        toBeRetired = _field.Units[i];
+                        _field.Units[i] = null;
+                        toBeRetired.location = Location.Drop;
+                        toBeRetired.overDress = false;
+                        drop.Insert(0, toBeRetired);
+                        ResetCardValues(toBeRetired);
+                        _playerRetired = true;
+                        break;
+                    }
                 }
             }
-            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
-            {
-                if (_field.Units[i] != null && _field.Units[i].tempID == tempID)
-                {
-                    drop = PlayerDrop;
-                    toBeRetired = _field.Units[i];
-                    _field.Units[i] = null;
-                    toBeRetired.location = Location.Drop;
-                    toBeRetired.overDress = false;
-                    drop.Insert(0, toBeRetired);
-                    ResetCardValues(toBeRetired);
-                    return;
-                }
-            }
+        }
+
+        public void RetireAttackedUnit()
+        {
+            List<int> list = new List<int>();
+            list.Add(_field.Units[_field.Attacked].tempID);
+            Retire(list);
+        }
+
+        public bool EnemyRetired()
+        {
+            return _enemyRetired;
+        }
+
+        public bool EnemyRetiredThisTurn()
+        {
+            return _enemyRetiredThisTurn;
+        }
+
+        public bool PlayerRetired()
+        {
+            return _playerRetired;
         }
 
         public void RetireGC()
@@ -1547,6 +1616,13 @@ namespace VanguardEngine
             }
         }
 
+        public void AddCritical(int selection, int critical)
+        {
+            Card target = FindActiveUnit(selection);
+            target.tempPower += critical;
+            Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+        }
+
         public void AddTempShield(int selection, int shield)
         {
             Card target = _field.CardCatalog[selection];
@@ -1565,10 +1641,26 @@ namespace VanguardEngine
                 target.abilityPower[new Tuple<int, int>(tempID, abilityNum)] = power;
         }
 
-        public void AddCritical(int selection, int critical)
+        public void SetAbilityShield(int tempID, int abilityNum, int selection, int shield)
         {
             Card target = FindActiveUnit(selection);
-            target.critical += critical;
+            if (!target.abilityShield.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
+            {
+                target.abilityShield.Add(new Tuple<int, int>(tempID, abilityNum), shield);
+            }
+            else
+                target.abilityShield[new Tuple<int, int>(tempID, abilityNum)] = shield;
+        }
+
+        public void SetAbilityDrive(int tempID, int abilityNum, int selection, int drive)
+        {
+            Card target = _field.CardCatalog[selection];
+            if (!target.abilityDrive.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
+            {
+                target.abilityDrive.Add(new Tuple<int, int>(tempID, abilityNum), drive);
+            }
+            else
+                target.abilityDrive[new Tuple<int, int>(tempID, abilityNum)] = drive;
         }
         
         public void Stand(int selection)
@@ -1651,6 +1743,12 @@ namespace VanguardEngine
                 {
                     PlayerDeck.Remove(cardToAdd);
                 }
+                else if (cardToAdd.location == Location.Drop)
+                {
+                    _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
+                }
+                if (PlayerLooking.Contains(cardToAdd))
+                    PlayerLooking.Remove(cardToAdd);
                 cardToAdd.location = Location.Soul;
                 cardToAdd.faceup = true;
                 cardToAdd.upright = true;
@@ -1773,6 +1871,10 @@ namespace VanguardEngine
                 if (card.location == Location.Hand)
                 {
                     EnemyHand.Remove(card);
+                }
+                else if (card.location == Location.RC)
+                {
+                    _field.Units[GetCircle(card)] = null;
                 }
                 card.location = Location.Prison;
                 PlayerPrisoners.Add(card);
@@ -1927,6 +2029,14 @@ namespace VanguardEngine
             PlayerRevealed.Clear();
         }
 
+        public void LookAtTopOfDeck(int count)
+        {
+            Card card;
+            PlayerLooking.Clear();
+            for (int i = 0; i < count; i++)
+                PlayerLooking.Add(PlayerDeck[i]);
+        }
+
         public void AddSkill(int tempID, int skill)
         {
             if (!_bonusSkills.ContainsKey(tempID))
@@ -1953,6 +2063,7 @@ namespace VanguardEngine
                 if (card != null)
                 {
                     card.tempPower = 0;
+                    card.tempCritical = 0;
                 }
             }
         }
@@ -1989,7 +2100,9 @@ namespace VanguardEngine
             card.battleOnlyPower = 0;
             card.tempPower = 0;
             card.tempShield = 0;
+            card.tempCritical = 0;
             card.abilityPower.Clear();
+            card.abilityDrive.Clear();
             foreach (Card item in _field.Units)
             {
                 if (item != null)
@@ -1997,7 +2110,11 @@ namespace VanguardEngine
                     foreach (Tuple<int, int> key in item.abilityPower.Keys)
                     {
                         if (key.Item1 == card.tempID)
+                        {
                             SetAbilityPower(key.Item1, key.Item2, item.tempID, 0);
+                            SetAbilityShield(key.Item1, key.Item2, item.tempID, 0);
+                            SetAbilityDrive(key.Item1, key.Item2, item.tempID, 0);
+                        }
                     }
                 }
             }
@@ -2037,6 +2154,17 @@ namespace VanguardEngine
         {
             if (location == EnemyFrontLeft || location == EnemyVanguard || location == EnemyFrontRight)
                 return true;
+            return false;
+        }
+
+        public bool IsEnemy(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
+            {
+                if (_field.Units[i] != null && _field.Units[i].tempID == tempID)
+                    return true;
+            }
             return false;
         }
 
@@ -2130,6 +2258,14 @@ namespace VanguardEngine
         public void FinalRush()
         {
             _finalRush = true;
+        }
+
+        public int NumOriginalDress(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (card.overDress)
+                return card.soul.Count;
+            return 0;
         }
 
         public List<Card> GetCardsWithName(string name)

@@ -33,6 +33,8 @@ namespace VanguardEngine
         protected List<Card> _player2RideDeck = new List<Card>();
         protected List<Card> _player1Revealed = new List<Card>();
         protected List<Card> _player2Revealed = new List<Card>();
+        protected List<Card> _player1Looking = new List<Card>();
+        protected List<Card> _player2Looking = new List<Card>();
         protected Card _player1Prison = null;
         protected Card _player2Prison = null;
         protected List<Card> _player1Prisoners = new List<Card>();
@@ -138,6 +140,16 @@ namespace VanguardEngine
         public List<Card> Player2Revealed
         {
             get => _player2Revealed;
+        }
+
+        public List<Card> Player1Looking
+        {
+            get => _player1Looking;
+        }
+
+        public List<Card> Player2Looking
+        {
+            get => _player2Looking;
         }
 
         public int Attacker

@@ -507,14 +507,14 @@ namespace VanguardEngine
                 {
                     Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
                 }
-                if (intlist_input.Count > min)
+                if (intlist_input.Count >= min)
                 {
                     Console.WriteLine(cardsToSelect.Count + 1 + ". End selection.");
-                    selection = SelectPrompt(cardsToSelect.Count);
+                    selection = SelectPrompt(cardsToSelect.Count + 1) - 1;
                 }
                 else
                     selection = SelectPrompt(cardsToSelect.Count) - 1;
-                if (intlist_input.Count > min && selection == cardsToSelect.Count)
+                if (intlist_input.Count >= min && selection == cardsToSelect.Count)
                     oSignalEvent.Set();
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);

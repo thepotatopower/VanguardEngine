@@ -1,28 +1,22 @@
--- Trickstar
+-- Uncanny Burning
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 1
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	end
+	return 0
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() then
+		if obj.IsRodeUponThisTurn() and obj.Turn() % 2 == 0 then
 			return true
 		end
 	end
@@ -34,7 +28,8 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.TargetImmunity(1);
+		obj.Draw(1)
+		obj.OnRideAbilityResolved()
 	end
 	return 0
 end

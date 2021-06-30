@@ -1,7 +1,7 @@
 -- Fire Slash Dragon, Inferno Sword
 
 function NumberOfAbilities()
-	return 2
+	return 1
 end
 
 function NumberOfParams()
@@ -17,19 +17,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, true, true
-	elseif n == 2 then
-		return a.OnBattleEnds, true, true
+		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() and not obj.IsVanguard() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsAttackingUnit() and not obj.IsVanguard() then
+		if obj.IsAttackingUnit() and obj.IsRearguard() then
 			return true
 		end
 	end
@@ -41,9 +35,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.AddTempPower(2, 2000)
-	elseif n == 2 then
-		obj.AddTempPower(2, -2000)
+		obj.AddBattleOnlyPower(1, 2000)
 	end
 	return 0
 end

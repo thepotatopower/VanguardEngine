@@ -22,9 +22,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, false, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	elseif n == 2 then
-		return a.PlacedOnRC, false, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 

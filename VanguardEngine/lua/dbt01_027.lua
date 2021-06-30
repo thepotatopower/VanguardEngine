@@ -1,37 +1,40 @@
--- Blaze Maiden, Rino
+-- Cataclysmic Bullet of Dust Storm, Randor
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 4
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Name, "Trickstar", q.Count, 1
+		return q.Location, l.Drop, q.Count, 1
 	elseif n == 2 then
+		return q.Location, l.EnemyRC, q.Count, 2, q.Other, o.OrLess
+	elseif n == 3 then
+		return q.Location, l.Damage, q.Count, 1
+	elseif n == 4 then
 		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
-
 
 function ActivationRequirement(n)
 	if n == 1 then
 		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Blaze Maiden, Reiyu") and obj.CanSuperiorCall(1) then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Heavy Artillery of Dust Storm, Eugene") and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() then
+		if obj.IsAttackingUnit() and obj.Exists(2) and obj.CanCB(3) then
 			return true
 		end
 	end
@@ -39,14 +42,18 @@ function CheckCondition(n)
 end
 
 function Cost(n)
+	if n == 2 then
+		obj.CounterBlast(3)
+	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(1)
+		obj.ChooseAddToSoul(1)
 		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.AddBattleOnlyPower(2, 2000)
+		obj.SoulCharge(1)
+		obj.AddBattleOnlyPower(4, 5000)
 	end
 	return 0
 end

@@ -1,37 +1,29 @@
--- Aurora Battle Princess, Risatt Pink
+-- Autonomic Caution
 
 function NumberOfAbilities()
-	return 2
+	return 1
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.EnemyHand, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.PlayerPrisoners, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
-	elseif n == 2 then
 		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.HasPrison() and obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
 		if obj.IsRearguard() then
 			return true
 		end
@@ -44,12 +36,12 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.EnemyChooseImprison(1)
-	elseif n == 2 then
-		if obj.Exists(2) then
-			obj.SetAbilityPower(3, 2000)
+		if obj.Exists(1) then
+			obj.SetAbilityPower(2, 2000)
+			obj.SetAbilityShield(2, 2000)
 		else
-			obj.SetAbilityPower(3, 0)
+			obj.SetAbilityPower(2, 0)
+			obj.SetAbilityShield(2, 0)
 		end
 	end
 	return 0

@@ -22,7 +22,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnBattleEnds, false, false
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 

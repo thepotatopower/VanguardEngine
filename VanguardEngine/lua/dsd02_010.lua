@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, false, true
+		return a.OnDriveCheck, a.OverTrigger, p.HasPrompt, true, p.IsMandatory, true
 	end
 end
 

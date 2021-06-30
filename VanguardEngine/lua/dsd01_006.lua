@@ -10,7 +10,7 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Name, "Trickstar"
+		return q.Location, l.PlayerRC, q.Name, "Trickstar"
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	elseif n == 3 then
@@ -24,9 +24,9 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OverDress, 1
 	elseif n == 2 then
-		return a.OnAttack, true, true
+		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	elseif n == 3 then
-		return a.Then, false, false
+		return a.Then, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 
@@ -54,7 +54,7 @@ function Activate(n)
 		obj.AddBattleOnlyPower(2, 10000)
 		return 3
 	elseif n == 3 then
-		obj.Retire(4)
+		obj.ChooseRetire(4)
 	end
 	return 0
 end

@@ -24,9 +24,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, false, true
+		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
 	elseif n == 2 then
-		return a.OnCallFromPrison, false, true, 0
+		return a.OnCallFromPrison, t.Order, p.HasPrompt, true, p.IsMandatory, true, p.ForEnemy
 	end
 end
 

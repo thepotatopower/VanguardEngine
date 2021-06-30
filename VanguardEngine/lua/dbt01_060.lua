@@ -1,36 +1,38 @@
--- Time-fissuring Fist Colossus
+-- Gunning of Dust Storm, Nigel
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Damage, q.Count, 1
 	elseif n == 2 then
+		return q.Location, l.EnemyRC, q.Count, 1
+	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	elseif n == 2 then
-		return a.Then, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnEnemyRetired, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Cataclysmic Bullet of Dust Storm, Randor") then
 			return true
 		end
 	elseif n == 2 then
-		if obj.InFinalRush() and obj.CanCB(1) then
+		if obj.IsRearguard() and obj.PlayerMainPhase() and obj.CanRetire(2) and obj.CanB(1) then
 			return true
 		end
 	end
@@ -40,15 +42,16 @@ end
 function Cost(n)
 	if n == 2 then
 		obj.CounterBlast(1)
+		obj.Retire(3)
 	end
 end
 
 function Activate(n)
 	if n == 1 then
 		obj.SoulCharge(1)
-		return 2
+		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.AddTempPower(2, 15000)
+		obj.ChooseRetire(2)
 	end
 	return 0
 end

@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, false, false
+		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 

@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, false, true
+		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	end
 end
 

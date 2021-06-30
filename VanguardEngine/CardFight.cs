@@ -10,8 +10,9 @@ namespace VanguardEngine
     {
         public Player _player1;
         public Player _player2;
+        protected Player actingPlayer;
         public int _turn;
-        public int _phase;
+        protected int _phase = Phase.Stand;
         public bool _gameOver = false;
         public bool _activatedOrder = false;
         public LuaInterpreter luaInterpreter;
@@ -113,19 +114,25 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             while (true)
             {
+                actingPlayer = player1;
+                _phase = Phase.Stand;
                 player1.StandAll();
                 if (_turn > 1)
                 {
                     Console.WriteLine("----------\nSTAND AND DRAW");
+                    _phase = Phase.Draw;
                     Draw(player1, player2, 1);
                 }
                 Console.WriteLine("----------\nRIDE PHASE");
+                _phase = Phase.Ride;
                 RidePhaseMenu(player1, player2);
                 Console.WriteLine("----------\nMAIN PHASE");
+                _phase = Phase.Main;
                 MainPhaseMenu(player1, player2);
                 if (_turn > 1)
                 {
                     Console.WriteLine("----------\nBATTLE PHASE");
+                    _phase = Phase.Battle;
                     BattlePhaseMenu(player1, player2);
                 }
                 if (_gameOver)
@@ -137,6 +144,7 @@ namespace VanguardEngine
                     return;
                 }
                 Console.WriteLine("----------\nEND PHASE");
+                _phase = Phase.End;
                 if (OnEndPhase != null)
                 {
                     args = new CardEventArgs();
@@ -398,9 +406,9 @@ namespace VanguardEngine
 
         }
 
-        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int circle)
+        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int circle)
         {
-            int selection = _inputManager.SelectFromList(cardsToSelect, 1, 1, "Choose card to Call.")[0];
+            int selection = _inputManager.SelectFromList(cardsToSelect, max, min, "Choose card to Call.")[0];
             int selectedCircle = 0;
             if (circle < 0)
                 selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
@@ -569,11 +577,16 @@ namespace VanguardEngine
                             return;
                         }
                     }
+                    AddAbilitiesToQueue(player1, player2, Activation.OnAttackHitsVanguard);
                 }
                 else
                 {
-                    player2.Retire(player1.AttackedUnit().tempID);
+                    player2.RetireAttackedUnit();
                 }
+                AddAbilitiesToQueue(player1, player2, Activation.OnAttackHits);
+                _inputManager.SwapPlayers();
+                ActivateAbilities(player1, player2, Activation.OnAttackHits);
+                _inputManager.SwapPlayers();
             }
             player2.RetireGC();
             AddAbilitiesToQueue(player1, player2, Activation.OnBattleEnds);
@@ -854,8 +867,8 @@ namespace VanguardEngine
 
         public void AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
-            List<int> cardsToAddToHand = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to soul.");
-            player1.AddToSoul(cardsToAddToHand);
+            List<int> cardsToAddToSoul = _inputManager.SelectFromList(canAddToHand, count, min, "Choose card(s) to add to soul.");
+            player1.AddToSoul(cardsToAddToSoul);
         }
 
         public void AutoAddToSoul(Player player1, Player player2, List<int> cardsToSoul)
@@ -871,11 +884,16 @@ namespace VanguardEngine
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
         {
             List<int> cardsToRetire = _inputManager.SelectFromList(canRetire, count, count, "Choose card(s) to retire.");
-            foreach (int tempID in cardsToRetire)
-            {
-                player1.Retire(tempID);
-                player2.Retire(tempID);
-            }
+            player1.Retire(cardsToRetire);
+            if (player1.EnemyRetired())
+                AddAbilitiesToQueue(player1, player2, Activation.OnEnemyRetired);
+        }
+
+        public void Retire(Player player1, Player player2, List<int> toRetire)
+        {
+            player1.Retire(toRetire);
+            if (player1.EnemyRetired())
+                AddAbilitiesToQueue(player1, player2, Activation.OnEnemyRetired);
         }
 
         public void FinalRush(Player player1, Player player2)
@@ -905,6 +923,12 @@ namespace VanguardEngine
             player1.EndReveal();
         }
 
+        public void ChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
+        {
+            List<int> cardsToImprison = _inputManager.SelectFromList(cardsToSelect, count, min, "Choose card(s) to imprison.");
+            player1.Imprison(cardsToImprison);
+        }
+
         public void EnemyChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
         {
             bool swapped = false;
@@ -928,11 +952,29 @@ namespace VanguardEngine
         {
             return _inputManager.SelectOption(list);
         }
+
+        public bool PlayerMainPhase(int playerID)
+        {
+            if (_phase == Phase.Main && playerID == actingPlayer._playerID)
+                return true;
+            return false;
+        }
     }
 
     public class C
     {
         public const bool Player = true;
         public const bool Enemy = false;
+    }
+
+    public class Phase
+    {
+        public const int Stand = 0;
+        public const int Draw = 1;
+        public const int Ride = 2;
+        public const int Stride = 3;
+        public const int Main = 4;
+        public const int Battle = 5;
+        public const int End = 6;
     }
 }

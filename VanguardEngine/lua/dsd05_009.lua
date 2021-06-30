@@ -1,4 +1,4 @@
--- Hopeful Maiden, Alejandra
+-- Craggy Beast, Girgrand
 
 function NumberOfAbilities()
 	return 1
