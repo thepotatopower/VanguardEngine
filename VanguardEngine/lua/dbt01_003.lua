@@ -63,6 +63,7 @@ function Activate(n)
 	    		obj.Select(5)
 	    		obj.SuperiorCall(7)
 	    		obj.AddTempPower(7, 10000)
+	    		obj.EndSelect()
 	    	end
 	    end
 	end

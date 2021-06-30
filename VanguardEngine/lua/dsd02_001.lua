@@ -12,7 +12,7 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Soul, q.Count, 5
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.FL, FL.PlayerFrontLeft, q.FL, FL.PlayerFrontRight
+		return q.Location, l.PlayerRC, q.FL, FL.PlayerFrontLeft, q.FL, FL.PlayerFrontRight, q.Other, o.Resting
 	end
 end
 
@@ -47,7 +47,7 @@ function Activate(n)
 	if n == 1 then
 		obj.FinalRush()
 	elseif n == 2 then
-		obj.AutoStand(2)
+		obj.Stand(2)
 	end
 	return 0
 end

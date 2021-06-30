@@ -15,6 +15,7 @@ namespace VanguardEngine
         protected List<Card> _lastPlacedOnRC = new List<Card>();
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
+        protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Card _playedOrder;
@@ -730,7 +731,7 @@ namespace VanguardEngine
             if (_startingTurn == 1 && _field.Turn % 2 != 0)
                 return true;
             if (_startingTurn == 2 && _field.Turn % 2 == 0)
-                return false;
+                return true;
             return false;
         }
 
@@ -1023,7 +1024,12 @@ namespace VanguardEngine
 
         public int Critical()
         {
-            return _field.Units[PlayerVanguard].critical + _field.Units[PlayerVanguard].tempCritical;
+            int critical = _field.Units[_field.Attacker].critical + _field.Units[_field.Attacker].tempCritical;
+            foreach (Tuple<int, int> key in _field.Units[_field.Attacker].abilityCritical.Keys)
+            {
+                critical += _field.Units[_field.Attacker].abilityCritical[key];
+            }
+            return critical;
         }
 
         public int Damage()
@@ -1599,7 +1605,7 @@ namespace VanguardEngine
 
         public void AddTempPower(int selection, int power, bool battleOnly)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             if (battleOnly)
                 target.battleOnlyPower += power;
             else
@@ -1619,7 +1625,7 @@ namespace VanguardEngine
         public void AddCritical(int selection, int critical)
         {
             Card target = FindActiveUnit(selection);
-            target.tempPower += critical;
+            target.tempCritical += critical;
             Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
         }
 
@@ -1662,11 +1668,24 @@ namespace VanguardEngine
             else
                 target.abilityDrive[new Tuple<int, int>(tempID, abilityNum)] = drive;
         }
-        
+
+        public void SetAbilityCritical(int tempID, int abilityNum, int selection, int critical)
+        {
+            Card target = _field.CardCatalog[selection];
+            if (!target.abilityCritical.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
+            {
+                target.abilityCritical.Add(new Tuple<int, int>(tempID, abilityNum), critical);
+            }
+            else
+                target.abilityCritical[new Tuple<int, int>(tempID, abilityNum)] = critical;
+        }
+
         public void Stand(int selection)
         {
             Card target = FindActiveUnit(selection);
             target.upright = true;
+            if (!_stoodByCardEffect.Contains(target))
+                _stoodByCardEffect.Add(target);
         }
 
         public void Heal(int selection)
@@ -1719,7 +1738,6 @@ namespace VanguardEngine
         public void AddToSoul(List<int> selections)
         {
             Card cardToAdd;
-            List<Card> location = null;
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
@@ -1730,9 +1748,6 @@ namespace VanguardEngine
                         if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
                             _field.Units[i] = null;
                     }
-                }
-                else if (cardToAdd.location == Location.RC)
-                {
                     for (int i = EnemyFrontLeft; i < EnemyVanguard; i++)
                     {
                         if (_field.Units[i] != null && _field.Units[i].tempID == cardToAdd.tempID)
@@ -1975,6 +1990,8 @@ namespace VanguardEngine
             foreach (int tempID in cardsToStand)
             {
                 _field.CardCatalog[tempID].upright = true;
+                if (!_stoodByCardEffect.Contains(_field.CardCatalog[tempID]))
+                    _stoodByCardEffect.Add(_field.CardCatalog[tempID]);
             }
         }
 
@@ -2087,11 +2104,15 @@ namespace VanguardEngine
             ResetPower();
             _riddenOnThisTurn.Clear();
             _finalRush = false;
-            _field.IncrementTurn();
             _field.SetPersonaRide(false, _playerID);
-            _field.SetPersonaRide(false, _enemyID);
             _canAttackFromBackRow.Clear();
             _bonusSkills.Clear();
+            _stoodByCardEffect.Clear();
+        }
+
+        public void IncrementTurn()
+        {
+            _field.IncrementTurn();
         }
 
         public void ResetCardValues(Card card)
@@ -2103,6 +2124,8 @@ namespace VanguardEngine
             card.tempCritical = 0;
             card.abilityPower.Clear();
             card.abilityDrive.Clear();
+            card.abilityShield.Clear();
+            card.abilityCritical.Clear();
             foreach (Card item in _field.Units)
             {
                 if (item != null)
@@ -2122,6 +2145,8 @@ namespace VanguardEngine
             card.overDress = false;
             if (_bonusSkills.ContainsKey(card.tempID))
                 _bonusSkills[card.tempID].Clear();
+            if (_stoodByCardEffect.Contains(card))
+                _stoodByCardEffect.Remove(card);
         }
 
         public void OnRideAbilityResolved(int tempID)
@@ -2258,6 +2283,14 @@ namespace VanguardEngine
         public void FinalRush()
         {
             _finalRush = true;
+        }
+
+        public bool StoodByCardEffect(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (_stoodByCardEffect.Contains(card))
+                return true;
+            return false;
         }
 
         public int NumOriginalDress(int tempID)

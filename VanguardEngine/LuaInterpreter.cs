@@ -550,11 +550,27 @@ namespace VanguardEngine
                                 newPool.Add(card);
                         }
                     }
+                    if (other == Other.World)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.orderType == OrderType.World)
+                                newPool.Add(card);
+                        }
+                    }
                     if (other == Other.Standing)
                     {
                         foreach (Card card in currentPool)
                         {
                             if (card.upright)
+                                newPool.Add(card);
+                        }
+                    }
+                    if (other == Other.Resting)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (!card.upright)
                                 newPool.Add(card);
                         }
                     }
@@ -839,6 +855,16 @@ namespace VanguardEngine
             return _player1.InFinalRush();
         }
 
+        public bool IsDarkNight()
+        {
+            return false;
+        }
+
+        public bool IsAbyssalDarkNight()
+        {
+            return false;
+        }
+
         public bool VanguardIs(string name)
         {
             if (_player1.Vanguard().name == name)
@@ -860,6 +886,11 @@ namespace VanguardEngine
         public bool IsPlayerTurn()
         {
             return _player1.IsPlayerTurn();
+        }
+
+        public bool StoodByCardEffect()
+        {
+            return _player1.StoodByCardEffect(_card.tempID);
         }
 
         public int AttackingUnitLocation()
@@ -1138,6 +1169,15 @@ namespace VanguardEngine
             foreach (Card card in cards)
             {
                 _player1.SetAbilityDrive(_card.tempID, _abilityNumber, card.tempID, drive);
+            }
+        }
+
+        public void SetAbilityCritical(int paramNum, int critical)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+            {
+                _player1.SetAbilityCritical(_card.tempID, _abilityNumber, card.tempID, critical);
             }
         }
 
@@ -1448,6 +1488,8 @@ namespace VanguardEngine
         public const int Standing = 4;
         public const int OverDress = 5;
         public const int OrLess = 6;
+        public const int Resting = 7;
+        public const int World = 8;
     }
 
     class AbilityType

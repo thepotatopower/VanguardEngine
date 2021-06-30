@@ -1,15 +1,17 @@
--- Deep Soniker
+-- Cardinal Noid, Routis
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 1
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
+		return q.Location, l.Deck, q.Other, o.World, q.Count, 1
+	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
@@ -24,7 +26,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() then
+		if obj.PlacedOnVC() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -40,12 +42,12 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SoulCharge(1)
+		obj.Search(1)
 	elseif n == 2 then
-		if obj.IsPlayerTurn() and obj.SoulCount() >= 10 then
-			obj.SetAbilityPower(1, 10000)
+		if (obj.IsAttackingUnit() or obj.IsBooster()) and (obj.IsDarkNight() and obj.IsAbyssalDarkNight()) then
+			obj.SetAbilityPower(2, 2000)
 		else
-			obj.SetAbilityPower(1, 0)
+			obj.SetAbilityPower(2, 0)
 		end
 	end
 	return 0

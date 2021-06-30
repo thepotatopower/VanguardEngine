@@ -42,12 +42,14 @@ function Cost(n)
 		obj.ChooseAddToSoul(1)
 	elseif n == 2 then
 		obj.CounterBlast(2)
+	end
 end
 
 function Activate(n)
 	if n == 1 then
 		obj.Draw(1)
 		obj.SoulCharge(1)
+		obj.OnRideAbilityResolved()
 	elseif n == 2 then
 		obj.SoulCharge(2)
 	end

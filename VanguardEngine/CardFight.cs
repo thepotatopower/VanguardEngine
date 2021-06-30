@@ -68,6 +68,7 @@ namespace VanguardEngine
             CardEventArgs args;
             int RPS1 = 0, RPS2 = 0;
             int first = 0;
+            string input;
             while (RPS1 == RPS2)
             {
                 RPS1 = _inputManager.RPS();
@@ -112,6 +113,8 @@ namespace VanguardEngine
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
             TriggerCheck(player2, player1, false);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             while (true)
             {
                 actingPlayer = player1;
@@ -141,6 +144,7 @@ namespace VanguardEngine
                         Console.WriteLine("----------\nPLAYER 1 WINS.");
                     else
                         Console.WriteLine("PLAYER 2 WINS.");
+                    input = Console.ReadLine();
                     return;
                 }
                 Console.WriteLine("----------\nEND PHASE");
@@ -151,6 +155,8 @@ namespace VanguardEngine
                     OnEndPhase(this, args);
                 }
                 player1.EndTurn();
+                player2.EndTurn();
+                player1.IncrementTurn();
                 _abilities.EndTurn();
                 _activatedOrder = false;
                 _turn++;
@@ -408,14 +414,36 @@ namespace VanguardEngine
 
         public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int circle)
         {
-            int selection = _inputManager.SelectFromList(cardsToSelect, max, min, "Choose card to Call.")[0];
-            int selectedCircle = 0;
-            if (circle < 0)
-                selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
-            else
-                selectedCircle = circle;
-            player1.SuperiorCall(selectedCircle, selection);
-            _abilities.ResetActivation(selection);
+            int selection = 0;
+            List<int> selections;
+            int selectedCircle = 0; 
+            for (int i = 0; i < max; i++)
+            {
+                if (i == min)
+                {
+                    selections = _inputManager.SelectFromList(cardsToSelect, 1, 0, "Choose card to Call.");
+                    if (selections.Count == 0)
+                        break;
+                    else
+                        selection = selections[0];
+                }
+                else
+                    selection = _inputManager.SelectFromList(cardsToSelect, 1, 1, "Choose card to Call.")[0];
+                foreach (Card card in cardsToSelect)
+                {
+                    if (card.tempID == selection)
+                    {
+                        cardsToSelect.Remove(card);
+                        break;
+                    }
+                }
+                if (circle < 0)
+                    selectedCircle = _inputManager.SelectCallLocation("Choose RC.");
+                else
+                    selectedCircle = circle;
+                player1.SuperiorCall(selectedCircle, selection);
+                _abilities.ResetActivation(selection);
+            }
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
         }
 
