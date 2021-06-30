@@ -129,6 +129,7 @@ namespace VanguardEngine
         public const int Set = 2;
         public const int Music = 3;
         public const int Prison = 4;
+        public const int World = 5;
     }
 
     class Skill
