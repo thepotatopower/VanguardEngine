@@ -1,4 +1,4 @@
--- Dragon Deity King of Resurgence, Dragveda
+-- Hades Deity King of Resentment, Gallmageheld
 
 function NumberOfAbilities()
 	return 1
@@ -22,7 +22,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() and obj.CanStand(1) then
+		if obj.OnTriggerZone() then
 			return true
 		end
 	end
@@ -34,7 +34,8 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseStand(1)
+		obj.AddCirclePower(FL.PlayerVanguard, 10000)
+		obj.AddCircleCritical(FL.PlayerVanguard, 1)
 	end
 	return 0
 end

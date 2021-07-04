@@ -70,12 +70,24 @@ namespace VanguardEngine
         public virtual bool YesNo(int request)
         {
             prompt = request;
+            string_input = "";
+            WaitForInput(YesNo_Input);
+            return bool_input;
+        }
+
+        public virtual bool YesNo(string query)
+        {
+            prompt = PromptType.UniqueQuery;
+            string_input = query;
             WaitForInput(YesNo_Input);
             return bool_input;
         }
 
         protected virtual void YesNo_Input()
         {
+            Console.WriteLine("----------");
+            if (string_input != "")
+                Console.WriteLine(string_input);
             Console.WriteLine("1. Yes\n2. No");
             int input = SelectPrompt(2);
             if (input == 1)
@@ -481,6 +493,49 @@ namespace VanguardEngine
             return false;
         }
 
+        public List<int> ChooseOrder(List<Card> cardsToRearrange)
+        {
+            Console.WriteLine("Choose order for card(s).");
+            cardsToSelect.Clear();
+            cardsToSelect.AddRange(cardsToRearrange);
+            WaitForInput(ChooseOrder_Input);
+            return intlist_input;
+        }
+
+        public void ChooseOrder_Input()
+        {
+            int selection = 0;
+            List<Card> newOrder = new List<Card>();
+            string output;
+            while (selection < cardsToSelect.Count + 1)
+            {
+                for (int i = 0; i < cardsToSelect.Count; i++)
+                {
+                    output = i + 1 + ". " + cardsToSelect[i].name;
+                    if (newOrder.Contains(cardsToSelect[i]))
+                        output += "(" + (newOrder.IndexOf(cardsToSelect[i]) + 1) + ")";
+                    Console.WriteLine(output);
+                }
+                if (newOrder.Count == cardsToSelect.Count)
+                {
+                    Console.WriteLine(cardsToSelect.Count + 1 + ". Finish selecting.");
+                    selection = SelectPrompt(4);
+                }
+                else
+                    selection = SelectPrompt(3);
+                if (selection < 4)
+                {
+                    if (newOrder.Contains(cardsToSelect[selection - 1]))
+                        newOrder.Remove(cardsToSelect[selection - 1]);
+                    else
+                        newOrder.Add(cardsToSelect[selection - 1]);
+                }
+            }
+            foreach (Card card in newOrder)
+                intlist_input.Add(card.tempID);
+            oSignalEvent.Set();
+        }
+
         public List<int> SelectFromList(List<Card> cards, int count, int min, string query)
         {
             _query = query;
@@ -541,6 +596,23 @@ namespace VanguardEngine
             int_input = selection;
             oSignalEvent.Set();
         }
+
+        public void DisplayCards(List<Card> cards)
+        {
+            cardsToSelect.Clear();
+            cardsToSelect.AddRange(cards);
+            WaitForInput(DisplayCards_Input);
+        }
+
+        protected void DisplayCards_Input()
+        {
+            Console.WriteLine("----------");
+            for (int i = 0; i < cardsToSelect.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+            }
+            oSignalEvent.Set();
+        }
     }
 
     public class PromptType
@@ -553,6 +625,7 @@ namespace VanguardEngine
         public const int AddCritical = 5;
         public const int Stand = 6;
         public const int OverDress = 7;
+        public const int UniqueQuery = 8;
     }
 }
 

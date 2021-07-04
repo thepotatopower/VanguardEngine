@@ -10,8 +10,11 @@ namespace VanguardEngine
         protected List<Card> _player2Hand = new List<Card>();
         protected List<Card> _player1Deck = new List<Card>();
         protected List<Card> _player2Deck = new List<Card>();
-        protected List<Card> _cardCatalog = new List<Card>();
+        protected List<Card> _tokens = new List<Card>();
+        protected Card[] _cardCatalog = new Card[200];
         protected Card[] _units = new Card[14];
+        protected int[] _circlePower = new int[14];
+        protected int[] _circleCritical = new int[14];
         protected List<Card> _GC = new List<Card>();
         protected bool _sentinel = false;
         protected int _attacker = -1;
@@ -25,8 +28,8 @@ namespace VanguardEngine
         protected List<Card> _player2Damage = new List<Card>();
         protected List<Card> _player1Bind = new List<Card>();
         protected List<Card> _player2Bind = new List<Card>();
-        protected Card _player1Trigger;
-        protected Card _player2Trigger;
+        protected Card[] _player1Trigger = new Card[1];
+        protected Card[] _player2Trigger = new Card[1];
         protected List<Card> _player1Order = new List<Card>();
         protected List<Card> _player2Order = new List<Card>();
         protected List<Card> _player1RideDeck = new List<Card>();
@@ -37,6 +40,8 @@ namespace VanguardEngine
         protected List<Card> _player2Looking = new List<Card>();
         protected Card _player1Prison = null;
         protected Card _player2Prison = null;
+        protected Card _player1World = null;
+        protected Card _player2World = null;
         protected List<Card> _player1Prisoners = new List<Card>();
         protected List<Card> _player2Prisoners = new List<Card>();
         protected Player _player2Player;
@@ -55,7 +60,7 @@ namespace VanguardEngine
             set => _player2Deck = value;
         }
 
-        public List<Card> CardCatalog
+        public Card[] CardCatalog
         {
             get => _cardCatalog;
             set => _cardCatalog = value;
@@ -79,6 +84,16 @@ namespace VanguardEngine
         public Card[] Units
         {
             get => _units;
+        }
+
+        public int[] CirclePower
+        {
+            get => _circlePower;
+        }
+
+        public int[] CircleCritical
+        {
+            get => _circleCritical;
         }
 
         public List<Card> Player1RideDeck
@@ -170,16 +185,14 @@ namespace VanguardEngine
             set => _booster = value;
         }
 
-        public Card Player1Trigger
+        public Card[] Player1Trigger
         {
             get => _player1Trigger;
-            set => _player1Trigger = value;
         }
 
-        public Card Player2Trigger
+        public Card[] Player2Trigger
         {
             get => _player2Trigger;
-            set => _player2Trigger = value;
         }
 
         public List<Card> Player1DamageZone
@@ -212,6 +225,16 @@ namespace VanguardEngine
             get => _player2Prisoners;
         }
 
+        public Card Player1World
+        {
+            get => _player1World;
+        }
+
+        public Card Player2World
+        {
+            get => _player2World;
+        }
+
         public int Turn
         {
             get => _turn;
@@ -222,8 +245,10 @@ namespace VanguardEngine
             _turn++;
         }
 
-        public void Initialize(List<Card> deck1, List<Card> deck2)
+        public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens)
         {
+            foreach (Card card in tokens)
+                _tokens.Add(card);
             _units[FL.PlayerVanguard] = deck1[0].Clone();
             _units[FL.PlayerVanguard].faceup = false;
             _units[FL.PlayerVanguard].location = Location.Field;
@@ -242,18 +267,26 @@ namespace VanguardEngine
                 _player1Deck.Add(deck1[i].Clone());
                 _player2Deck.Add(deck2[i].Clone());
             }
-            for (int i = 0; i < deck1.Count + deck2.Count; i++)
-            {
-                _cardCatalog.Add(null);
-            }
             foreach (Card card in _player1Deck)
+            {
                 _cardCatalog[card.tempID] = card;
+                card.originalOwner = 1;
+            }
             foreach (Card card in _player1RideDeck)
+            {
                 _cardCatalog[card.tempID] = card;
+                card.originalOwner = 1;
+            }
             foreach (Card card in _player2Deck)
+            {
                 _cardCatalog[card.tempID] = card;
+                card.originalOwner = 2;
+            }
             foreach (Card card in _player2RideDeck)
+            {
                 _cardCatalog[card.tempID] = card;
+                card.originalOwner = 2;
+            }
             _cardCatalog[_units[FL.PlayerVanguard].tempID] = _units[FL.PlayerVanguard];
             _cardCatalog[_units[FL.EnemyVanguard].tempID] = _units[FL.EnemyVanguard];
             Shuffle(_player1Deck);
@@ -318,6 +351,30 @@ namespace VanguardEngine
                 _player1PersonaRide = active;
             else
                 _player2PersonaRide = active;
+        }
+
+        public int CreateToken(string tokenID)
+        {
+            Card template = null;
+            foreach (Card card in _tokens)
+            {
+                if (card.id == tokenID)
+                {
+                    template = card;
+                    break;
+                }
+            }
+            Card token = template.Clone();
+            for (int i = 0; i < _cardCatalog.Length; i++)
+            {
+                if (_cardCatalog[i] == null)
+                {
+                    token.tempID = i;
+                    _cardCatalog[i] = token;
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 

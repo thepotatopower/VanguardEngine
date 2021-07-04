@@ -1,17 +1,14 @@
--- Dragon Deity King of Resurgence, Dragveda
+-- Light Dragon Diety of Honors, Amartinoa
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 1
+	return 0
 end
 
 function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerVC, q.Count, 1
-	end
 end
 
 function ActivationRequirement(n)
@@ -22,7 +19,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() and obj.CanStand(1) then
+		if obj.OnTriggerZone() then
 			return true
 		end
 	end
@@ -34,7 +31,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseStand(1)
+		obj.RearguardDriveCheck()
 	end
 	return 0
 end

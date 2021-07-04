@@ -17,6 +17,7 @@ namespace VanguardEngine
         public int tempPower = 0;
         public int battleOnlyPower = 0;
         public int tempCritical = 0;
+        public int tempDrive = 0;
         public Dictionary<Tuple<int, int>, int> abilityPower = new Dictionary<Tuple<int, int>, int>();
         public Dictionary<Tuple<int, int>, int> abilityShield = new Dictionary<Tuple<int, int>, int>();
         public Dictionary<Tuple<int, int>, int> abilityDrive = new Dictionary<Tuple<int, int>, int>();
@@ -40,7 +41,9 @@ namespace VanguardEngine
         public bool upright = true;
         public bool overDress = false;
         public bool targetImmunity = false;
+        public bool alchemagic = false;
         public int location = Location.Deck;
+        public int originalOwner = 0;
         public List<Card> soul = new List<Card>();
 
         public Card Clone()

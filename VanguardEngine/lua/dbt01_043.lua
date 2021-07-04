@@ -1,24 +1,22 @@
--- Cardinal Noid, Routis
+-- Hollowing Moonlit Night
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 1
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Other, o.World, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+		return q.Location, l.Soul, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
 	elseif n == 2 then
 		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	end
@@ -26,11 +24,11 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.Exists(1) then
+		if obj.CanSB(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() then
+		if obj.IsWorld() then
 			return true
 		end
 	end
@@ -38,16 +36,24 @@ function CheckCondition(n)
 end
 
 function Cost(n)
+	if n == 1 then
+		obj.SoulBlast(1)
+	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.Search(1)
+		obj.SetWorld()
+		obj.Draw(1)
 	elseif n == 2 then
-		if (obj.IsAttackingUnit() or obj.IsBooster()) and (obj.IsDarkNight() or obj.IsAbyssalDarkNight()) then
-			obj.SetAbilityPower(2, 2000)
+		if obj.OnlyWorlds() then
+			if obj.NumWorlds() == 1 then
+				obj.DarkNight()
+			elseif obj.NumWorlds() >= 2 then
+				obj.AbyssalDarkNight()
+			end
 		else
-			obj.SetAbilityPower(2, 0)
+			obj.NoWorld()
 		end
 	end
 	return 0

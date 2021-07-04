@@ -1,28 +1,30 @@
--- Dragon Deity King of Resurgence, Dragveda
+-- Painkiller Angel
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 1
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerVC, q.Count, 1
+		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 2 then
+		return q.Location, l.Soul, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() and obj.CanStand(1) then
+		if obj.IsBooster() and obj.CanSB(2) then
 			return true
 		end
 	end
@@ -30,11 +32,15 @@ function CheckCondition(n)
 end
 
 function Cost(n)
+	if n == 1 then
+		obj.SoulBlast(2)
+	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseStand(1)
+		obj.AddToSoul(1)
+		obj.Draw(1)
 	end
 	return 0
 end

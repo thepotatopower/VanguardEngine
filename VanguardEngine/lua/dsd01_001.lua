@@ -14,7 +14,7 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.Drop, q.Grade, 0
 	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Type, t.overDress
+		return q.Location, l.PlayerRC, q.Type, u.overDress
 	elseif n == 4 then
 		return q.Location, l.PlayerVC
 	elseif n == 5 then

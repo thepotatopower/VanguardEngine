@@ -1,4 +1,4 @@
--- Cardinal Noid, Routis
+-- Mysterious Rain Spiritualist, Zorga
 
 function NumberOfAbilities()
 	return 2
@@ -10,27 +10,27 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Other, o.World, q.Count, 1
+		return q.Location, l.Damage, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+		return q.Location, l.Drop, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
-	elseif n == 2 then
 		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+	elseif n == 2 then
+		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.Exists(1) then
+		if obj.IsVanguard() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() then
+		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(1) and obj.Exists(2) then
 			return true
 		end
 	end
@@ -38,17 +38,16 @@ function CheckCondition(n)
 end
 
 function Cost(n)
+	if n == 2 then
+		obj.CounterBlast(1)
+	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.Search(1)
+		obj.SetAlchemagic()
 	elseif n == 2 then
-		if (obj.IsAttackingUnit() or obj.IsBooster()) and (obj.IsDarkNight() or obj.IsAbyssalDarkNight()) then
-			obj.SetAbilityPower(2, 2000)
-		else
-			obj.SetAbilityPower(2, 0)
-		end
+		obj.SuperiorCall(2)
 	end
 	return 0
 end

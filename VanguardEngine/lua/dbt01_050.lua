@@ -1,4 +1,4 @@
--- Cardinal Noid, Routis
+-- Black Tears Husk Dragon
 
 function NumberOfAbilities()
 	return 2
@@ -9,8 +9,8 @@ function NumberOfParams()
 end
 
 function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Deck, q.Other, o.World, q.Count, 1
+	if n == 1 then 
+		return q.Location, l.Drop, q.Other, o.NormalOrder, q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	elseif n == 2 then
 		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	end
@@ -42,10 +42,10 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Search(1)
+		obj.ChooseAddToHand(1)
 	elseif n == 2 then
-		if (obj.IsAttackingUnit() or obj.IsBooster()) and (obj.IsDarkNight() or obj.IsAbyssalDarkNight()) then
-			obj.SetAbilityPower(2, 2000)
+		if obj.OrderPlayed() then
+			obj.SetAbilityPower(2, 5000)
 		else
 			obj.SetAbilityPower(2, 0)
 		end
