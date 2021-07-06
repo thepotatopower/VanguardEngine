@@ -25,6 +25,7 @@ namespace VanguardEngine
         public Card card_input;
         string _query;
         string[] _list;
+        List<int> _ints = new List<int>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -271,39 +272,51 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectCallLocation(string query)
+        public virtual int SelectCallLocation(string query, List<int> selectedCircles)
         {
             _query = query;
+            _ints.Clear();
+            _ints.AddRange(selectedCircles);
             WaitForInput(SelectCallLocation_Input);
             return int_input;
         }
 
         protected virtual void SelectCallLocation_Input()
         {
+            bool proceed = false;
             Console.WriteLine("----------\nChoose location.\n" +
                             "1. Front left.\n" +
                             "2. Back left.\n" +
                             "3. Back middle.\n" +
                             "4. Front right.\n" +
                             "5. Back right.\n");
-            int_input = SelectPrompt(5);
-            switch (int_input)
+            while (!proceed)
             {
-                case 1:
-                    int_input = FL.PlayerFrontLeft;
-                    break;
-                case 2:
-                    int_input = FL.PlayerBackLeft;
-                    break;
-                case 3:
-                    int_input = FL.PlayerBackCenter;
-                    break;
-                case 4:
-                    int_input = FL.PlayerFrontRight;
-                    break;
-                case 5:
-                    int_input = FL.PlayerBackRight;
-                    break;
+                int_input = SelectPrompt(5);
+                if (!_ints.Contains(int_input))
+                {
+                    proceed = true;
+                    switch (int_input)
+                    {
+                        case 1:
+                            int_input = FL.PlayerFrontLeft;
+                            break;
+                        case 2:
+                            int_input = FL.PlayerBackLeft;
+                            break;
+                        case 3:
+                            int_input = FL.PlayerBackCenter;
+                            break;
+                        case 4:
+                            int_input = FL.PlayerFrontRight;
+                            break;
+                        case 5:
+                            int_input = FL.PlayerBackRight;
+                            break;
+                    }
+                }
+                else
+                    Console.WriteLine("This circle has already been selected.");
             }
             oSignalEvent.Set();
         }
@@ -412,12 +425,34 @@ namespace VanguardEngine
             int selection = 0;
             string output;
             List<Card> cards = _player1.GetGuardableCards();
-            Console.WriteLine("Choose card to guard with.");
+            Console.WriteLine("Choose card to put on Guardian Circle.");
             for (int i = 0; i < cards.Count; i++)
             {
                 output = i + 1 + ". " + cards[i].name;
                 if (cards[i].location == Location.PlayerRC)
                     output += " [Intercept]";
+                Console.WriteLine(output);
+            }
+            selection = SelectPrompt(cards.Count) - 1;
+            int_input = cards[selection].tempID;
+            oSignalEvent.Set();
+        }
+
+        public virtual int SelectCardToGuard()
+        {
+            WaitForInput(SelectCardToGuard_Input);
+            return int_input;
+        }
+
+        protected virtual void SelectCardToGuard_Input()
+        {
+            int selection = 0;
+            string output;
+            List<Card> cards = _player1.GetAttackedCards();
+            Console.WriteLine("Choose card to guard.");
+            for (int i = 0; i < cards.Count; i++)
+            {
+                output = i + 1 + ". " + cards[i].name;
                 Console.WriteLine(output);
             }
             selection = SelectPrompt(cards.Count) - 1;
@@ -485,6 +520,8 @@ namespace VanguardEngine
 
         public bool CheckForMandatoryEffects(List<Ability> abilities)
         {
+            if (_player1.IsAlchemagic())
+                return true;
             foreach (Ability ability in abilities)
             {
                 if (ability.isMandatory)

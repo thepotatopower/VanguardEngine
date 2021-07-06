@@ -1,30 +1,32 @@
--- Grief, Despair, and Rejection
+-- Dragritter, Alwaith
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Damage, q.Count, 1
-	elseif n == 2 then 
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 3
+	elseif n == 2 then
+		return q.Location, l.Soul, q.Count, 1
+	elseif n == 3 then
+		return q.Location, l.EnemyRC, q.Grade, 2, q.Grade, 3, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.AlchemagicCB, 1
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanCB(1) and obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then 
+		if obj.LastPlacedOnRC() and obj.CanCB(1) and obj.CanSB(2) and obj.Exists(3) then
 			return true
 		end
 	end
@@ -34,12 +36,13 @@ end
 function Cost(n)
 	if n == 1 then
 		obj.CounterBlast(1)
+		obj.SoulBlast(2)
 	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddTempPower(2, 10000)
+		obj.ChooseRetire(3)
 	end
 	return 0
 end

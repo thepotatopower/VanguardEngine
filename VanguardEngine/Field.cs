@@ -16,9 +16,10 @@ namespace VanguardEngine
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
         protected List<Card> _GC = new List<Card>();
-        protected bool _sentinel = false;
+        protected Dictionary<int, List<Card>> _guardians = new Dictionary<int, List<Card>>();
+        protected List<Card> _sentinel = new List<Card>();
         protected int _attacker = -1;
-        protected int _attacked = -1;
+        protected List<Card> _attacked = new List<Card>();
         protected int _booster = -1;
         protected bool _player1PersonaRide = false;
         protected bool _player2PersonaRide = false;
@@ -111,10 +112,14 @@ namespace VanguardEngine
             get => _GC;
         }
 
-        public bool Sentinel
+        public Dictionary<int, List<Card>> Guardians
+        {
+            get => _guardians;
+        }
+
+        public List<Card> Sentinel
         {
             get => _sentinel;
-            set => _sentinel = value;
         }
 
         public List<Card> Player1Drop
@@ -173,10 +178,9 @@ namespace VanguardEngine
             set => _attacker = value;
         }
 
-        public int Attacked
+        public List<Card> Attacked
         {
             get => _attacked;
-            set => _attacked = value;
         }
 
         public int Booster
@@ -251,10 +255,10 @@ namespace VanguardEngine
                 _tokens.Add(card);
             _units[FL.PlayerVanguard] = deck1[0].Clone();
             _units[FL.PlayerVanguard].faceup = false;
-            _units[FL.PlayerVanguard].location = Location.Field;
+            _units[FL.PlayerVanguard].location = Location.VC;
             _units[FL.EnemyVanguard] = deck2[0].Clone();
             _units[FL.EnemyVanguard].faceup = false;
-            _units[FL.EnemyVanguard].location = Location.Field;
+            _units[FL.EnemyVanguard].location = Location.VC;
             for (int i = 1; i < 4; i++)
             {
                 _player1RideDeck.Add(deck1[i].Clone());

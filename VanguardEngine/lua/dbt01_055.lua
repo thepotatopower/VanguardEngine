@@ -28,7 +28,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.AlchemagicSB, 1
 	end
 end
 
@@ -61,7 +61,6 @@ function Activate(n)
 		end
 		obj.SuperiorCall(7)
 		obj.AddTempPower(7, 5000)
-		obj.EndOrder()
 	end
 	return 0
 end

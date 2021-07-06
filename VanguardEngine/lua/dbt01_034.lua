@@ -1,7 +1,7 @@
--- Inheritance Maiden, Hendrina
+-- Shadow Leak Magician
 
 function NumberOfAbilities()
-	return 2
+	return 1
 end
 
 function NumberOfParams()
@@ -16,18 +16,12 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
-	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
-	if n == 1 then 
-		if obj.LastPlacedOnRC() then
-			return true
-		end
-	elseif n == 2 then
+	if n == 1 then
 		if obj.IsRearguard() then
 			return true
 		end
@@ -36,16 +30,11 @@ function CheckCondition(n)
 end
 
 function Cost(n)
-	if n == 2 then
-		obj.Retire(1)
-	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.Mill(3)
-	elseif n == 2 then
-		obj.AlchemagicFreeSB()
+		obj.TargetImmunity(1);
 	end
 	return 0
 end

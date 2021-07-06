@@ -13,11 +13,13 @@ namespace VanguardEngine
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
+        protected List<Card> _lastPlacedOnRCFromHand = new List<Card>();
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
         protected Card _lastOrderPlayed = null;
         protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
+        protected List<Card> _unitsHit = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Card _playedOrder;
         protected bool _rearguardDriveCheck = false;
@@ -29,6 +31,7 @@ namespace VanguardEngine
         protected bool _enemyRetiredThisTurn = false;
         protected bool _orderPlayed = false;
         protected bool _isAlchemagic = false;
+        protected bool _alchemagicFreeSB = false;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
         protected List<Card> PlayerDeck;
@@ -339,6 +342,18 @@ namespace VanguardEngine
             Console.WriteLine("----------\nDrew " + count + " card(s).");
         }
 
+        public void Mill(int count)
+        {
+            Card milled;
+            for (int i = 0; i < count; i++)
+            {
+                milled = PlayerDeck[0];
+                PlayerDeck.Remove(milled);
+                milled.location = Location.Drop;
+                PlayerDrop.Insert(0, milled);
+            }
+        }
+
         public void MulliganCards(List<int> selection)
         {
             int i = 0;
@@ -613,9 +628,9 @@ namespace VanguardEngine
             return callableCards;
         }
 
-        public int GetShield()
+        public int GetShield(int tempID)
         {
-            return CalculateShield();
+            return CalculateShield(tempID);
         }
 
         public bool CheckColumn(int column) //0 is left, 1 is right
@@ -711,7 +726,7 @@ namespace VanguardEngine
 
         public bool CanIntercept(Card card)
         {
-            if (card != null && card.skill == 1 && card != _field.Units[_field.Attacked] && (_field.Units[PlayerFrontLeft] == card || _field.Units[PlayerFrontRight] == card))
+            if (card != null && !_field.Attacked.Contains(card) && card.skill == 1 && (_field.Units[PlayerFrontLeft] == card || _field.Units[PlayerFrontRight] == card))
                 return true;
             return false;
         }
@@ -784,28 +799,43 @@ namespace VanguardEngine
             return _field.GetPersonaRide(_playerID);
         }
 
-        public int CalculateShield()
+        public int CalculateShield(int tempID)
         {
+            List<Card> guardians;
+            Card attacked = _field.CardCatalog[tempID];
+            if (!_field.Attacked.Contains(attacked))
+                return 0;
             int shield = 0;
-            if (_field.Sentinel)
+            if (_field.Sentinel.Contains(attacked))
                 return 1000000000;
-            foreach (Card card in _field.GC)
+            if (!_field.Guardians.ContainsKey(tempID))
+                return 0;
+            guardians = _field.Guardians[tempID];
+            if (guardians == null)
+                return 0;
+            foreach (Card card in guardians)
             {
-                shield += card.shield + card.tempShield;
-                foreach (Tuple<int, int> key in card.abilityShield.Keys)
-                    shield += card.abilityShield[key];
+                if (_field.GC.Contains(card))
+                {
+                    shield += card.shield + card.tempShield;
+                    foreach (Tuple<int, int> key in card.abilityShield.Keys)
+                        shield += card.abilityShield[key];
+                }
             }
             return shield;
         }
 
         public void PrintShield()
         {
-            if (_field.Sentinel)
+            foreach (Card card in _field.Attacked)
             {
-                Console.WriteLine("Perfect Shield is active.");
-                return;
+                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]))
+                {
+                    Console.WriteLine("Perfect Shield is active.");
+                    return;
+                }
+                Console.WriteLine("[" + card.name + "] Shield: " + (CalculateShield(card.tempID) + CalculatePowerOfUnit(GetCircle(card))));
             }
-            Console.WriteLine("Shield: " + (CalculateShield() + CalculatePowerOfUnit(_field.Attacked)));
         }
 
         public void PrintAttack()
@@ -966,7 +996,7 @@ namespace VanguardEngine
         {
             if (_field.Attacker == PlayerFrontLeft)
             {
-                if (_field.Units[PlayerBackRight] != null && CanBoost(_field.Units[PlayerBackRight]))
+                if (_field.Units[PlayerBackLeft] != null && CanBoost(_field.Units[PlayerBackLeft]))
                     return true;
             }
             else if (_field.Attacker == PlayerVanguard)
@@ -994,11 +1024,8 @@ namespace VanguardEngine
 
         public bool CanGuard()
         {
-            foreach (Card card in PlayerHand)
-            {
-                if (card.orderType < 0)
-                    return true;
-            }
+            if (GetGuardableCards().Count > 0)
+                return true;
             return false;
         }
 
@@ -1016,7 +1043,7 @@ namespace VanguardEngine
                 Vanguard = PlayerVanguard;
             else
                 Vanguard = EnemyVanguard;
-            if (_field.Attacked == Vanguard)
+            if (_field.Attacked.Contains(_field.Units[Vanguard]))
                 return true;
             return false;
         }
@@ -1035,7 +1062,17 @@ namespace VanguardEngine
         {
             foreach (Card card in _lastPlacedOnRC)
             {
-                if (card.tempID == tempID)
+                if (card.tempID == tempID && card.location == Location.RC)
+                    return true;
+            }
+            return false;
+        }
+
+        public bool IsLastPlacedOnRCFromHand(int tempID)
+        {
+            foreach (Card card in _lastPlacedOnRCFromHand)
+            {
+                if (card.tempID == tempID && card.location == Location.RC)
                     return true;
             }
             return false;
@@ -1100,31 +1137,44 @@ namespace VanguardEngine
                 return EnemyTrigger[0];
         }
 
+        public bool StillAttacking()
+        {
+            if (_field.Units[_field.Attacker] != null)
+                return true;
+            return false;
+        }
+
         public bool AttackHits()
         {
             Card attacker = _field.Units[_field.Attacker];
-            Card card = _field.Units[_field.Attacked];
             CardEventArgs args = new CardEventArgs();
-            if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield() + CalculatePowerOfUnit(_field.Attacked))
+            foreach (Card card in _field.Attacked)
             {
-                Console.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
-                if (OnAttackHits != null)
+                if (!GetAllUnitsOnField().Contains(card))
+                    return false;
+                if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID) + CalculatePowerOfUnit(GetCircle(card)))
                 {
-                    args.b = true;
-                    OnAttackHits(this, args);
+                    _unitsHit.Add(card);
+                    Console.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
+                    if (OnAttackHits != null)
+                    {
+                        args.b = true;
+                        OnAttackHits(this, args);
+                    }
                 }
+                else
+                {
+                    Console.WriteLine("----------\n" + attacker.name + "'s attack against " + card.name + " was successfully guarded!");
+                    if (OnAttackHits != null)
+                    {
+                        args.b = false;
+                        OnAttackHits(this, args);
+                    }
+                }
+            }
+            if (_unitsHit.Count > 0)
                 return true;
-            }
-            else
-            {
-                Console.WriteLine("----------\n" + attacker.name + "'s attack against " + card.name + " was successfully guarded!");
-                if (OnAttackHits != null)
-                {
-                    args.b = false;
-                    OnAttackHits(this, args);
-                }
-                return false;
-            }
+            return false;
         }
 
         public bool AttackerIsVanguard()
@@ -1200,7 +1250,6 @@ namespace VanguardEngine
             Card toBeRetired = null;
             List<Card> retired = new List<Card>();
             CardEventArgs args;
-            _lastPlacedOnRC.Clear();
             hand = PlayerHand;
             location = Convert(location);
             foreach (Card item in hand)
@@ -1285,23 +1334,26 @@ namespace VanguardEngine
             }
             card.upright = true;
             _lastPlacedOnRC.Add(card);
+            _lastPlacedOnRCFromHand.Add(card);
         }
 
-        public void SuperiorCall(int circle, int tempID)
+        public int SuperiorCall(int circle, int tempID)
         {
+            bool fromHand = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
             int loc = ToBeCalled.location;
             Card[] slots = _field.Units;
             List<Card> location = null;
-            if (!_isAlchemagic)
-                _lastPlacedOnRC.Clear();
             circle = Convert(circle);
             if (loc == Location.Drop)
                 location = PlayerDrop;
             else if (loc == Location.Deck)
                 location = PlayerDeck;
             else if (loc == Location.Hand)
+            {
                 location = PlayerHand;
+                fromHand = true;
+            }
             else if (loc == Location.Soul)
                 location = _field.Units[PlayerVanguard].soul;
             else if (loc == Location.Prison)
@@ -1343,6 +1395,12 @@ namespace VanguardEngine
             }
             _field.Shuffle(PlayerDeck);
             _lastPlacedOnRC.Add(ToBeCalled);
+            if (fromHand)
+            {
+                _lastPlacedOnRCFromHand.Add(ToBeCalled);
+                return 1;
+            }
+            return 0;
         }
 
         public void MoveRearguard(int location)
@@ -1460,7 +1518,7 @@ namespace VanguardEngine
             {
                 _field.Units[PlayerBackLeft].upright = false;
                 _field.Booster = PlayerBackLeft;
-                Console.WriteLine("----------\n" + _field.Units[PlayerBackLeft].name + " boosts " + _field.Units[PlayerFrontRight].name + "!");
+                Console.WriteLine("----------\n" + _field.Units[PlayerBackLeft].name + " boosts " + _field.Units[PlayerFrontLeft].name + "!");
             }
             else if (_field.Attacker == PlayerVanguard)
             {
@@ -1489,21 +1547,35 @@ namespace VanguardEngine
             Card Attacked = _field.CardCatalog[target];
             Attacker.upright = false;
             _field.Attacker = GetCircle(Attacker);
-            _field.Attacked = GetCircle(Attacked);
+            _field.Attacked.Add(Attacked);
             Console.WriteLine("----------\n" + Attacker.name + " attacks " + Attacked.name + "!");
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
                 args.playerID = _playerID;
                 args.card = Attacker;
-                args.i = _field.Attacked;
+                args.i = Attacked.tempID;
                 OnAttack(this, args);
             }
         }
 
-        public void Guard(int selection)
+        public List<Card> GetAttackedCards()
+        {
+            List<Card> cards = new List<Card>();
+            foreach (Card card in _field.Attacked)
+            {
+                if (GetAllUnitsOnField().Contains(card))
+                    cards.Add(card);
+            }
+            return cards;
+        }
+
+        public void Guard(int selection, int target)
         {
             Card card = _field.CardCatalog[selection];
+            if (!_field.Guardians.ContainsKey(target))
+                _field.Guardians[target] = new List<Card>();
+            _field.Guardians[target].Add(card);
             _lastPlacedOnGC.Clear();
             if (card.location == Location.Hand)
                 PlayerHand.Remove(card);
@@ -1524,9 +1596,9 @@ namespace VanguardEngine
             return;
         }
 
-        public void PerfectGuard()
+        public void PerfectGuard(int tempID)
         {
-            _field.Sentinel = true;
+            _field.Sentinel.Add(_field.CardCatalog[tempID]);
         }
 
         public void TargetImmunity(int tempID)
@@ -1586,7 +1658,8 @@ namespace VanguardEngine
         public void RetireAttackedUnit()
         {
             List<int> list = new List<int>();
-            list.Add(_field.Units[_field.Attacked].tempID);
+            foreach (Card card in _unitsHit)
+                list.Add(card.tempID);
             Retire(list);
         }
 
@@ -1873,6 +1946,8 @@ namespace VanguardEngine
                 cardToAdd = _field.CardCatalog[tempID];
                 if (drop.Contains(cardToAdd))
                     drop.Remove(cardToAdd);
+                if (_field.Units[PlayerVanguard].soul.Contains(cardToAdd))
+                    _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
                 cardToAdd.location = Location.Hand;
                 PlayerHand.Add(cardToAdd);
             }
@@ -1997,16 +2072,16 @@ namespace VanguardEngine
             Console.WriteLine("----------\nDamage taken!");
         }
 
-        public void PlayOrder(int tempID, bool alchemagic)
+        public void PlayOrder(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
-            if (alchemagic)
+            if (card.location == Location.Drop)
             {
                 PlayerBind.Add(card);
                 card.location = Location.Bind;
                 _isAlchemagic = true;
             }
-            else
+            else if (card.location == Location.Hand)
             {
                 _playedOrder = card;
                 _lastOrderPlayed = card;
@@ -2019,15 +2094,13 @@ namespace VanguardEngine
 
         public void EndOrder()
         {
-            if (_playedOrder != null)
+            if (_playedOrder != null && (_playedOrder.orderType == OrderType.Normal || _playedOrder.orderType == OrderType.Blitz))
             {
                 PlayerOrder.Remove(_playedOrder);
                 PlayerDrop.Add(_playedOrder);
                 _playedOrder.location = Location.Drop;
                 _playedOrder = null;
             }
-            else
-                _isAlchemagic = false;
         }
 
         public bool OrderPlayed()
@@ -2048,6 +2121,7 @@ namespace VanguardEngine
         public void EndAlchemagic()
         {
             _isAlchemagic = false;
+            _alchemagicFreeSB = false;
         }
 
         public bool CanAlchemagic()
@@ -2063,6 +2137,16 @@ namespace VanguardEngine
         public bool IsAlchemagic()
         {
             return _isAlchemagic;
+        }
+
+        public void AlchemagicFreeSB()
+        {
+            _alchemagicFreeSB = true;
+        }
+
+        public bool AlchemagicFreeSBAvailable()
+        {
+            return _alchemagicFreeSB;
         }
 
         public void SetPrison()
@@ -2171,6 +2255,19 @@ namespace VanguardEngine
             return _field.CreateToken(tokenID);
         }
 
+        public bool CanCB(int count)
+        {
+            int faceup = 0;
+            foreach (Card card in PlayerDamage)
+            {
+                if (card.faceup)
+                    faceup++;
+            }
+            if (faceup < count)
+                return false;
+            return true;
+        }
+
         public void CounterBlast(List<int> cardsToCB)
         {
             List<Card> damage = null;
@@ -2186,6 +2283,13 @@ namespace VanguardEngine
                     }
                 }
             }
+        }
+
+        public bool CanSB(int count)
+        {
+            if (_field.Units[PlayerVanguard].soul.Count < count)
+                return false;
+            return true;
         }
 
         public void SoulBlast(List<int> cardsToSB)
@@ -2371,9 +2475,10 @@ namespace VanguardEngine
 
         public void EndAttack()
         {
-            _field.Sentinel = false;
+            _field.Sentinel.Clear();
             _field.Attacker = -1;
-            _field.Attacked = -1;
+            _field.Attacked.Clear();
+            _field.Guardians.Clear();
             _field.Booster = -1;
             _lastRevealedTriggers.Clear();
             foreach (Card unit in _field.Units)
@@ -2389,6 +2494,7 @@ namespace VanguardEngine
             _riddenOnThisTurn.Clear();
             _rearguardDriveCheck = false;
             _finalRush = false;
+            _alchemagicFreeSB = false;
             _field.SetPersonaRide(false, _playerID);
             _canAttackFromBackRow.Clear();
             _bonusSkills.Clear();
@@ -2398,6 +2504,12 @@ namespace VanguardEngine
                 _field.CirclePower[i] = 0;
             for (int i = 0; i < _field.CircleCritical.Length; i++)
                 _field.CircleCritical[i] = 0;
+        }
+
+        public void AllAbilitiesResolved()
+        {
+            _lastPlacedOnRC.Clear();
+            _lastPlacedOnRCFromHand.Clear();
         }
 
         public void IncrementTurn()
@@ -2538,9 +2650,9 @@ namespace VanguardEngine
             return null;
         }
 
-        public Card AttackedUnit()
+        public List<Card> AttackedUnits()
         {
-            return _field.Units[_field.Attacked];
+            return _field.Attacked;
         }
 
         public int AttackingUnitLocation()
