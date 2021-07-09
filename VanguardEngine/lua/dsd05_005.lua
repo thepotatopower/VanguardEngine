@@ -24,7 +24,16 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and obj.HasPrison() and obj.Exists(2) then
+		if obj.IsRearguard() then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.HasPrison() and obj.Exists(2) then
 			return true
 		end
 	end

@@ -35,6 +35,15 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.HasPrison() and obj.Exists(3) then
+			return true
+		end
+	end
+	return false
+end
+
 function Cost(n)
 	obj.CounterBlast(1)
 	obj.SoulBlast(2)

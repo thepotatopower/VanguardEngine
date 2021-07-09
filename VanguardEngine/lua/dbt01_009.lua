@@ -30,7 +30,16 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(1) and obj.Exists(2) then
+		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(1) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 2 then
+		if obj.Exists(2) then
 			return true
 		end
 	end

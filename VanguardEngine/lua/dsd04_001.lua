@@ -28,7 +28,16 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() and obj.CanCB(1) and obj.Exists(2) then
+		if obj.IsAttackingUnit() and obj.CanCB(1) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(2) then
 			return true
 		end
 	end

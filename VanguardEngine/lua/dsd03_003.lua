@@ -43,6 +43,15 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		return true
+	end
+	return false
+end
+
 function Cost(n)
 	if n == 1 then
 		obj.ChooseReveal(1)

@@ -31,6 +31,15 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(2) then
+			return true
+		end
+	end
+	return false
+end
+
 function Cost(n)
 	if n == 1 then
 		obj.CounterBlast(1)

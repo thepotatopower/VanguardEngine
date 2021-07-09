@@ -38,7 +38,18 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(4) and obj.HasPrison() and obj.Exists(6) then
+		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(4) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		if obj.HasPrison() and obj.Exists(6) then
 			return true
 		end
 	end

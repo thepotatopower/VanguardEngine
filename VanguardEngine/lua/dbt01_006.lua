@@ -34,7 +34,18 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.LastPlacedOnRC() and obj.CanSB(3) and obj.HasPrison() and obj.Exists(1) then
+		if obj.LastPlacedOnRC() and obj.CanSB(3) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		if obj.HasPrison() and obj.Exists(1) then
 			return true
 		end
 	end

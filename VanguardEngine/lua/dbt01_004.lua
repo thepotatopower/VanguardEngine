@@ -14,7 +14,7 @@ function GetParam(n)
 	elseif n == 2 then 
 		return q.Location, l.Damage, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.EnemyRC, q.Count, 1
+		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
@@ -32,7 +32,18 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.Exists(3) and obj.CanCB(2) then
+		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.CanCB(2) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		if obj.Exists(3) then
 			return true
 		end
 	end

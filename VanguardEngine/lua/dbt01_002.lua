@@ -12,7 +12,7 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.PlayerRC, q.Count, 2, q.Other, o.Standing
 	elseif n == 2 then
-		return q.Location, l.EnemyRC, q.Count, 1
+		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
 	elseif n == 3 then
 		return q.Location, l.PlayerVC, q.Other, o.This
 	elseif n == 4 then
@@ -43,6 +43,17 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(2) then
+			return true
+		end
+	elseif n == 2 then
+		return true
+	end
+	return false
+end
+
 function Cost(n)
 	if n == 1 then
 		obj.ChooseRest(1)
@@ -53,7 +64,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		if obj.CanRetire(2) then
+		if obj.Exists(2) then
 			obj.ChooseRetire(2)
 		end
 		obj.AddTempPower(3, 10000)

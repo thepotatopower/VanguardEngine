@@ -29,6 +29,13 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	end
+	return false
+end
+
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddTempPower(1, 100000000)

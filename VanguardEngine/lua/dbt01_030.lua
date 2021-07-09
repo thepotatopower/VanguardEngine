@@ -14,7 +14,7 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.Soul, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.EnemyRC, q.Grade, 2, q.Grade, 3, q.Count, 1
+		return q.Location, l.EnemyRC, q.Grade, 2, q.Grade, 3, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
@@ -26,7 +26,16 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() and obj.CanCB(1) and obj.CanSB(2) and obj.Exists(3) then
+		if obj.LastPlacedOnRC() and obj.CanCB(1) and obj.CanSB(2) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(3) then
 			return true
 		end
 	end

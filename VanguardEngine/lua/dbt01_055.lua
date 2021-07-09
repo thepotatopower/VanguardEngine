@@ -34,7 +34,16 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(5) and obj.Exists(6) then 
+		if obj.CanSB(5) then 
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(6) then
 			return true
 		end
 	end

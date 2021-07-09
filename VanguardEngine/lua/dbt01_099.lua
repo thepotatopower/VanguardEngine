@@ -32,7 +32,18 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if not obj.Activated() and obj.IsRearguard() and obj.Exists(3) and obj.CanCB(2) and obj.Exists(1) then
+		if not obj.Activated() and obj.IsRearguard() and obj.Exists(3) and obj.CanCB(2) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		if obj.Exists(1) then
 			return true
 		end
 	end

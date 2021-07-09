@@ -114,6 +114,8 @@ namespace VanguardEngine
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
             TriggerCheck(player2, player1, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
             player1.SoulCharge(10);
             player2.SoulCharge(10);
             while (true)
@@ -319,6 +321,7 @@ namespace VanguardEngine
         {
             List<int> cardsToDiscard = _inputManager.SelectFromList(cardsToSelect, max, min, "Choose card(s) to discard.");
             player1.Discard(cardsToDiscard);
+            AddAbilitiesToQueue(player1, player2, Activation.OnDiscard);
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -515,6 +518,7 @@ namespace VanguardEngine
             int selection2;
             int drive;
             int critical;
+            List<int> selections;
             player1.InitiateAttack(attacker, target);
 
             if (player1.CanBeBoosted())
@@ -537,7 +541,7 @@ namespace VanguardEngine
                 if (!player1.StillAttacking())
                     break;
                 player2.PrintEnemyAttack();
-                if (player2.CanGuard())
+                if (true)
                 {
                     selection = _inputManager.SelectGuardPhaseAction();
                     if (selection == 1)
@@ -548,18 +552,21 @@ namespace VanguardEngine
                         player2.PrintShield();
                     else if (selection == 4)
                     {
-                        selection = _inputManager.SelectCardToGuardWith();
                         if (player2.GetAttackedCards().Count > 1)
                             selection2 = _inputManager.SelectCardToGuard();
                         else
                             selection2 = -1;
-                        player2.Guard(selection, -1);
+                        if (player2.MustGuardWithTwo())
+                            selections = _inputManager.SelectFromList(player2.GetGuardableCards(), 2, 2, "Choose card(s) to guard with.");
+                        else
+                            selections = _inputManager.SelectFromList(player2.GetGuardableCards(), 1, 1, "Choose card(s) to guard with.");
+                        player2.Guard(selections, selection2);
                         AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
                         ActivateAbilities(player2, player1, Activation.PlacedOnGC);
                     }
                     else if (selection == 5)
                     {
-                        if (!_activatedOrder)
+                        if (!player2.OrderPlayed())
                         {
                             AddAbilitiesToQueue(player2, player1, Activation.OnBlitzOrder);
                             ActivateAbilities(player2, player1, Activation.OnBlitzOrder);
@@ -571,15 +578,13 @@ namespace VanguardEngine
                     {
                         break;
                     }
-                    else if (selection == 7) //guard with specific card (for use outside of console only)
-                    {
-                        player2.Guard(_inputManager.intlist_input[0], -1);
-                        AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
-                        ActivateAbilities(player2, player1, Activation.PlacedOnGC);
-                    }
+                    //else if (selection == 7) //guard with specific card (for use outside of console only)
+                    //{
+                    //    player2.Guard(_inputManager.intlist_input[0], -1);
+                    //    AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
+                    //    ActivateAbilities(player2, player1, Activation.PlacedOnGC);
+                    //}
                 }
-                else
-                    break;
              }
             if (player1.StillAttacking() && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck()))
             {
@@ -733,7 +738,7 @@ namespace VanguardEngine
         {
             List<Card> cards = new List<Card>();
             List<Ability> abilities = new List<Ability>();
-            if (activation == Activation.OnOrder)
+            if (activation == Activation.OnOrder || activation == Activation.OnBlitzOrder)
             {
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetOrderableCards()));
             }
@@ -882,9 +887,9 @@ namespace VanguardEngine
             return false;
         }
 
-        public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count)
+        public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count, int min)
         {
-            List<int> cardsToCB = _inputManager.SelectFromList(canCB, count, count, "Choose card(s) to Counter Blast.");
+            List<int> cardsToCB = _inputManager.SelectFromList(canCB, count, min, "Choose card(s) to Counter Blast.");
             player1.CounterBlast(cardsToCB);
         }
 
@@ -934,6 +939,13 @@ namespace VanguardEngine
         {
             List<int> cardsToAddPower = _inputManager.SelectFromList(canAdd, count, count, "Choose card(s) to give +" + power + " to.");
             player1.AddTempPower(cardsToAddPower, power);
+        }
+
+        public void ChooseAddBattleOnlyPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
+        {
+            List<int> cardsToAddPower = _inputManager.SelectFromList(canAdd, count, count, "Choose card(s) to give +" + power + " to.");
+            foreach (int tempID in cardsToAddPower)
+                player1.AddTempPower(tempID, power, true);
         }
 
         public void ChooseAddCritical(Player player1, Player player2, List<Card> canAdd, int critical, int count)
@@ -998,6 +1010,12 @@ namespace VanguardEngine
         {
             List<int> cardsToSend = _inputManager.SelectFromList(canSend, max, min, "Choose card(s) to send to bottom of deck.");
             player1.SendToDeck(cardsToSend, true);
+        }
+
+        public void ChooseSendToTop(Player player1, Player player2, List<Card> canSend, int max, int min)
+        {
+            List<int> cardsToSend = _inputManager.SelectFromList(canSend, max, min, "Choose card(s) to send to top of deck.");
+            player1.SendToDeck(cardsToSend, false);
         }
 
         public void FinalRush(Player player1, Player player2)

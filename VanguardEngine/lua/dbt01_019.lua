@@ -29,6 +29,13 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	end
+	return false
+end
+
 function Cost(n)
 end
 

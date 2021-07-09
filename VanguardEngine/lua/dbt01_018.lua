@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
@@ -13,6 +13,8 @@ function GetParam(n)
 		return q.Location, l.PlayerOrder, q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 3 then
+		return q.Location, l.Damage, q.Other, o.FaceUp, q.Count, 1
 	end
 end
 
@@ -25,6 +27,15 @@ end
 function CheckCondition(n)
 	if n == 1 then
 		if obj.IsBooster() and obj.Exists(1) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(3) then
 			return true
 		end
 	end

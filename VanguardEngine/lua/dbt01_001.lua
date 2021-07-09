@@ -45,6 +45,15 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 2 then
+		return true
+	elseif n == 3 then
+		return true
+	end
+	return false
+end
+
 function Cost(n)
 	if n == 3 then
 		obj.CounterBlast(4)

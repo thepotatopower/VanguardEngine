@@ -32,7 +32,16 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsBooster() and obj.CanCB(2) and obj.ExistsAmong(4, 5, q.Name) then
+		if obj.IsBooster() and obj.CanCB(2) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.ExistsAmong(4, 5, q.Name) then
 			return true
 		end
 	end

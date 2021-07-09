@@ -29,13 +29,24 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) and obj.CanSearch(1) then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) then
 			return true
 		end
 	elseif n == 2 then
 		if obj.IsAttackingUnit() then
 			return true
 		end
+	end
+	return false
+end
+
+function CanFullyResolve(n)
+	if n == 1 then
+		if obj.Exists(1) then
+			return true
+		end
+	elseif n == 2 then
+		return true
 	end
 	return false
 end

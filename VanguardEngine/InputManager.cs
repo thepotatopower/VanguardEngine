@@ -505,9 +505,15 @@ namespace VanguardEngine
 
         protected virtual void SelectAbility_Input()
         {
+            string output = "";
             Console.WriteLine("----------\nSelect effect to activate.");
             for (int i = 0; i < _abilities.Count; i++)
-                Console.WriteLine(i + 1 + ". " + _abilities[i].Name);
+            {
+                output = (i + 1) + ". " + _abilities[i].Name;
+                if (!_abilities[i].CanFullyResolve())
+                    output += " (May not fully resolve.)";
+                Console.WriteLine(output);
+            }
             if (!CheckForMandatoryEffects(_abilities))
             {
                 Console.WriteLine(_abilities.Count + 1 + ". Don't activate effect.");
@@ -580,6 +586,11 @@ namespace VanguardEngine
             cardsToSelect.AddRange(cards);
             if (cardsToSelect.Count < count)
                 count = cardsToSelect.Count;
+            if (cardsToSelect.Count < min)
+            {
+                intlist_input.Clear();
+                return intlist_input;
+            }
             int_value = count;
             int_value2 = min;
             WaitForInput(SelectFromList_Input);

@@ -43,6 +43,15 @@ function CheckCondition(n)
 	return false
 end
 
+function CanFullyResolve(n)
+	if n == 1 then
+		return true
+	elseif n == 2 then
+		return true
+	end
+	return false
+end
+
 function Cost(n)
 	if n == 2 then
 		obj.Discard(3)
@@ -58,7 +67,7 @@ function Activate(n)
 		end
 	elseif n == 2 then
 		obj.Select(4)
-		obj.AutoStand(5)
+		obj.Stand(5)
 		obj.AddTempPower(5, 10000)
 		obj.EndSelect()
 	end
