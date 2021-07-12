@@ -110,14 +110,14 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             while (true)

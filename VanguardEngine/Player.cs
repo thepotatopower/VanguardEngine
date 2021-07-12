@@ -621,9 +621,9 @@ namespace VanguardEngine
         public void DisplayVanguard(bool player)
         {
             if (player)
-                DisplayCard(_field.Units[PlayerVanguard]);
-            else
                 DisplayCard(_field.Units[EnemyVanguard]);
+            else
+                DisplayCard(_field.Units[PlayerVanguard]);
         }
 
         public void DisplayRearguard(int selection)
@@ -1748,6 +1748,12 @@ namespace VanguardEngine
                         toBeRetired.overDress = false;
                         drop.Insert(0, toBeRetired);
                         ResetCardValues(toBeRetired);
+                        foreach (Card card in toBeRetired.soul)
+                        {
+                            card.location = Location.Drop;
+                            drop.Insert(0, card);
+                        }
+                        toBeRetired.soul.Clear();
                         _enemyRetired = true;
                         _enemyRetiredThisTurn = true;
                         break;
@@ -1764,6 +1770,12 @@ namespace VanguardEngine
                         toBeRetired.overDress = false;
                         drop.Insert(0, toBeRetired);
                         ResetCardValues(toBeRetired);
+                        foreach (Card card in toBeRetired.soul)
+                        {
+                            card.location = Location.Drop;
+                            drop.Insert(0, card);
+                        }
+                        toBeRetired.soul.Clear();
                         _playerRetired = true;
                         break;
                     }
@@ -2093,9 +2105,9 @@ namespace VanguardEngine
                 cardToAdd = _field.CardCatalog[tempID];
                 if (drop.Contains(cardToAdd))
                     drop.Remove(cardToAdd);
-                if (isRearguard(cardToAdd.tempID))
+                else if (cardToAdd.location == Location.RC)
                     _field.Units[GetCircle(cardToAdd)] = null;
-                if (_field.Units[PlayerVanguard].soul.Contains(cardToAdd))
+                else if (_field.Units[PlayerVanguard].soul.Contains(cardToAdd))
                     _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
                 cardToAdd.location = Location.Hand;
                 PlayerHand.Add(cardToAdd);
@@ -2778,27 +2790,6 @@ namespace VanguardEngine
                     break;
                 }
             }
-        }
-
-        public bool isRearguard(int location)
-        {
-            if (location != 6 && location != 13)
-                return true;
-            return false;
-        }
-
-        public bool isPlayerFrontRow(int location)
-        {
-            if (location == PlayerFrontLeft || location == PlayerVanguard || location == PlayerFrontRight)
-                return true;
-            return false;
-        }
-
-        public bool isEnemyFrontRow(int location)
-        {
-            if (location == EnemyFrontLeft || location == EnemyVanguard || location == EnemyFrontRight)
-                return true;
-            return false;
         }
 
         public bool IsEnemy(int tempID)
