@@ -16,11 +16,13 @@ namespace VanguardEngine
         protected List<Card> _lastPlacedOnRCFromHand = new List<Card>();
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
+        protected Card _lastRevealedTrigger = null;
         protected List<Card> _lastDiscarded = new List<Card>();
         protected List<Card> _isIntercepting = new List<Card>();
         protected Card _lastOrderPlayed = null;
         protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
+        protected List<Card> _canColumnAttack = new List<Card>();
         protected List<Card> _unitsHit = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Card _playedOrder;
@@ -242,6 +244,11 @@ namespace VanguardEngine
             return PlayerOrder;
         }
 
+        public List<Card> GetBind()
+        {
+            return PlayerBind;
+        }
+
         public List<Card> GetRevealed()
         {
             return PlayerRevealed;
@@ -310,6 +317,45 @@ namespace VanguardEngine
             return -1;
         }
 
+        public List<Card> GetUnitsAtColumn(int column)
+        {
+            List<Card> cards = new List<Card>();
+            if (column == 0)
+            {
+                cards.Add(_field.Units[EnemyBackCenter]);
+                cards.Add(_field.Units[EnemyVanguard]);
+                cards.Add(_field.Units[PlayerVanguard]);
+                cards.Add(_field.Units[PlayerBackCenter]);
+            }
+            else if (column == 1)
+            {
+                cards.Add(_field.Units[EnemyBackLeft]);
+                cards.Add(_field.Units[EnemyFrontLeft]);
+                cards.Add(_field.Units[PlayerFrontRight]);
+                cards.Add(_field.Units[PlayerBackRight]);
+            }
+            else if (column == -1)
+            {
+                cards.Add(_field.Units[EnemyBackRight]);
+                cards.Add(_field.Units[EnemyFrontRight]);
+                cards.Add(_field.Units[PlayerFrontLeft]);
+                cards.Add(_field.Units[PlayerBackLeft]);
+            }
+            return cards;
+        }
+
+        public int GetColumn(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetUnitsAtColumn(1).Contains(card))
+                return 1;
+            else if (GetUnitsAtColumn(0).Contains(card))
+                return 0;
+            else if (GetUnitsAtColumn(-1).Contains(card))
+                return -1;
+            return 0;
+        }
+
         public int NumEnemyOpenCircles()
         {
             int count = 0;
@@ -324,6 +370,11 @@ namespace VanguardEngine
         public List<Card> GetRevealedTriggers()
         {
             return _lastRevealedTriggers;
+        }
+
+        public Card GetRevealedTrigger()
+        {
+            return _lastRevealedTrigger;
         }
 
         public void Draw(int count)
@@ -682,14 +733,25 @@ namespace VanguardEngine
             return cards;
         }
 
-        public List<Card> GetEnemyFrontRow()
+        public List<Card> GetAttackableUnits()
         {
             List<Card> cards = new List<Card>();
-            if (_field.Units[EnemyFrontLeft] != null)
-                cards.Add(_field.Units[EnemyFrontLeft]);
-            cards.Add(_field.Units[EnemyVanguard]);
-            if (_field.Units[EnemyFrontRight] != null)
-                cards.Add(_field.Units[EnemyFrontRight]);
+            if (_canColumnAttack.Contains(_field.Units[_field.Attacker]))
+            {
+                for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
+                {
+                    if (_field.Units[i] != null)
+                        cards.Add(_field.Units[i]);
+                }
+            }
+            else
+            {
+                if (_field.Units[EnemyFrontLeft] != null)
+                    cards.Add(_field.Units[EnemyFrontLeft]);
+                cards.Add(_field.Units[EnemyVanguard]);
+                if (_field.Units[EnemyFrontRight] != null)
+                    cards.Add(_field.Units[EnemyFrontRight]);
+            }
             return cards;
         }
 
@@ -1119,7 +1181,7 @@ namespace VanguardEngine
 
         public int Critical()
         {
-            int critical = _field.Units[_field.Attacker].critical + _field.Units[_field.Attacker].tempCritical + _field.CircleCritical[_field.Attacker];
+            int critical = _field.Units[_field.Attacker].critical + _field.Units[_field.Attacker].tempCritical + _field.CircleCritical[_field.Attacker] + _field.Units[_field.Attacker].battleOnlyCritical;
             foreach (Tuple<int, int> key in _field.Units[_field.Attacker].abilityCritical.Keys)
             {
                 critical += _field.Units[_field.Attacker].abilityCritical[key];
@@ -1130,7 +1192,7 @@ namespace VanguardEngine
         public int Critical(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
-            int critical = card.critical + card.tempCritical + _field.CircleCritical[GetCircle(card)];
+            int critical = card.critical + card.tempCritical + _field.CircleCritical[GetCircle(card)] + card.battleOnlyCritical;
             foreach (Tuple<int, int> key in card.abilityCritical.Keys)
             {
                 critical += card.abilityCritical[key];
@@ -1555,14 +1617,36 @@ namespace VanguardEngine
             }
         }
 
-        public void InitiateAttack(int selection, int target)
+        public void SetAttacker(int selection)
         {
-            Card Attacker = _field.CardCatalog[selection];
+            _field.Attacker = GetCircle(_field.CardCatalog[selection]);
+        }
+
+        public void InitiateAttack(int target)
+        {
+            Card Attacker = _field.Units[_field.Attacker];
             Card Attacked = _field.CardCatalog[target];
             Attacker.upright = false;
             _field.Attacker = GetCircle(Attacker);
             _field.Attacked.Add(Attacked);
-            Console.WriteLine("----------\n" + Attacker.name + " attacks " + Attacked.name + "!");
+            if (_canColumnAttack.Contains(Attacker))
+            {
+                if (GetCircle(Attacked) == EnemyFrontLeft)
+                    _field.Attacked.Add(_field.Units[EnemyBackLeft]);
+                else if (GetCircle(Attacked) == EnemyBackLeft)
+                    _field.Attacked.Add(_field.Units[EnemyFrontLeft]);
+                else if (GetCircle(Attacked) == EnemyVanguard)
+                    _field.Attacked.Add(_field.Units[EnemyBackCenter]);
+                else if (GetCircle(Attacked) == EnemyBackCenter)
+                    _field.Attacked.Add(_field.Units[EnemyVanguard]);
+                else if (GetCircle(Attacked) == EnemyFrontRight)
+                    _field.Attacked.Add(_field.Units[EnemyBackRight]);
+                else if (GetCircle(Attacked) == EnemyBackRight)
+                    _field.Attacked.Add(_field.Units[EnemyFrontRight]);
+            }
+            Console.WriteLine("----------");
+            foreach (Card card in _field.Attacked)
+                Console.WriteLine(Attacker.name + " attacks " + card.name + "!");
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
@@ -1691,7 +1775,10 @@ namespace VanguardEngine
         {
             List<int> list = new List<int>();
             foreach (Card card in _unitsHit)
-                list.Add(card.tempID);
+            {
+                if (card != _field.Units[PlayerVanguard])
+                    list.Add(card.tempID);
+            }
             Retire(list);
         }
 
@@ -1788,6 +1875,7 @@ namespace VanguardEngine
             PlayerDeck.Remove(trigger);
             PlayerTrigger[0] = trigger;
             _lastRevealedTriggers.Add(trigger);
+            _lastRevealedTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
                 Console.WriteLine("----------\nCritical Trigger!");
             else if (trigger.trigger == Trigger.Draw)
@@ -1872,6 +1960,13 @@ namespace VanguardEngine
             Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
         }
 
+        public void AddBattleOnlyCritical(int selection, int critical)
+        {
+            Card target = FindActiveUnit(selection);
+            target.battleOnlyCritical += critical;
+            Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+        }
+
         public void DoublePower(int selection)
         {
             Card target = _field.CardCatalog[selection];
@@ -1904,7 +1999,7 @@ namespace VanguardEngine
 
         public void SetAbilityPower(int tempID, int abilityNum, int selection, int power)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             if (!target.abilityPower.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
             {
                 target.abilityPower.Add(new Tuple<int, int>(tempID, abilityNum), power);
@@ -1915,7 +2010,7 @@ namespace VanguardEngine
 
         public void SetAbilityShield(int tempID, int abilityNum, int selection, int shield)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             if (!target.abilityShield.ContainsKey(new Tuple<int, int>(tempID, abilityNum)))
             {
                 target.abilityShield.Add(new Tuple<int, int>(tempID, abilityNum), shield);
@@ -1949,9 +2044,9 @@ namespace VanguardEngine
         public void Stand(int selection)
         {
             Card target = FindActiveUnit(selection);
-            target.upright = true;
-            if (!_stoodByCardEffect.Contains(target))
+            if (!target.upright && !_stoodByCardEffect.Contains(target))
                 _stoodByCardEffect.Add(target);
+            target.upright = true;
         }
 
         public void Heal(int selection)
@@ -1998,6 +2093,8 @@ namespace VanguardEngine
                 cardToAdd = _field.CardCatalog[tempID];
                 if (drop.Contains(cardToAdd))
                     drop.Remove(cardToAdd);
+                if (isRearguard(cardToAdd.tempID))
+                    _field.Units[GetCircle(cardToAdd)] = null;
                 if (_field.Units[PlayerVanguard].soul.Contains(cardToAdd))
                     _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
                 cardToAdd.location = Location.Hand;
@@ -2032,6 +2129,12 @@ namespace VanguardEngine
                 else if (cardToAdd.location == Location.Drop)
                 {
                     _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
+                }
+                else if (cardToAdd.location == Location.Order)
+                {
+                    if (cardToAdd == _playedOrder)
+                        _playedOrder = null;
+                    PlayerOrder.Remove(cardToAdd);
                 }
                 if (PlayerLooking.Contains(cardToAdd))
                     PlayerLooking.Remove(cardToAdd);
@@ -2130,6 +2233,7 @@ namespace VanguardEngine
             if (card.location == Location.Drop)
             {
                 PlayerBind.Add(card);
+                PlayerDrop.Remove(card);
                 card.location = Location.Bind;
                 _isAlchemagic = true;
             }
@@ -2142,6 +2246,11 @@ namespace VanguardEngine
                 PlayerOrder.Add(card);
                 card.location = Location.Order;
             }
+        }
+
+        public Card GetPlayedOrder()
+        {
+            return _playedOrder;
         }
 
         public void EndOrder()
@@ -2158,6 +2267,20 @@ namespace VanguardEngine
         public bool OrderPlayed()
         {
             return _orderPlayed;
+        }
+
+        public void AllowColumnAttack(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (!_canColumnAttack.Contains(card))
+                _canColumnAttack.Add(card);
+        }
+
+        public void DisableColumnAttack(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (_canColumnAttack.Contains(card))
+                _canColumnAttack.Remove(card);
         }
 
         public void SetAlchemagic(int tempID)
@@ -2323,6 +2446,19 @@ namespace VanguardEngine
             if (faceup < count)
                 return false;
             return true;
+        }
+
+        public bool CanRetire(int count)
+        {
+            int existing = 0;
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
+            {
+                if (_field.Units[i] != null)
+                    existing++;
+            }
+            if (existing >= count)
+                return true;
+            return false;
         }
 
         public void CounterBlast(List<int> cardsToCB)
@@ -2555,7 +2691,10 @@ namespace VanguardEngine
             foreach (Card unit in _field.Units)
             {
                 if (unit != null)
+                {
                     unit.battleOnlyPower = 0;
+                    unit.battleOnlyCritical = 0;
+                }
             }
         }
 
@@ -2568,6 +2707,7 @@ namespace VanguardEngine
             _alchemagicFreeSB = false;
             _field.SetPersonaRide(false, _playerID);
             _canAttackFromBackRow.Clear();
+            _canColumnAttack.Clear();
             _bonusSkills.Clear();
             _stoodByCardEffect.Clear();
             _orderPlayed = false;

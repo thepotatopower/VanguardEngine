@@ -66,7 +66,7 @@ function Activate(n)
 		if obj.CanSuperiorCall(2) then
 			obj.SuperiorCall(2)
 		else
-			obj.AutoAddToDrop(5)
+			obj.AddToDrop(5)
 		end
 		obj.EndReveal()
 		obj.OnRideAbilityResolved()

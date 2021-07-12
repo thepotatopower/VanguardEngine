@@ -17,6 +17,7 @@ namespace VanguardEngine
         public int tempPower = 0;
         public int battleOnlyPower = 0;
         public int tempCritical = 0;
+        public int battleOnlyCritical = 0;
         public int tempDrive = 0;
         public Dictionary<Tuple<int, int>, int> abilityPower = new Dictionary<Tuple<int, int>, int>();
         public Dictionary<Tuple<int, int>, int> abilityShield = new Dictionary<Tuple<int, int>, int>();

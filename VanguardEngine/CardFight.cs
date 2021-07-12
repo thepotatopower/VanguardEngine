@@ -114,10 +114,12 @@ namespace VanguardEngine
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
             TriggerCheck(player2, player1, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
             player1.SoulCharge(10);
             player2.SoulCharge(10);
+            //player1.AbyssalDarkNight();
+            //player2.AbyssalDarkNight();
             while (true)
             {
                 actingPlayer = player1;
@@ -492,9 +494,7 @@ namespace VanguardEngine
                         BrowseField(player1);
                     else if (selection == 3)
                     {
-                        selection = _inputManager.SelectAttackingUnit();
-                        target = _inputManager.SelectUnitToAttack();
-                        Attack(player1, player2, selection, target);
+                        Attack(player1, player2);
                         if (_gameOver)
                             return;
                     }
@@ -502,7 +502,7 @@ namespace VanguardEngine
                         break;
                     else if (selection == 5) //for use outside of console only
                     {
-                        Attack(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1]);
+                        //Attack(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1]);
                     }
                     else
                         break;
@@ -512,14 +512,19 @@ namespace VanguardEngine
             }
         }
 
-        public void Attack(Player player1, Player player2, int attacker, int target)
+        public void Attack(Player player1, Player player2)
         {
             int selection;
             int selection2;
             int drive;
             int critical;
+            int attacker;
+            int target;
             List<int> selections;
-            player1.InitiateAttack(attacker, target);
+            selection = _inputManager.SelectAttackingUnit();
+            player1.SetAttacker(selection);
+            target = _inputManager.SelectUnitToAttack();
+            player1.InitiateAttack(target);
 
             if (player1.CanBeBoosted())
             {
@@ -625,10 +630,7 @@ namespace VanguardEngine
                     }
                     AddAbilitiesToQueue(player1, player2, Activation.OnAttackHitsVanguard);
                 }
-                else
-                {
-                    player2.RetireAttackedUnit();
-                }
+                player2.RetireAttackedUnit();
                 AddAbilitiesToQueue(player1, player2, Activation.OnAttackHits);
                 _inputManager.SwapPlayers();
                 ActivateAbilities(player1, player2, Activation.OnAttackHits);
@@ -954,6 +956,15 @@ namespace VanguardEngine
             foreach (int tempID in cardsToAddCritical)
             {
                 player1.AddCritical(tempID, critical);
+            }
+        }
+
+        public void ChooseAddBattleOnlyCritical(Player player1, List<Card> canAdd, int critical, int count, int min)
+        {
+            List<int> cardsToAddCritical = _inputManager.SelectFromList(canAdd, count, min, "Choose card(s) to give +" + critical + " critical to.");
+            foreach (int tempID in cardsToAddCritical)
+            {
+                player1.AddBattleOnlyCritical(tempID, critical);
             }
         }
 
