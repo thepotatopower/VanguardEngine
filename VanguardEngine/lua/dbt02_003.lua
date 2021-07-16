@@ -1,36 +1,38 @@
--- Diabolos, "Violence" Bruce
+-- Crimson Expeller
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 5
+		return q.Location, l.Soul, q.Other, o.This, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.FL, FL.PlayerFrontLeft, q.FL, FL.PlayerFrontRight, q.Other, o.Resting
+		return q.Location, l.Damage, q.Count, 1
+	elseif n == 3 then
+		return q.Location, l.PlayerVC, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRidePhase, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, true
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and obj.IsPlayerTurn() then
+		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.TargetIsEnemyVanguard() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.InFinalRush() and obj.CanSB(1) then
+		if obj.Exists(1) and obj.CanCB(2) then
 			return true
 		end
 	end
@@ -48,15 +50,17 @@ end
 
 function Cost(n)
 	if n == 2 then
-		obj.SoulBlast(1)
+		obj.CounterBlast(2)
+		obj.AddToDrop(1)
 	end
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.FinalRush()
+		obj.SoulCharge(1)
 	elseif n == 2 then
-		obj.Stand(2)
+		obj.SoulCharge(1) 
+		obj.ChooseAddTempPower(3, 10000)
 	end
 	return 0
 end

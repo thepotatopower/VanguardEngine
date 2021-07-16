@@ -26,6 +26,7 @@ namespace VanguardEngine
         string _query;
         string[] _list;
         List<int> _ints = new List<int>();
+        List<int> _ints2 = new List<int>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -68,19 +69,35 @@ namespace VanguardEngine
             InputThread.Abort();
         }
 
-        public virtual bool YesNo(int request)
+        public virtual bool YesNo(Player actingPlayer, int request)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             prompt = request;
             string_input = "";
             WaitForInput(YesNo_Input);
+            if (swapped)
+                SwapPlayers();
             return bool_input;
         }
 
-        public virtual bool YesNo(string query)
+        public virtual bool YesNo(Player actingPlayer, string query)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             prompt = PromptType.UniqueQuery;
             string_input = query;
             WaitForInput(YesNo_Input);
+            if (swapped)
+                SwapPlayers();
             return bool_input;
         }
 
@@ -272,51 +289,61 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectCallLocation(string query, List<int> selectedCircles)
+        public virtual int SelectCallLocation(Player actingPlayer, string query, List<int> selectedCircles, List<int> canSelect)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             _query = query;
             _ints.Clear();
             _ints.AddRange(selectedCircles);
+            if (canSelect != null)
+                _ints2.AddRange(canSelect);
             WaitForInput(SelectCallLocation_Input);
+            if (swapped)
+                SwapPlayers();
             return int_input;
         }
 
         protected virtual void SelectCallLocation_Input()
         {
             bool proceed = false;
-            Console.WriteLine("----------\nChoose location.\n" +
+            while (!proceed)
+            {
+                Console.WriteLine("----------\nChoose location.\n" +
                             "1. Front left.\n" +
                             "2. Back left.\n" +
                             "3. Back middle.\n" +
                             "4. Front right.\n" +
                             "5. Back right.\n");
-            while (!proceed)
-            {
                 int_input = SelectPrompt(5);
-                if (!_ints.Contains(int_input))
+                switch (int_input)
+                {
+                    case 1:
+                        int_input = _player1.Convert(FL.PlayerFrontLeft);
+                        break;
+                    case 2:
+                        int_input = _player1.Convert(FL.PlayerBackLeft);
+                        break;
+                    case 3:
+                        int_input = _player1.Convert(FL.PlayerBackCenter);
+                        break;
+                    case 4:
+                        int_input = _player1.Convert(FL.PlayerFrontRight);
+                        break;
+                    case 5:
+                        int_input = _player1.Convert(FL.PlayerBackRight);
+                        break;
+                }
+                if (!_ints.Contains(int_input) && ((_ints2.Count > 0 && _ints2.Contains(int_input)) || _ints2.Count == 0))
                 {
                     proceed = true;
-                    switch (int_input)
-                    {
-                        case 1:
-                            int_input = FL.PlayerFrontLeft;
-                            break;
-                        case 2:
-                            int_input = FL.PlayerBackLeft;
-                            break;
-                        case 3:
-                            int_input = FL.PlayerBackCenter;
-                            break;
-                        case 4:
-                            int_input = FL.PlayerFrontRight;
-                            break;
-                        case 5:
-                            int_input = FL.PlayerBackRight;
-                            break;
-                    }
                 }
                 else
-                    Console.WriteLine("This circle has already been selected.");
+                    Console.WriteLine("This circle cannot be selected.");
             }
             oSignalEvent.Set();
         }
@@ -479,23 +506,6 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectDamageZone()
-        {
-            WaitForInput(SelectDamageZone_Input);
-            return int_input;
-        }
-
-        protected virtual void SelectDamageZone_Input()
-        {
-            int selection = 0;
-            List<Card> cards = _player1.GetDamageZone();
-            for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". " + cards[i].name);
-            selection = SelectPrompt(cards.Count) - 1;
-            int_input = cards[selection].tempID;
-            oSignalEvent.Set();
-        }
-
         public virtual int SelectAbility(List<Ability> abilities)
         {
             _abilities = abilities;
@@ -536,12 +546,20 @@ namespace VanguardEngine
             return false;
         }
 
-        public List<int> ChooseOrder(List<Card> cardsToRearrange)
+        public List<int> ChooseOrder(Player actingPlayer, List<Card> cardsToRearrange)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             Console.WriteLine("Choose order for card(s).");
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
             WaitForInput(ChooseOrder_Input);
+            if (swapped)
+                SwapPlayers();
             return intlist_input;
         }
 
@@ -579,13 +597,23 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public List<int> SelectFromList(List<Card> cards, int count, int min, string query)
+        public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             _query = query;
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cards);
             if (cardsToSelect.Count < count)
+            {
+                if (min == count)
+                    min = cardsToSelect.Count;
                 count = cardsToSelect.Count;
+            }
             if (cardsToSelect.Count < min)
             {
                 intlist_input.Clear();
@@ -594,6 +622,8 @@ namespace VanguardEngine
             int_value = count;
             int_value2 = min;
             WaitForInput(SelectFromList_Input);
+            if (swapped)
+                SwapPlayers();
             return intlist_input;
         }
 
@@ -625,10 +655,18 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public int SelectOption(string[] list)
+        public int SelectOption(Player actingPlayer, string[] list)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             _list = list;
             WaitForInput(SelectOption_Input);
+            if (swapped)
+                SwapPlayers();
             return int_input;
         }
 

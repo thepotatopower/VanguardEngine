@@ -397,6 +397,7 @@ namespace VanguardEngine
         public const int PlayerBackRight = 12;
         public const int PlayerVanguard = 13;
         public const int GuardianCircle = 14;
+        public const int OpenCircle = 100;
 
         public static int SwitchSides(int location)
         {

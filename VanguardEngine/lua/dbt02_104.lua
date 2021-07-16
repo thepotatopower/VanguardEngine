@@ -1,18 +1,22 @@
--- Diabolos, "Bad" Steve
+-- Blaster Dark
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 4
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 1
+		return q.Location, l.Revealed, q.Other, o.Unit
 	elseif n == 2 then
+		return q.Location, l.Revealed
+	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 4 then
+		return q.Location, l.PlayerVC, q.NameContains, "Blaster", q.Count, 1
 	end
 end
 
@@ -26,7 +30,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.CanSuperiorCall(1, FL.PlayerBackCenter) then
+		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Blaster Dark") then
 			return true
 		end
 	elseif n == 2 then
@@ -37,7 +41,7 @@ function CheckCondition(n)
 	return false
 end
 
-function CanFullyResolve(n) 
+function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
@@ -51,13 +55,18 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(1, FL.PlayerBackCenter)
-		obj.SoulCharge(1)
+		obj.RevealFromDeck(1)
+		if obj.Exists(1) then
+			obj.SuperiorCallAsRest(1)
+		else
+			obj.AddToDrop(2)
+		end
+		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		if obj.InFinalRush() then
-			obj.SetAbilityPower(2, 5000)
-		else 
-			obj.SetAbilityPower(2, 0)
+		if obj.IsPlayerTurn() and obj.Exists(4) then
+			obj.SetAbilityPower(3, 2000)
+		else
+			obj.SetAbilityPower(3, 0)
 		end
 	end
 	return 0

@@ -1,4 +1,4 @@
--- Rancor Chain
+-- Sylvan Horned Beast, Damainaru
 
 function NumberOfAbilities()
 	return 2
@@ -9,32 +9,32 @@ function NumberOfParams()
 end
 
 function GetParam(n)
-	if n == 1 then 
+	if n == 1 then
 		return q.Location, l.Soul, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerHand, q.Other, o.Order, q.Count, 1
+		return q.Location, l.PlayerRC, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.PlayerHand, q.Count, 2
-	elseif n == 4 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 4 then
+		return q.Location, l.Selected
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.SB, 1
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.SB, 1
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnChosen, t.Auto, p.HasPrompt, false, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanSB(1) then
+		if obj.LastPlacedOnRC() and obj.VanguardIs("Sylvan Horned Beast King, Magnolia") and obj.CanSB(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() then
+		if obj.IsRearguard() and not obj.Activated() and obj.ChosenByVanguard() then
 			return true
 		end
 	end
@@ -58,23 +58,12 @@ end
 
 function Activate(n)
 	if n == 1 then
-		local t = false
-		obj.Draw(2)
-		if obj.Exists(2) then
-			t = obj.YesNo("Discard an order card?")
-			if t then
-				obj.Discard(2)
-			end
-		end
-		if not t then
-			obj.Discard(3) 
-		end
+		obj.Select(2)
+		obj.AllowBackRowAttack(4)
+		obj.AddTempPower(4, 5000)
+		obj.EndSelect()
 	elseif n == 2 then
-		if obj.OrderPlayed() then
-			obj.SetAbilityPower(4, 2000)
-		else
-			obj.SetAbilityPower(4, 0)
-		end
+		obj.AddTempPower(3, 5000)
 	end
 	return 0
 end

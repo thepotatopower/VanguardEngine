@@ -47,6 +47,7 @@ namespace VanguardEngine
             UserData.RegisterType<Property>();
             UserData.RegisterType<UnitType>();
             UserData.RegisterType<Trigger>();
+            UserData.RegisterType<Skill>();
             DynValue l = UserData.Create(new Location());
             DynValue a = UserData.Create(new Activation());
             DynValue q = UserData.Create(new Query());
@@ -56,6 +57,7 @@ namespace VanguardEngine
             DynValue p = UserData.Create(new Property());
             DynValue u = UserData.Create(new UnitType());
             DynValue tt = UserData.Create(new Trigger());
+            DynValue s = UserData.Create(new Skill());
             DynValue obj;
             script.Globals.Set("l", l);
             script.Globals.Set("a", a);
@@ -66,6 +68,7 @@ namespace VanguardEngine
             script.Globals.Set("p", p);
             script.Globals.Set("u", u);
             script.Globals.Set("tt", tt);
+            script.Globals.Set("s", s);
             script.DoFile(filePath);
             DynValue numberOfAbilities = script.Call(script.Globals["NumberOfAbilities"]);
             for (int i = 0; i < numberOfAbilities.Number; i++)
@@ -162,9 +165,9 @@ namespace VanguardEngine
         {
             Ability fromHand = GetAbility(tempID, 1);
             Ability fromDrop;
-            int amSB = 0;
-            int amCB = 0;
-            int amRetire = 0;
+            int SB = 0;
+            int CB = 0;
+            int Retire = 0;
             List<Card> drop = player1.GetDrop();
             List<Card> damage = player1.GetDamageZone();
             List<Ability> alchemagicable = new List<Ability>();
@@ -173,12 +176,12 @@ namespace VanguardEngine
                 if (card.orderType == OrderType.Normal && card.name != player1.GetCard(fromHand.GetID()).name)
                 {
                     fromDrop = GetAbility(card.tempID, 1);
-                    amSB = fromHand.AlchemagicSB() + fromDrop.AlchemagicSB();
-                    amCB = fromHand.AlchemagicCB() + fromDrop.AlchemagicCB();
-                    amRetire = fromHand.AlchemagicRetire() + fromDrop.AlchemagicRetire();
+                    SB = fromHand.GetSB() + fromDrop.GetSB();
+                    CB = fromHand.GetCB() + fromDrop.GetCB();
+                    Retire = fromHand.GetRetire() + fromDrop.GetRetire();
                     if (player1.AlchemagicFreeSBAvailable())
-                        amSB = 0;
-                    if (player1.CanSB(amSB) && player1.CanCB(amCB) && player1.CanRetire(amRetire))
+                        SB = 0;
+                    if (player1.CanSB(SB) && player1.CanCB(CB) && player1.CanRetire(Retire))
                         alchemagicable.Add(fromDrop);
                 }
             }
@@ -194,14 +197,14 @@ namespace VanguardEngine
         Card _card; 
         bool _isMandatory = true;
         bool _hasPrompt = true;
-        int _alchemagicSB = 0;
-        int _alchemagicCB = 0;
-        int _alchemagicRetire = 0;
+        int _SB = 0;
+        int _CB = 0;
+        int _retire = 0;
         string _description = "";
         bool _forEnemy = false;
         bool _isSuperiorCall = false;
         bool _activated = false;
-        bool _active = true;
+        bool _withAlchemagic = true;
         int _activation;
         List<int> _location = new List<int>();
         int _abilityType;
@@ -289,6 +292,11 @@ namespace VanguardEngine
                         param.AddColumn((int)returnedParam.Tuple[j + 1].Number);
                         j++;
                     }
+                    else if (returnedParam.Tuple[j].Number == Query.NameContains)
+                    {
+                        param.AddNameContains((string)returnedParam.Tuple[j + 1].String);
+                        j++;
+                    }
                 }
                 _params.Add(param);
             }
@@ -319,19 +327,23 @@ namespace VanguardEngine
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.ForEnemy)
                     _forEnemy = true;
-                else if ((int)activationRequirement.Tuple[i].Number == Property.AlchemagicCB)
+                else if ((int)activationRequirement.Tuple[i].Number == Property.CB)
                 {
-                    _alchemagicCB += (int)activationRequirement.Tuple[i + 1].Number;
+                    _CB += (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
-                else if ((int)activationRequirement.Tuple[i].Number == Property.AlchemagicSB)
+                else if ((int)activationRequirement.Tuple[i].Number == Property.SB)
                 {
-                    _alchemagicSB += (int)activationRequirement.Tuple[i + 1].Number;
+                    _SB += (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
-                else if ((int)activationRequirement.Tuple[i].Number == Property.AlchemagicRetire)
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Retire)
                 {
-                    _alchemagicRetire += (int)activationRequirement.Tuple[i + 1].Number;
+                    _retire += (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Discard)
+                {
                     i++;
                 }
             }
@@ -388,6 +400,16 @@ namespace VanguardEngine
         public int GetID()
         {
             return _card.tempID;
+        }
+
+        public Player GetPlayer1()
+        {
+            return _player1;
+        }
+
+        public Player GetPlayer2()
+        {
+            return _player2;
         }
 
         public int GetCount(int paramNum)
@@ -455,13 +477,21 @@ namespace VanguardEngine
         {
             _script.Call(_abilityCost, _abilityNumber);
         }
-
+        
         public bool CheckCondition()
         {
             DynValue check = _script.Call(_checkCondition, _abilityNumber);
             if (check.Boolean)
                 return true;
             return false;
+        }
+
+        public bool CheckConditionWithoutAlchemagic()
+        {
+            _withAlchemagic = false;
+            bool condition = CheckCondition();
+            _withAlchemagic = true;
+            return condition;
         }
 
         public bool CanFullyResolve()
@@ -472,19 +502,19 @@ namespace VanguardEngine
             return false;
         }
 
-        public int AlchemagicCB()
+        public int GetCB()
         {
-            return _alchemagicCB;
+            return _CB;
         }
 
-        public int AlchemagicSB()
+        public int GetSB()
         {
-            return _alchemagicSB;
+            return _SB;
         }
 
-        public int AlchemagicRetire()
+        public int GetRetire()
         {
-            return _alchemagicRetire;
+            return _retire;
         }
 
         public bool NotActivatedYet()
@@ -551,7 +581,6 @@ namespace VanguardEngine
             List<Card> currentPool = new List<Card>();
             List<Card> newPool = new List<Card>();
             List<Card> cards;
-            bool exists = false;
             foreach (int location in param.Locations)
             {
                 if (location == Location.Deck)
@@ -623,6 +652,10 @@ namespace VanguardEngine
                     if (_player1.GetPlayedOrder() != null)
                         currentPool.Add(_player1.GetPlayedOrder());
                 }
+                else if (location == Location.LastCalledFromPrison)
+                    currentPool.AddRange(_player2.GetLastCalledFromPrison());
+                else if (location == Location.LastStood)
+                    currentPool.AddRange(_player1.GetLastStood());
             }
             if (currentPool.Count == 0)
                 return currentPool;
@@ -819,6 +852,28 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.Attacking)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (_player1.GetAttacker().tempID == card.tempID)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
+                    else if (other == Other.Token)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.unitType == UnitType.Token)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                 }
             }
             if (param.Names.Count > 0)
@@ -827,6 +882,20 @@ namespace VanguardEngine
                 {
                     if (param.Names.Contains(currentPool[i].name) && !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
+                }
+                currentPool.Clear();
+                currentPool.AddRange(newPool);
+                newPool.Clear();
+            }
+            if (param.NameContains.Count > 0)
+            {
+                for (int i = 0; i < currentPool.Count; i++)
+                {
+                    foreach (string substring in param.NameContains)
+                    {
+                        if (currentPool[i].name.Contains(substring))
+                            newPool.Add(currentPool[i]);
+                    }
                 }
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
@@ -997,13 +1066,16 @@ namespace VanguardEngine
         public bool CanCB(int paramNum)
         {
             List<Card> damage = _player1.GetDamageZone();
+            int count = GetCount(paramNum);
             int faceupCards = 0;
             foreach (Card card in damage)
             {
                 if (card.faceup)
                     faceupCards++;
             }
-            if (faceupCards >= _params[paramNum - 1].Counts[0])
+            if (_withAlchemagic && _card.orderType == OrderType.Normal && _player1.CanAlchemagic() && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
+                faceupCards += _player1.AlchemagicFreeCBAvailable();
+            if (faceupCards >= count)
                 return true;
             return false;
         }
@@ -1124,6 +1196,17 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsGuardian()
+        {
+            List<Card> units = _player1.GetGC();
+            foreach (Card card in units)
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
+        }
+
         public bool TargetIsPlayerVanguard()
         {
             if (_player1.TargetIsVanguard(C.Player))
@@ -1138,14 +1221,18 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool TargetIsEnemyRearguard()
+        {
+            if (_player1.TargetIsRearguard(C.Enemy))
+                return true;
+            return false;
+        }
+
         public bool InOverDress()
         {
-            List<Card> Units = _player1.GetActiveUnits();
-            foreach (Card card in Units)
-            {
-                if (card.tempID == _card.tempID && card.overDress)
-                    return true;
-            }
+            Card card = _player1.GetCard(_card.tempID);
+            if (card.overDress)
+                return true;
             return false;
         }
 
@@ -1232,10 +1319,27 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, -1);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true);
         }
 
         public void SuperiorCall(int paramNum, int circle)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            List<int> circles = new List<int>();
+            if (circle == FL.OpenCircle)
+                circles.AddRange(_player1.GetOpenCircles());
+            else
+                circles.Add(circle);
+            int count = GetCount(paramNum);
+            int min = GetMin(paramNum);
+            if (count == -1)
+                count = cardsToSelect.Count;
+            if (min == -1)
+                min = 0;
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, circles, false, true);
+        }
+
+        public void SuperiorCallAsRest(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             int count = GetCount(paramNum);
@@ -1244,7 +1348,16 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, circle);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, false);
+        }
+
+        public void SuperiorOverDress(int paramNum, int paramNum2)
+        {
+            List<Card> fromHand = ValidCards(paramNum);
+            int circle = _player1.GetCircle(ValidCards(paramNum2)[0]);
+            List<int> circles = new List<int>();
+            circles[0] = circle;
+            _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles, true, true);
         }
 
         public void CounterBlast(int paramNum)
@@ -1434,7 +1547,7 @@ namespace VanguardEngine
                 if (!card.upright)
                     canStand.Add(card.tempID);
             }
-            _player1.Stand(canStand);
+            _cardFight.Stand(_player1, _player2, canStand);
         }
 
         public void ChooseRest(int paramNum)
@@ -1467,7 +1580,7 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, -1);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true);
         }
 
         public void ChooseReveal(int paramNum)
@@ -1729,6 +1842,19 @@ namespace VanguardEngine
             return _player1.EnemyRetiredThisTurn();
         }
 
+        public bool PlayerRetiredThisTurn()
+        {
+            return _player1.PlayerRetiredThisTurn();
+        }
+
+        public bool ChosenByVanguard()
+        {
+            int vanguard = _player1.Vanguard().tempID;
+            if (_cardFight._chosen.ContainsKey(vanguard) && _cardFight._chosen[vanguard].Contains(_card.tempID))
+                return true;
+            return false;
+        }
+
         public void Select(int paramNum)
         {
             _selected.Clear();
@@ -1829,7 +1955,7 @@ namespace VanguardEngine
             List<Card> toBeCalled = new List<Card>();
             toBeCalled.Add(_player1.GetCard(token));
             toBeCalled[0].originalOwner = _player1._playerID;
-            _cardFight.SuperiorCall(_player1, _player2, toBeCalled, 1, 1, -1);
+            _cardFight.SuperiorCall(_player1, _player2, toBeCalled, 1, 1, null, false, true);
         }
 
         public int NumOriginalDress()
@@ -1850,6 +1976,11 @@ namespace VanguardEngine
         public void AlchemagicFreeSB()
         {
             _player1.AlchemagicFreeSB();
+        }
+
+        public void AddAlchemagicFreeCB(int count)
+        {
+            _player1.AddAlchemagicFreeCB(count);
         }
 
         public bool IsAlchemagic()
@@ -1884,14 +2015,19 @@ namespace VanguardEngine
             _player2.GuardWithTwo();
         }
 
+        public void EnemyCannotGuardFromHand()
+        {
+            _player2.CannotGuardFromHand();
+        }
+
         public int SelectOption(params string[] list)
         {
-            return _cardFight.SelectOption(list);
+            return _cardFight.SelectOption(_player1, list);
         }
 
         public bool YesNo(string query)
         {
-            return _cardFight.YesNo(query);
+            return _cardFight.YesNo(_player1, query);
         }
 
         public void OnRideAbilityResolved()
@@ -1917,6 +2053,7 @@ namespace VanguardEngine
         List<int> _FL = new List<int>();
         List<int> _column = new List<int>();
         List<int> _min = new List<int>();
+        List<string> _nameContains = new List<string>();
 
         public void AddLocation(int location)
         {
@@ -1986,6 +2123,11 @@ namespace VanguardEngine
             _min.Add(min);
         }
 
+        public void AddNameContains(string name)
+        {
+            _nameContains.Add(name);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -2035,6 +2177,11 @@ namespace VanguardEngine
         {
             get => _min;
         }
+
+        public List<string> NameContains
+        {
+            get => _nameContains;
+        }
     }
 
     class Activation
@@ -2062,6 +2209,8 @@ namespace VanguardEngine
         public const int OnOverTrigger = 21;
         public const int PlacedOnRCFromHand = 22;
         public const int OnDiscard = 23;
+        public const int OnStand = 24;
+        public const int OnChosen = 25;
     }
 
     public class Location
@@ -2107,6 +2256,8 @@ namespace VanguardEngine
         public const int RevealedTrigger = 39;
         public const int PlayerUnits = 40;
         public const int PlayedOrder = 41;
+        public const int LastCalledFromPrison = 42;
+        public const int LastStood = 43;
     }
 
     class Query
@@ -2121,6 +2272,7 @@ namespace VanguardEngine
         public const int Min = 8;
         public const int Trigger = 9;
         public const int Column = 10;
+        public const int NameContains = 11;
     }
 
     class Other
@@ -2140,6 +2292,8 @@ namespace VanguardEngine
         public const int FaceUp = 13;
         public const int FaceDown = 14;
         public const int NotAttackTarget = 15;
+        public const int Attacking = 16;
+        public const int Token = 17;
     }
 
     class AbilityType
@@ -2157,8 +2311,9 @@ namespace VanguardEngine
         public const int ForEnemy = 1;
         public const int HasPrompt = 2;
         public const int IsMandatory = 3;
-        public const int AlchemagicSB = 4;
-        public const int AlchemagicCB = 5;
-        public const int AlchemagicRetire = 6;
+        public const int SB = 4;
+        public const int CB = 5;
+        public const int Retire = 6;
+        public const int Discard = 7;
     }
 }

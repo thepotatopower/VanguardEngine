@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.AlchemagicCB, 1
+		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanCB(1) and obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then 
+		if obj.CanCB(1) then 
 			return true
 		end
 	end
@@ -33,7 +33,9 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		return true
+		if obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then
+			return true
+		end
 	end
 	return false
 end
@@ -46,7 +48,9 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddTempPower(2, 10000)
+		if obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then
+			obj.ChooseAddTempPower(2, 10000)
+		end
 	end
 	return 0
 end
