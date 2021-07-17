@@ -42,6 +42,7 @@ namespace VanguardEngine
         public bool upright = true;
         public bool overDress = false;
         public bool targetImmunity = false;
+        public List<int> hitImmunity = new List<int>();
         public bool alchemagic = false;
         public int location = Location.Deck;
         public int originalOwner = 0;

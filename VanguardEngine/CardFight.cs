@@ -331,6 +331,7 @@ namespace VanguardEngine
         public void MainPhaseMenu(Player player1, Player player2)
         {
             int selection;
+            Tuple<int, int> selections;
             int location;
             int max;
             int input;
@@ -376,8 +377,16 @@ namespace VanguardEngine
                 {
                     if (player1.CanMoveRearguard())
                     {
-                        selection = _inputManager.SelectRearguardColumn();
-                        MoveRearguard(player1, player2, selection);
+                        if (player1.CanFreeSwap())
+                        {
+                            selections = _inputManager.MoveRearguards();
+                            MoveRearguard(player1, player2, selections.Item1, selections.Item2);
+                        }
+                        else
+                        {
+                            selection = _inputManager.SelectRearguardColumn();
+                            MoveRearguard(player1, player2, selection);
+                        }
                     }
                     else
                         Console.WriteLine("No Rearguards can be moved.");
@@ -467,6 +476,11 @@ namespace VanguardEngine
             player1.MoveRearguard(selection);
         }
 
+        public void MoveRearguard(Player player1, Player player2, int selection, int direction)
+        {
+            player1.MoveRearguard(selection, direction);
+        }
+
         public void ActivateACT(Player player1, int selection)
         {
             player1.ActivateACT(selection);
@@ -488,6 +502,8 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnBattlePhase(this, args);
             }
+            AddAbilitiesToQueue(player1, player2, Activation.OnBattlePhase);
+            ActivateAbilities(player1, player2, Activation.OnBattlePhase);
             while (true)
             {
                 if (player1.CanAttack())
@@ -526,6 +542,7 @@ namespace VanguardEngine
             int attacker;
             int target;
             List<int> selections;
+            bool intercept = false;
             selection = _inputManager.SelectAttackingUnit();
             player1.SetAttacker(selection);
             target = _inputManager.SelectUnitToAttack();
@@ -570,8 +587,10 @@ namespace VanguardEngine
                             selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), 2, 2, "Choose card(s) to guard with.");
                         else
                             selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), 1, 1, "Choose card(s) to guard with.");
-                        player2.Guard(selections, selection2);
-                        AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
+                        intercept = player2.Guard(selections, selection2);
+                        if (!intercept)
+                            AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
+                        AddAbilitiesToQueue(player2, player1, Activation.PutOnGC);
                         ActivateAbilities(player2, player1, Activation.PlacedOnGC);
                     }
                     else if (selection == 5)
@@ -798,6 +817,8 @@ namespace VanguardEngine
             int ThenNum = 0;
             while (abilities.Count > 0)
             {
+                player1.RefreshContinuous();
+                player2.RefreshContinuous();
                 continuousAbilities = ContinuousAbilitiesInQueue();
                 foreach (Ability ability in continuousAbilities)
                 {
@@ -873,6 +894,15 @@ namespace VanguardEngine
                         AddAbilitiesToQueue(player1, player2, item);
                 }
             }
+            AddAbilitiesToQueue(player1, player2, Activation.Cont);
+            player1.RefreshContinuous();
+            player2.RefreshContinuous();
+            continuousAbilities = ContinuousAbilitiesInQueue();
+            foreach (Ability ability in continuousAbilities)
+            {
+                ability.Activate();
+                abilities.Remove(ability);
+            }
             abilities.Clear();
             _activatedAbilities.Clear();
             _currentActivations.Clear();
@@ -900,6 +930,7 @@ namespace VanguardEngine
 
         public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count, int min)
         {
+            int originalCount = count;
             if (player1.IsAlchemagic())
             {
                 count -= player1.AlchemagicFreeCBAvailable();
@@ -908,9 +939,9 @@ namespace VanguardEngine
                     count = 0;
                 if (min < 0)
                     min = 0;
-                player1.ResetAlchemagicFreeCB();
             }
             List<int> cardsToCB = _inputManager.SelectFromList(player1, canCB, count, min, "Choose card(s) to Counter Blast.");
+            player1.AddAlchemagicFreeCB(-1 * (originalCount - cardsToCB.Count));
             player1.CounterBlast(cardsToCB);
         }
 
@@ -1166,6 +1197,14 @@ namespace VanguardEngine
         {
             List<Ability> alchemagicable = _abilities.GetAlchemagicableCards(player, tempID);
             if (alchemagicable.Count > 0)
+                return true;
+            return false;
+        }
+
+        public bool Activated(int tempID, int activationNumber)
+        {
+            Ability ability = _abilities.GetAbility(tempID, activationNumber);
+            if (ability.Activated())
                 return true;
             return false;
         }

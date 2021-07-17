@@ -13,6 +13,7 @@ namespace VanguardEngine
         public Player _player2;
         public bool bool_input;
         public int int_input;
+        public int int_input2;
         public List<int> intlist_input = new List<int>();
         public List<Ability> _abilities = null;
         public List<Card> cardsToSelect = new List<Card>();
@@ -369,6 +370,36 @@ namespace VanguardEngine
             }
         }
 
+        public virtual Tuple<int, int> MoveRearguards()
+        {
+            cardsToSelect = _player1.GetActiveUnits();
+            cardsToSelect.RemoveAt(cardsToSelect.Count - 1);
+            WaitForInput(MoveRearguards_Input);
+            return new Tuple<int, int>(int_input, int_input2);
+        }
+
+        protected virtual void MoveRearguards_Input()
+        {
+            int selection = cardsToSelect.Count + 1;
+            while (selection == cardsToSelect.Count + 1)
+            {
+                Console.WriteLine("Select rearguard to move.");
+                for (int i = 0; i < cardsToSelect.Count; i++)
+                    Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                selection = SelectPrompt(cardsToSelect.Count + 1);
+            }
+            int_input = cardsToSelect[selection - 1].tempID;
+            selection = 5;
+            while (selection == 5)
+            {
+                Console.WriteLine("Choose a direction.\n" +
+                    "1. Up.\n2. Right.\n3. Down.\n4. Left.");
+                selection = SelectPrompt(5);
+            }
+            int_input2 = selection;
+            oSignalEvent.Set();
+        }
+
         public virtual int SelectBattlePhaseAction()
         {
             WaitForInput(SelectBattlePhaseAction_Input);
@@ -580,11 +611,11 @@ namespace VanguardEngine
                 if (newOrder.Count == cardsToSelect.Count)
                 {
                     Console.WriteLine(cardsToSelect.Count + 1 + ". Finish selecting.");
-                    selection = SelectPrompt(4);
+                    selection = SelectPrompt(cardsToSelect.Count + 1);
                 }
                 else
-                    selection = SelectPrompt(3);
-                if (selection < 4)
+                    selection = SelectPrompt(cardsToSelect.Count);
+                if (selection < cardsToSelect.Count + 1)
                 {
                     if (newOrder.Contains(cardsToSelect[selection - 1]))
                         newOrder.Remove(cardsToSelect[selection - 1]);

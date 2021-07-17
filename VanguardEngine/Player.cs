@@ -12,6 +12,7 @@ namespace VanguardEngine
         protected bool _guarding = false;
         protected List<Card> _riddenOnThisTurn = new List<Card>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
+        protected List<Card> _lastPutOnGC = new List<Card>();
         protected List<Card> _lastPlacedOnRC = new List<Card>();
         protected List<Card> _lastPlacedOnRCFromHand = new List<Card>();
         protected List<Card> _lastCalledFromPrison = new List<Card>();
@@ -43,6 +44,7 @@ namespace VanguardEngine
         protected int _alchemagicFreeCBAvailable = 0;
         protected bool _guardWithTwo = false;
         protected bool _canGuardFromHand = true;
+        protected bool _freeSwap = false;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
         protected List<Card> PlayerDeck;
@@ -369,6 +371,26 @@ namespace VanguardEngine
             else if (GetUnitsAtColumn(-1).Contains(card))
                 return -1;
             return 0;
+        }
+
+        public bool IsInFront(int front, int behind)
+        {
+            if (_field.Units[PlayerFrontLeft] != null &&
+                _field.Units[PlayerFrontLeft].tempID == front &&
+                _field.Units[PlayerBackLeft] != null &&
+                _field.Units[PlayerBackLeft].tempID == behind)
+                return true;
+            if (_field.Units[PlayerVanguard] != null &&
+                _field.Units[PlayerVanguard].tempID == front &&
+                _field.Units[PlayerBackCenter] != null &&
+                _field.Units[PlayerBackCenter].tempID == behind)
+                return true;
+            if (_field.Units[PlayerFrontRight] != null &&
+                _field.Units[PlayerFrontRight].tempID == front &&
+                _field.Units[PlayerBackRight] != null &&
+                _field.Units[PlayerBackRight].tempID == behind)
+                return true;
+            return false;
         }
 
         public int NumEnemyOpenCircles()
@@ -892,7 +914,7 @@ namespace VanguardEngine
             if (!_field.Attacked.Contains(attacked))
                 return 0;
             int shield = 0;
-            if (_field.Sentinel.Contains(attacked))
+            if (_field.Sentinel.Contains(attacked) || attacked.hitImmunity.Contains(_field.Units[_field.Attacker].grade))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
                 return 0;
@@ -915,9 +937,9 @@ namespace VanguardEngine
         {
             foreach (Card card in _field.Attacked)
             {
-                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]))
+                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || card.hitImmunity.Contains(_field.Units[_field.Attacker].grade))
                 {
-                    Console.WriteLine("Perfect Shield is active.");
+                    Console.WriteLine("[" + card.name + "] Hit immunity active.");
                     return;
                 }
                 Console.WriteLine("[" + card.name + "] Shield: " + (CalculateShield(card.tempID) + CalculatePowerOfUnit(GetCircle(card))));
@@ -1164,6 +1186,17 @@ namespace VanguardEngine
             }
             return false;
         }
+
+        public bool IsLastPutOnGC(int tempID)
+        {
+            foreach (Card card in _lastPutOnGC)
+            {
+                if (card.tempID == tempID)
+                    return true;
+            }
+            return false;
+        }
+
 
         public bool IsLastPlacedOnRC(int tempID)
         {
@@ -1583,6 +1616,46 @@ namespace VanguardEngine
             }
         }
 
+        public void MoveRearguard(int location, int direction)
+        {
+            int location1 = GetCircle(_field.CardCatalog[location]);
+            int location2 = location1;
+            if (location1 == PlayerFrontLeft)
+            {
+                if (direction == Direction.Down)
+                    location2 = PlayerBackLeft;
+            }
+            else if (location1 == PlayerBackLeft)
+            {
+                if (direction == Direction.Up)
+                    location2 = PlayerFrontLeft;
+                else if (direction == Direction.Right)
+                    location2 = PlayerBackCenter;
+            }
+            else if (location1 == PlayerBackCenter)
+            {
+                if (direction == Direction.Left)
+                    location2 = PlayerBackLeft;
+                else if (direction == Direction.Right)
+                    location2 = PlayerBackRight;
+            }
+            else if (location1 == PlayerFrontRight)
+            {
+                if (direction == Direction.Down)
+                    location2 = PlayerBackRight;
+            }
+            else if (location1 == PlayerBackRight)
+            {
+                if (direction == Direction.Up)
+                    location2 = PlayerFrontRight;
+                else if (direction == Direction.Left)
+                    location2 = PlayerBackCenter;
+            }
+            Card temp = _field.Units[location1];
+            _field.Units[location1] = _field.Units[location2];
+            _field.Units[location2] = temp;
+        }
+
         public void ActivateACT(int selection)
         {
 
@@ -1688,9 +1761,10 @@ namespace VanguardEngine
             return _field.Units[_field.Attacker];
         }
 
-        public void Guard(List<int> selections, int target)
+        public bool Guard(List<int> selections, int target)
         {
             Card card;
+            bool intercept = false;
             foreach (int selection in selections)
             {
                 card = _field.CardCatalog[selection];
@@ -1700,17 +1774,21 @@ namespace VanguardEngine
                     _field.Guardians[target] = new List<Card>();
                 _field.Guardians[target].Add(card);
                 _lastPlacedOnGC.Clear();
+                _lastPutOnGC.Clear();
                 if (card.location == Location.Hand)
                     PlayerHand.Remove(card);
                 else if (card.location == Location.RC)
                 {
                     _field.Units[GetCircle(card)] = null;
                     _isIntercepting.Add(card);
+                    intercept = true;
                 }
                 card.upright = false;
                 card.location = Location.GC;
                 _field.GC.Insert(0, card);
-                _lastPlacedOnGC.Add(card);
+                _lastPutOnGC.Add(card);
+                if (!intercept)
+                    _lastPlacedOnGC.Add(card);
                 Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
                 if (OnGuard != null)
                 {
@@ -1720,6 +1798,7 @@ namespace VanguardEngine
                     OnGuard(this, args);
                 }
             }
+            return intercept;
         }
 
         public void GuardWithTwo()
@@ -1745,6 +1824,28 @@ namespace VanguardEngine
         public void PerfectGuard(int tempID)
         {
             _field.Sentinel.Add(_field.CardCatalog[tempID]);
+        }
+
+        public void HitImmunity(List<int> tempIDs, List<int> grades)
+        {
+            Card card = null;
+            foreach (int tempID in tempIDs)
+            {
+                card = _field.CardCatalog[tempID];
+                foreach (int grade in grades)
+                {
+                    if (!card.hitImmunity.Contains(grade))
+                        card.hitImmunity.Add(grade);
+                }
+            }
+        }
+
+        public bool CannotBeHitByGrade(int tempID, int grade)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (card.hitImmunity.Contains(grade))
+                return true;
+            return false;
         }
 
         public void TargetImmunity(int tempID)
@@ -2321,6 +2422,16 @@ namespace VanguardEngine
             return _orderPlayed;
         }
 
+        public void AllowFreeSwap()
+        {
+            _freeSwap = true;
+        }
+
+        public bool CanFreeSwap()
+        {
+            return _freeSwap;
+        }
+
         public void AllowColumnAttack(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
@@ -2374,6 +2485,8 @@ namespace VanguardEngine
         public void AddAlchemagicFreeCB(int count)
         {
             _alchemagicFreeCBAvailable += count;
+            if (_alchemagicFreeCBAvailable < 0)
+                _alchemagicFreeCBAvailable = 0;
         }
 
         public void ResetAlchemagicFreeCB()
@@ -2768,6 +2881,7 @@ namespace VanguardEngine
                 {
                     unit.battleOnlyPower = 0;
                     unit.battleOnlyCritical = 0;
+                    unit.hitImmunity.Clear();
                 }
             }
         }
@@ -2793,6 +2907,16 @@ namespace VanguardEngine
                 _field.CirclePower[i] = 0;
             for (int i = 0; i < _field.CircleCritical.Length; i++)
                 _field.CircleCritical[i] = 0;
+        }
+
+        public void RefreshContinuous()
+        {
+            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+            {
+                if (_field.Units[i] != null)
+                    _field.Units[i].targetImmunity = false;
+            }
+            _freeSwap = false;
         }
 
         public void AllAbilitiesResolved()
@@ -2823,6 +2947,7 @@ namespace VanguardEngine
             card.abilityDrive.Clear();
             card.abilityShield.Clear();
             card.abilityCritical.Clear();
+            card.hitImmunity.Clear();
             foreach (Card item in _field.Units)
             {
                 if (item != null)
@@ -3032,6 +3157,14 @@ namespace VanguardEngine
                 circle == FL.EnemyFrontRight)
                 return true;
             return false;
+        }
+
+        public class Direction
+        {
+            public const int Up = 1;
+            public const int Right = 2;
+            public const int Down = 3;
+            public const int Left = 4;
         }
     }
 }

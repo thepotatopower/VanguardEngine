@@ -779,7 +779,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (!card.targetImmunity)
+                            if (card.originalOwner == _player1._playerID || !card.targetImmunity)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -874,6 +874,28 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.SetOrder)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.orderType == OrderType.Set || card.orderType == OrderType.Prison || card.orderType == OrderType.World)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
+                    else if (other == Other.InFront)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (_player1.IsInFront(card.tempID, _card.tempID))
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                 }
             }
             if (param.Names.Count > 0)
@@ -905,7 +927,9 @@ namespace VanguardEngine
             {
                 for (int i = 0; i < currentPool.Count; i++)
                 {
-                    if (param.Grades.Contains(currentPool[i].grade) && !newPool.Contains(currentPool[i]))
+                    if ((param.Grades.Contains(currentPool[i].grade) || 
+                        (param.Others.Contains(Other.GradeOrLess) && currentPool[i].grade <= param.Grades.Max()) && 
+                        !newPool.Contains(currentPool[i])))
                         newPool.Add(currentPool[i]);
                 }
                 currentPool.Clear();
@@ -943,6 +967,12 @@ namespace VanguardEngine
             return cards[0].name;
         }
 
+        public int GetSelectedGrade(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            return cards[0].grade;
+        }
+
         public bool CanOverDress(int tempID, int circle)
         {
             Card card = _player1.GetUnitAt(circle);
@@ -963,6 +993,11 @@ namespace VanguardEngine
         public bool LastPlacedOnGC()
         {
             return _player1.IsLastPlacedOnGC(_card.tempID);
+        }
+
+        public bool LastPutOnGC()
+        {
+            return _player1.IsLastPutOnGC(_card.tempID);
         }
 
         public bool IsIntercepting()
@@ -1003,7 +1038,7 @@ namespace VanguardEngine
             int min = GetMin(paramNum);
             List<Card> cards = ValidCards(paramNum);
             bool orLess = GetOrLess(paramNum);
-            if (cards.Count > 0 && cards.Count >= min)
+            if (cards.Count >= 0 && cards.Count >= min)
             {
                 if (orLess && cards.Count > min)
                     return false;
@@ -1042,6 +1077,8 @@ namespace VanguardEngine
                 customParam.InjectCount(num);
             else if (query == Query.Column)
                 customParam.InjectColumn(num);
+            else if (query == Query.Grade)
+                customParam.InjectGrade(num);
         }
 
         public bool OnGC()
@@ -1261,6 +1298,11 @@ namespace VanguardEngine
         public int VanguardGrade()
         {
             return _player1.Vanguard().grade;
+        }
+
+        public int EnemyVanguardGrade()
+        {
+            return _player2.Vanguard().grade;
         }
 
         public bool OpponentHasRearguards()
@@ -1636,6 +1678,15 @@ namespace VanguardEngine
             _cardFight.PerfectGuard(_player1, _player2);
         }
 
+        public void HitImmunity(int paramNum, params int[] grades)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            List<int> tempIDs = new List<int>();
+            foreach (Card card in cards)
+                tempIDs.Add(card.tempID);
+            _player1.HitImmunity(tempIDs, grades.ToList());
+        }
+
         public void TargetImmunity(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -1804,6 +1855,11 @@ namespace VanguardEngine
             {
                 _cardFight.RemoveSkill(_player1, _player2, card, skill);
             }
+        }
+
+        public void AllowFreeSwap()
+        {
+            _player1.AllowFreeSwap();
         }
 
         public void AllowBackRowAttack(int paramNum)
@@ -2039,6 +2095,11 @@ namespace VanguardEngine
         {
             return _activated;
         }
+
+        public bool Activated(int activationNumber)
+        {
+            return _cardFight.Activated(_card.tempID, activationNumber);
+        }
     }
 
     class Param
@@ -2086,6 +2147,12 @@ namespace VanguardEngine
         {
             _column.Clear();
             _column.Add(num);
+        }
+
+        public void InjectGrade(int num)
+        {
+            _grade.Clear();
+            _grade.Add(num);
         }
 
         public void AddGrade(int grade)
@@ -2211,6 +2278,8 @@ namespace VanguardEngine
         public const int OnDiscard = 23;
         public const int OnStand = 24;
         public const int OnChosen = 25;
+        public const int PutOnGC = 26;
+        public const int OnBattlePhase = 27;
     }
 
     public class Location
@@ -2294,6 +2363,9 @@ namespace VanguardEngine
         public const int NotAttackTarget = 15;
         public const int Attacking = 16;
         public const int Token = 17;
+        public const int SetOrder = 18;
+        public const int InFront = 19;
+        public const int GradeOrLess = 20;
     }
 
     class AbilityType
