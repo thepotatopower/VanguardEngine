@@ -782,7 +782,8 @@ namespace VanguardEngine
                 abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetOrderZone()));
                 abilities.AddRange(_abilities.GetAbilities(activation, cards));
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits()));
-                abilities.AddRange(_abilities.GetAbilities(activation, player2.GetActiveUnits()));
+                if (activation != Activation.OnACT)
+                    abilities.AddRange(_abilities.GetAbilities(activation, player2.GetActiveUnits()));
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand()));
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop()));
                 abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul()));
@@ -1162,8 +1163,30 @@ namespace VanguardEngine
 
         public void RearrangeOnTop(Player player1, List<Card> cardsToRearrange)
         {
+            bool swapped = false;
+            if (_inputManager._player1._playerID != player1._playerID)
+            {
+                _inputManager.SwapPlayers();
+                swapped = true;
+            }
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
             _player1.RearrangeOnTop(newOrder);
+            if (swapped)
+                _inputManager.SwapPlayers();
+        }
+
+        public void RearrangeOnBottom(Player player1, List<Card> cardsToRearrange)
+        {
+            bool swapped = false;
+            if (_inputManager._player1._playerID != player1._playerID)
+            {
+                _inputManager.SwapPlayers();
+                swapped = true;
+            }
+            List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
+            _player1.RearrangeOnBottom(newOrder);
+            if (swapped)
+                _inputManager.SwapPlayers();
         }
 
         public void DisplayCards(Player player1, List<Card> cardsToDisplay)

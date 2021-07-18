@@ -45,6 +45,7 @@ namespace VanguardEngine
         protected bool _guardWithTwo = false;
         protected bool _canGuardFromHand = true;
         protected bool _freeSwap = false;
+        protected bool _canIntercept = true;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
         protected List<Card> PlayerDeck;
@@ -834,9 +835,14 @@ namespace VanguardEngine
 
         public bool CanIntercept(Card card)
         {
-            if (card != null && !_field.Attacked.Contains(card) && card.skill == 1 && (_field.Units[PlayerFrontLeft] == card || _field.Units[PlayerFrontRight] == card))
+            if (_canIntercept && card != null && !_field.Attacked.Contains(card) && card.skill == 1 && (_field.Units[PlayerFrontLeft] == card || _field.Units[PlayerFrontRight] == card))
                 return true;
             return false;
+        }
+
+        public void DisableIntercept()
+        {
+            _canIntercept = false;
         }
 
         public List<Card> GetActiveUnits()
@@ -968,7 +974,10 @@ namespace VanguardEngine
                 power += Units[location].abilityPower[key];
             if (_field.Booster >= 0 && location == _field.Attacker)
             {
-                power += CalculatePowerOfUnit(_field.Booster);
+                if (_field.Units[_field.Booster] == null)
+                    _field.Booster = -1;
+                else
+                    power += CalculatePowerOfUnit(_field.Booster);
             }
             return power;
         }
@@ -2246,6 +2255,10 @@ namespace VanguardEngine
                     _field.Units[GetCircle(cardToAdd)] = null;
                 else if (_field.Units[PlayerVanguard].soul.Contains(cardToAdd))
                     _field.Units[PlayerVanguard].soul.Remove(cardToAdd);
+                if (PlayerLooking.Contains(cardToAdd))
+                    PlayerLooking.Remove(cardToAdd);
+                if (PlayerRevealed.Contains(cardToAdd))
+                    PlayerRevealed.Remove(cardToAdd);
                 cardToAdd.location = Location.Hand;
                 PlayerHand.Add(cardToAdd);
             }
@@ -2286,6 +2299,10 @@ namespace VanguardEngine
                     if (cardToAdd == _playedOrder)
                         _playedOrder = null;
                     PlayerOrder.Remove(cardToAdd);
+                }
+                else if (cardToAdd.location == Location.Hand)
+                {
+                    PlayerHand.Remove(cardToAdd);
                 }
                 if (PlayerLooking.Contains(cardToAdd))
                     PlayerLooking.Remove(cardToAdd);
@@ -2832,6 +2849,14 @@ namespace VanguardEngine
             }
         }
 
+        public void RearrangeOnBottom(List<int> tempIDs)
+        {
+            for (int i = PlayerDeck.Count - 1 - tempIDs.Count; i < tempIDs.Count; i++)
+            {
+                PlayerDeck[i] = _field.CardCatalog[tempIDs[i]];
+            }
+        }
+
         public void AddSkill(int tempID, int skill)
         {
             if (!_bonusSkills.ContainsKey(tempID))
@@ -2903,6 +2928,7 @@ namespace VanguardEngine
             _soulChargedThisTurn = false;
             _playerRetiredThisTurn = false;
             _enemyRetiredThisTurn = false;
+            _canIntercept = true;
             for (int i = 0; i < _field.CirclePower.Length; i++)
                 _field.CirclePower[i] = 0;
             for (int i = 0; i < _field.CircleCritical.Length; i++)

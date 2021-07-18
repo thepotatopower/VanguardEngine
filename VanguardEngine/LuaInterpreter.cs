@@ -896,6 +896,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.Boosting)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.tempID == _player1.Booster().tempID)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                 }
             }
             if (param.Names.Count > 0)
@@ -1224,7 +1235,7 @@ namespace VanguardEngine
 
         public bool IsRearguard()
         {
-            List<Card> units = _player1.GetAllUnitsOnField();
+            List<Card> units = _player1.GetActiveUnits();
             foreach (Card card in units)
             {
                 if (card.tempID == _card.tempID && card.location == Location.RC)
@@ -1652,6 +1663,12 @@ namespace VanguardEngine
 ;            _cardFight.RearrangeOnTop(_player1, cards);
         }
 
+        public void RearrangeOnBottom(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            ; _cardFight.RearrangeOnBottom(_player1, cards);
+        }
+
         public void DisplayCards(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -1881,6 +1898,11 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
                 _player1.DisableColumnAttack(card.tempID);
+        }
+
+        public void EnemyDisableIntercept()
+        {
+            _player2.DisableIntercept();
         }
 
         public void Heal()
@@ -2366,6 +2388,7 @@ namespace VanguardEngine
         public const int SetOrder = 18;
         public const int InFront = 19;
         public const int GradeOrLess = 20;
+        public const int Boosting = 21;
     }
 
     class AbilityType
