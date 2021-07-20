@@ -588,6 +588,7 @@ namespace VanguardEngine
             Console.WriteLine("Choose order for card(s).");
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
+            intlist_input.Clear();
             WaitForInput(ChooseOrder_Input);
             if (swapped)
                 SwapPlayers();
@@ -663,6 +664,7 @@ namespace VanguardEngine
             int selection;
             int count = int_value;
             int min = int_value2;
+            int bonus = 0;
             intlist_input.Clear();
             for (int j = 0; j < count; j++)
             {
@@ -678,7 +680,9 @@ namespace VanguardEngine
                 }
                 else
                     selection = SelectPrompt(cardsToSelect.Count) - 1;
-                if (intlist_input.Count >= min && selection == cardsToSelect.Count)
+                if (_query.Contains("retire") && _player1.CanCountAsTwoRetires(cardsToSelect[selection].tempID) && !_player1.IsEnemy(cardsToSelect[selection].tempID))
+                    bonus++;
+                if (intlist_input.Count + bonus >= min && selection == cardsToSelect.Count)
                     oSignalEvent.Set();
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);

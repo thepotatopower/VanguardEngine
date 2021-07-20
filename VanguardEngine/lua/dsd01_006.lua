@@ -49,7 +49,7 @@ function CanFullyResolve(n)
 	elseif n == 2 then
 		return true
 	elseif n == 3 then
-		if obj.Exists(4) then
+		if obj.CanRetire(4) then
 			return true
 		end
 	end

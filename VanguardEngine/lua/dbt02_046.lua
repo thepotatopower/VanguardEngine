@@ -32,11 +32,11 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.CanCB(1) and obj.Exists(2) then
+		if obj.LastPlacedOnVC() and obj.CanCB(1) and obj.CanRetire(2) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.LastPlacedOnRC() and obj.CanCB(1) and obj.Exists(2) then
+		if obj.LastPlacedOnRC() and obj.CanCB(1) and obj.CanRetire(2) then
 			return true
 		end
 	elseif n == 3 then
@@ -49,7 +49,7 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 or n == 2 then
-		if obj.Exists(3) then
+		if obj.CanRetire(3) then
 			return true
 		end
 	elseif n == 3 then

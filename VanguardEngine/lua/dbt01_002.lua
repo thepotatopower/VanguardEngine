@@ -64,7 +64,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		if obj.Exists(2) then
+		if obj.CanRetire(2) then
 			obj.ChooseRetire(2)
 		end
 		obj.AddTempPower(3, 10000)

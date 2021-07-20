@@ -24,7 +24,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) then 
+		if obj.CanRetire(1) then 
 			return true
 		end
 	end

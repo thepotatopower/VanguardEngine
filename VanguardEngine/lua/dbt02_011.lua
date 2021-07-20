@@ -37,7 +37,7 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(3) and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") then
+		if obj.CanRetire(3) and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") then
 			return true
 		end
 	end

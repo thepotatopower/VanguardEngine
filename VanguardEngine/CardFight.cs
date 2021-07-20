@@ -1020,6 +1020,16 @@ namespace VanguardEngine
             AddToChosen(cardsToAddCritical);
         }
 
+        public void ChooseAddDrive(Player player1, Player player2, List<Card> canAdd, int drive, int count)
+        {
+            List<int> cardsToAddDrive = _inputManager.SelectFromList(player1, canAdd, count, count, "Choose card(s) to give +" + drive + " drive to.");
+            foreach (int tempID in cardsToAddDrive)
+            {
+                player1.AddDrive(tempID, drive);
+            }
+            AddToChosen(cardsToAddDrive);
+        }
+
         public void ChooseAddBattleOnlyCritical(Player player1, List<Card> canAdd, int critical, int count, int min)
         {
             List<int> cardsToAddCritical = _inputManager.SelectFromList(player1, canAdd, count, min, "Choose card(s) to give +" + critical + " critical to.");

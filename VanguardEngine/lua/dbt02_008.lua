@@ -36,7 +36,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(2) and obj.Exists(3) then
+		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(2) and obj.CanRetire(3) then
 			return true
 		end
 	end

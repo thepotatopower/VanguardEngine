@@ -26,6 +26,7 @@ namespace VanguardEngine
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected List<Card> _canColumnAttack = new List<Card>();
         protected List<Card> _unitsHit = new List<Card>();
+        protected List<Card> _countsAsTwoRetires = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Card _playedOrder;
         protected int _CBUsed = 0;
@@ -394,6 +395,26 @@ namespace VanguardEngine
             return false;
         }
 
+        public List<Card> GetInFront(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            List<Card> columnUnits;
+            List<Card> inFront = new List<Card>();
+            if (GetActiveUnits().Contains(card))
+            {
+                int column = GetColumn(tempID);
+                columnUnits = GetUnitsAtColumn(column);
+                foreach (Card c in columnUnits)
+                {
+                    if (c != null && c.tempID != tempID)
+                        inFront.Add(c);
+                    else
+                        break;
+                }
+            }
+            return inFront;
+        }
+
         public int NumEnemyOpenCircles()
         {
             int count = 0;
@@ -514,9 +535,9 @@ namespace VanguardEngine
             }
         }
 
-        public void GiveShuffleKey(int[] key)
+        public void Shuffle()
         {
-            _field.ShuffleKey = key;
+            _field.Shuffle(PlayerDeck);
         }
 
         public void StandAll()
@@ -1518,7 +1539,10 @@ namespace VanguardEngine
             if (loc == Location.Drop)
                 location = PlayerDrop;
             else if (loc == Location.Deck)
+            {
                 location = PlayerDeck;
+                _field.Shuffle(PlayerDeck);
+            }
             else if (loc == Location.Hand)
             {
                 location = PlayerHand;
@@ -1588,7 +1612,6 @@ namespace VanguardEngine
                 PlayerDrop.Add(ToBeCalled);
                 slots[circle] = null;
             }
-            _field.Shuffle(PlayerDeck);
             _lastPlacedOnRC.Add(ToBeCalled);
             if (fromHand)
             {
@@ -1867,6 +1890,34 @@ namespace VanguardEngine
                     return;
                 }
             }
+        }
+
+        public void CountsAsTwoRetires(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetActiveUnits().Contains(card) && !_countsAsTwoRetires.Contains(card))
+            {
+                _countsAsTwoRetires.Add(card);
+            }
+        }
+
+        public void DoesNotCountAsTwoRetires(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetActiveUnits().Contains(card) && _countsAsTwoRetires.Contains(card))
+            {
+                _countsAsTwoRetires.Remove(card);
+            }
+        }
+
+        public bool CanCountAsTwoRetires(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetActiveUnits().Contains(card) && _countsAsTwoRetires.Contains(card))
+            {
+                return true;
+            }
+            return false;
         }
 
         public void Retire(List<int> tempIDs)
@@ -2541,6 +2592,10 @@ namespace VanguardEngine
                 {
                     _field.Units[GetCircle(card)] = null;
                 }
+                else if (card.location == Location.Drop)
+                {
+                    PlayerDrop.Remove(card);
+                }
                 card.location = Location.Prison;
                 PlayerPrisoners.Add(card);
                 PlayerOrder.Add(card);
@@ -2843,17 +2898,25 @@ namespace VanguardEngine
 
         public void RearrangeOnTop(List<int> tempIDs)
         {
+            Card card;
             for (int i = 0; i < tempIDs.Count; i++)
             {
-                PlayerDeck[i] = _field.CardCatalog[tempIDs[i]];
+                card = _field.CardCatalog[tempIDs[i]];
+                PlayerDeck[i] = card;
+                if (PlayerLooking.Contains(card))
+                    PlayerLooking.Remove(card);
             }
         }
 
         public void RearrangeOnBottom(List<int> tempIDs)
         {
+            Card card;
             for (int i = PlayerDeck.Count - 1 - tempIDs.Count; i < tempIDs.Count; i++)
             {
-                PlayerDeck[i] = _field.CardCatalog[tempIDs[i]];
+                card = _field.CardCatalog[tempIDs[i]];
+                PlayerDeck[i] = card;
+                if (PlayerLooking.Contains(card))
+                    PlayerLooking.Remove(card);
             }
         }
 
@@ -2924,6 +2987,7 @@ namespace VanguardEngine
             _canColumnAttack.Clear();
             _bonusSkills.Clear();
             _stoodByCardEffect.Clear();
+            _countsAsTwoRetires.Clear();
             _orderPlayed = false;
             _soulChargedThisTurn = false;
             _playerRetiredThisTurn = false;
@@ -2940,7 +3004,9 @@ namespace VanguardEngine
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
                 if (_field.Units[i] != null)
+                {
                     _field.Units[i].targetImmunity = false;
+                }
             }
             _freeSwap = false;
         }

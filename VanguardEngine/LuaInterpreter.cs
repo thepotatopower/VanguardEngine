@@ -585,8 +585,10 @@ namespace VanguardEngine
             {
                 if (location == Location.Deck)
                     currentPool.AddRange(_player1.GetDeck());
-                else if (location == Location.Drop)
+                else if (location == Location.Drop || location == Location.PlayerDrop)
                     currentPool.AddRange(_player1.GetDrop());
+                else if (location == Location.EnemyDrop)
+                    currentPool.AddRange(_player2.GetDrop());
                 else if (location == Location.PlayerHand)
                     currentPool.AddRange(_player1.GetHand());
                 else if (location == Location.EnemyHand)
@@ -656,6 +658,8 @@ namespace VanguardEngine
                     currentPool.AddRange(_player2.GetLastCalledFromPrison());
                 else if (location == Location.LastStood)
                     currentPool.AddRange(_player1.GetLastStood());
+                else if (location == Location.InFront)
+                    currentPool.AddRange(_player1.GetInFront(_card.tempID));
             }
             if (currentPool.Count == 0)
                 return currentPool;
@@ -1044,6 +1048,14 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool TriggerRevealed()
+        {
+            Card trigger = _player1.GetTrigger(true);
+            if (trigger.trigger != Trigger.NotTrigger)
+                return true;
+            return false;
+        }
+
         public bool Exists(int paramNum)
         {
             int min = GetMin(paramNum);
@@ -1179,14 +1191,19 @@ namespace VanguardEngine
             if (units == null)
                 return false;
             List<Card> canRetire = new List<Card>();
+            int count = 0;
             foreach (Card card in units)
             {
                 if (!(card.targetImmunity && _player1.IsEnemy(card.tempID)))
-                    canRetire.Add(card);
+                {
+                    count++;
+                    if (_player1.CanCountAsTwoRetires(card.tempID))
+                        count++;
+                }
             }
-            if (canRetire.Count < _params[paramNum - 1].Counts[0])
-                return false;
-            return true;
+            if (count >= GetCount(paramNum) || count >= GetMin(paramNum))
+                return true;
+            return false;
         }
 
         public bool CanDiscard(int paramNum)
@@ -1518,6 +1535,20 @@ namespace VanguardEngine
             _cardFight.Discard(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
+        public void CountsAsTwoRetires(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.CountsAsTwoRetires(card.tempID);
+        }
+
+        public void DoesNotCountAsTwoRetires(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.DoesNotCountAsTwoRetires(card.tempID);
+        }
+
         public void ChooseRetire(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
@@ -1838,6 +1869,12 @@ namespace VanguardEngine
             }
         }
 
+        public void ChooseAddDrive(int paramNum, int drive)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            _cardFight.ChooseAddDrive(_player1, _player2, cards, drive, GetCount(paramNum));
+        }
+
         public void AddBattleOnlyPower(int paramNum, int power)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -2122,6 +2159,11 @@ namespace VanguardEngine
         {
             return _cardFight.Activated(_card.tempID, activationNumber);
         }
+
+        public void Shuffle()
+        {
+            _player1.Shuffle();
+        }
     }
 
     class Param
@@ -2349,6 +2391,9 @@ namespace VanguardEngine
         public const int PlayedOrder = 41;
         public const int LastCalledFromPrison = 42;
         public const int LastStood = 43;
+        public const int PlayerDrop = 44;
+        public const int EnemyDrop = 45;
+        public const int InFront = 46;
     }
 
     class Query
