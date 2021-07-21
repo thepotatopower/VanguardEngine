@@ -122,6 +122,8 @@ namespace VanguardEngine
             player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
+            player1.Mill(10);
+            player2.Mill(10);
             while (true)
             {
                 actingPlayer = player1;
@@ -430,32 +432,14 @@ namespace VanguardEngine
 
         public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing)
         {
-            int selection = 0;
             List<int> selections;
             int selectedCircle = 0;
             List<int> selectedCircles = new List<int>();
             List<int> canSelect = new List<int>();
             int sc = 0;
-            for (int i = 0; i < max; i++)
+            selections = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose card to Call.");
+            foreach (int tempID in selections)
             {
-                if (i == min)
-                {
-                    selections = _inputManager.SelectFromList(player1, cardsToSelect, 1, 0, "Choose card to Call.");
-                    if (selections.Count == 0)
-                        break;
-                    else
-                        selection = selections[0];
-                }
-                else
-                    selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "Choose card to Call.")[0];
-                foreach (Card card in cardsToSelect)
-                {
-                    if (card.tempID == selection)
-                    {
-                        cardsToSelect.Remove(card);
-                        break;
-                    }
-                }
                 if (circles != null)
                     canSelect.AddRange(circles);
                 if (canSelect.Count == 1)
@@ -463,8 +447,8 @@ namespace VanguardEngine
                 else
                     selectedCircle = _inputManager.SelectCallLocation(player1, "Choose RC.", selectedCircles, canSelect);
                 selectedCircles.Add(selectedCircle);
-                sc = player1.SuperiorCall(selectedCircle, selection, overDress, standing);
-                _abilities.ResetActivation(selection);
+                sc = player1.SuperiorCall(selectedCircle, tempID, overDress, standing);
+                _abilities.ResetActivation(tempID);
             }
             AddAbilitiesToQueue(player1, player2, Activation.PlacedOnRC);
             if (sc == 1)
@@ -633,7 +617,7 @@ namespace VanguardEngine
             }
             if (player1.StillAttacking() && player2.AttackHits())
             {
-                if (player2.TargetIsVanguard(C.Player))
+                if (player2.VanguardHit(C.Player))
                 {
                     critical = player1.Critical();
                     for (int i = 0; i < critical; i++)
@@ -1138,6 +1122,21 @@ namespace VanguardEngine
             }
             List<int> cardsToImprison = _inputManager.SelectFromList(player1, cardsToSelect, count, min, "Choose card(s) to imprison.");
             player1.Imprison(cardsToImprison);
+            if (swapped)
+                _inputManager.SwapPlayers();
+        }
+
+        public void ChooseMoveEnemyRearguard(Player player1, List<Card> cardsToSelect, List<int> availableCircles)
+        {
+            bool swapped = false;
+            if (_inputManager._player1._playerID != player1._playerID)
+            {
+                _inputManager.SwapPlayers();
+                swapped = true;
+            }
+            int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "Choose unit to switch places.")[0];
+            int selection2 = _inputManager.SelectCircle(player1, availableCircles);
+            player1.MoveRearguardSpecific(selection, selection2);
             if (swapped)
                 _inputManager.SwapPlayers();
         }

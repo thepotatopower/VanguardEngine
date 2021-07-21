@@ -12,7 +12,7 @@ namespace VanguardEngine
         protected List<Card> _player2Deck = new List<Card>();
         protected List<Card> _tokens = new List<Card>();
         protected Card[] _cardCatalog = new Card[200];
-        protected Card[] _units = new Card[14];
+        protected readonly Circle[] _circles = new Circle[14];
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
         protected List<Card> _GC = new List<Card>();
@@ -45,6 +45,7 @@ namespace VanguardEngine
         protected Card _player2World = null;
         protected List<Card> _player1Prisoners = new List<Card>();
         protected List<Card> _player2Prisoners = new List<Card>();
+        protected List<Card> _unitsHit = new List<Card>();
         protected Player _player2Player;
         protected int[] _shuffleKey;
         protected int _turn = 1;
@@ -82,9 +83,16 @@ namespace VanguardEngine
             get => _player2Hand;
         }
 
-        public Card[] Units
+        public Card GetCircle(int circle)
         {
-            get => _units;
+            if (_circles[circle] == null)
+                return null;
+            return _circles[circle].Unit;
+        }
+
+        public void SetCircle(int circle, Card card)
+        {
+            _circles[circle].Unit = card;
         }
 
         public int[] CirclePower
@@ -229,6 +237,11 @@ namespace VanguardEngine
             get => _player2Prisoners;
         }
 
+        public List<Card> UnitsHit
+        {
+            get => _unitsHit;
+        }
+
         public Card Player1World
         {
             get => _player1World;
@@ -253,12 +266,41 @@ namespace VanguardEngine
         {
             foreach (Card card in tokens)
                 _tokens.Add(card);
-            _units[FL.PlayerVanguard] = deck1[0].Clone();
-            _units[FL.PlayerVanguard].faceup = false;
-            _units[FL.PlayerVanguard].location = Location.VC;
-            _units[FL.EnemyVanguard] = deck2[0].Clone();
-            _units[FL.EnemyVanguard].faceup = false;
-            _units[FL.EnemyVanguard].location = Location.VC;
+            for (int i = 1; i < 14; i++)
+            {
+                if (i == FL.PlayerFrontLeft)
+                    _circles[i] = new Circle(0, -1);
+                else if (i == FL.PlayerBackLeft)
+                    _circles[i] = new Circle(1, -1);
+                else if (i == FL.PlayerVanguard)
+                    _circles[i] = new Circle(0, 0);
+                else if (i == FL.PlayerBackCenter)
+                    _circles[i] = new Circle(1, 0);
+                else if (i == FL.PlayerFrontRight)
+                    _circles[i] = new Circle(0, 1);
+                else if (i == FL.PlayerBackRight)
+                    _circles[i] = new Circle(1, 1);
+                else if (i == FL.EnemyFrontLeft)
+                    _circles[i] = new Circle(0, 1);
+                else if (i == FL.EnemyBackLeft)
+                    _circles[i] = new Circle(1, 1);
+                else if (i == FL.EnemyVanguard)
+                    _circles[i] = new Circle(0, 0);
+                else if (i == FL.EnemyBackCenter)
+                    _circles[i] = new Circle(1, 0);
+                else if (i == FL.EnemyFrontRight)
+                    _circles[i] = new Circle(0, -1);
+                else if (i == FL.EnemyBackRight)
+                    _circles[i] = new Circle(1, -1);
+                else if (i == 7)
+                    _circles[i] = new Circle(100, 100);
+            }
+            _circles[FL.PlayerVanguard].Unit = deck1[0].Clone();
+            _circles[FL.PlayerVanguard].Unit.faceup = false;
+            _circles[FL.PlayerVanguard].Unit.location = Location.VC;
+            _circles[FL.EnemyVanguard].Unit = deck2[0].Clone();
+            _circles[FL.EnemyVanguard].Unit.faceup = false;
+            _circles[FL.EnemyVanguard].Unit.location = Location.VC;
             for (int i = 1; i < 4; i++)
             {
                 _player1RideDeck.Add(deck1[i].Clone());
@@ -291,8 +333,8 @@ namespace VanguardEngine
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 2;
             }
-            _cardCatalog[_units[FL.PlayerVanguard].tempID] = _units[FL.PlayerVanguard];
-            _cardCatalog[_units[FL.EnemyVanguard].tempID] = _units[FL.EnemyVanguard];
+            _cardCatalog[_circles[FL.PlayerVanguard].Unit.tempID] = _circles[FL.PlayerVanguard].Unit;
+            _cardCatalog[_circles[FL.EnemyVanguard].Unit.tempID] = _circles[FL.EnemyVanguard].Unit;
             Shuffle(_player1Deck);
             Shuffle(_player2Deck);
         }
@@ -379,6 +421,53 @@ namespace VanguardEngine
                 }
             }
             return -1;
+        }
+    }
+
+    public class Circle
+    {
+        Card _unit = null;
+        List<Card> _overloadedUnits = new List<Card>();
+        int _row = 0;
+        int _column = 0;
+        int _power = 0;
+        int _critical = 0;
+
+        public Circle(int row, int column)
+        {
+            _row = row;
+            _column = column;
+        }
+
+        public Card Unit
+        {
+            get => _unit;
+            set => _unit = value;
+        }
+
+        public List<Card> OverloadedUnits
+        {
+            get => _overloadedUnits;
+        }
+
+        public int Row
+        {
+            get => _row;
+        }
+
+        public int Column
+        {
+            get => _column;
+        }
+
+        public int Power
+        {
+            get => _power;
+        }
+
+        public int Critical
+        {
+            get => _critical;
         }
     }
 

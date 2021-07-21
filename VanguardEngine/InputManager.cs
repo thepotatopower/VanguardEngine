@@ -11,6 +11,7 @@ namespace VanguardEngine
     {
         public Player _player1;
         public Player _player2;
+        public Player _actingPlayer;
         public bool bool_input;
         public int int_input;
         public int int_input2;
@@ -349,6 +350,37 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
+        public virtual int SelectCircle(Player actingPlayer, List<int> availableCircles)
+        {
+            _actingPlayer = actingPlayer;
+            intlist_input.Clear();
+            intlist_input.AddRange(availableCircles);
+            WaitForInput(SelectCircle_Input);
+            return int_input;
+        }
+
+        protected virtual void SelectCircle_Input()
+        {
+            string output;
+            int_input = -1;
+            while (int_input < 0)
+            {
+                Console.WriteLine("Select a circle.");
+                for (int i = 0; i < intlist_input.Count; i++)
+                {
+                    output = (i + 1) + ". ";
+                    if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyFrontRight))
+                        output += "Enemy Front Right.";
+                    else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyFrontLeft))
+                        output += "Enemy Front Left.";
+                    Console.WriteLine(output);
+                }
+                int_input = SelectPrompt(intlist_input.Count);
+            }
+            int_input = intlist_input[int_input - 1];
+            oSignalEvent.Set();
+        }
+
         public virtual int SelectRearguardColumn()
         {
             WaitForInput(SelectRearguardColumn_Input);
@@ -646,7 +678,7 @@ namespace VanguardEngine
                     min = cardsToSelect.Count;
                 count = cardsToSelect.Count;
             }
-            if (cardsToSelect.Count < min)
+            if (cardsToSelect.Count == 0 || cardsToSelect.Count < min)
             {
                 intlist_input.Clear();
                 return intlist_input;

@@ -561,8 +561,7 @@ namespace VanguardEngine
 
         public bool CanSuperiorCall(int paramNum)
         {
-            List<Card> cards = ValidCards(paramNum);
-            if (cards != null && cards.Count >= _params[paramNum - 1].Counts[0])
+            if (Exists(paramNum))
                 return true;
             return false;
         }
@@ -1086,6 +1085,37 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool OpenCirclesExist(int paramNum)
+        {
+            if (OpenCircles(paramNum).Count > 0)
+                return true;
+            return false;
+        }
+
+        public List<int> OpenCircles(int paramNum)
+        {
+            Param param = _params[paramNum - 1];
+            List<int> openCircles;
+            List<int> availableCircles = new List<int>();
+            if (param.Locations.Contains(Location.FrontRowEnemyRC))
+            {
+                openCircles = _player1.GetOpenCircles(C.Enemy);
+                if (openCircles.Contains(_player1.Convert(FL.EnemyFrontRight)))
+                    availableCircles.Add(_player1.Convert(FL.EnemyFrontRight));
+                if (openCircles.Contains(_player1.Convert(FL.EnemyFrontLeft)))
+                    availableCircles.Add(_player1.Convert(FL.EnemyFrontLeft));
+            }
+            return availableCircles;
+        }
+
+        public void ChooseMoveEnemyRearguard(int paramNum, List<int> circles)
+        {
+            if (circles.Count == 0)
+                return;
+            List<Card> cards = ValidCards(paramNum);
+            _cardFight.ChooseMoveEnemyRearguard(_player1, cards, circles);
+        }
+
         public void Inject(int paramNum, int query, string name)
         {
             Param customParam = _params[paramNum - 1];
@@ -1293,6 +1323,11 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool EnemyVanguardHit()
+        {
+            return _player2.VanguardHit(true);
+        }
+
         public bool InOverDress()
         {
             Card card = _player1.GetCard(_card.tempID);
@@ -1397,7 +1432,7 @@ namespace VanguardEngine
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<int> circles = new List<int>();
             if (circle == FL.OpenCircle)
-                circles.AddRange(_player1.GetOpenCircles());
+                circles.AddRange(_player1.GetOpenCircles(C.Player));
             else
                 circles.Add(circle);
             int count = GetCount(paramNum);
@@ -1559,6 +1594,15 @@ namespace VanguardEngine
                     canRetire.Add(card);
             }
             _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum - 1].Counts[0], false); 
+        }
+
+        public void Bind(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            List<int> tempIDs = new List<int>();
+            foreach (Card card in cards)
+                tempIDs.Add(card.tempID);
+            _player1.Bind(tempIDs);
         }
 
         public void Retire(int paramNum)
@@ -2103,6 +2147,11 @@ namespace VanguardEngine
             return _player1.IsAlchemagic();
         }
 
+        public bool AlchemagicUsedThisTurn()
+        {
+            return _player1.AlchemagicUsedThisTurn();
+        }
+
         public int GetNumberOf(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -2394,6 +2443,7 @@ namespace VanguardEngine
         public const int PlayerDrop = 44;
         public const int EnemyDrop = 45;
         public const int InFront = 46;
+        public const int PlayerBind = 47;
     }
 
     class Query
@@ -2434,6 +2484,7 @@ namespace VanguardEngine
         public const int InFront = 19;
         public const int GradeOrLess = 20;
         public const int Boosting = 21;
+        public const int Locked = 22;
     }
 
     class AbilityType
