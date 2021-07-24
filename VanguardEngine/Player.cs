@@ -49,6 +49,7 @@ namespace VanguardEngine
         protected bool _alchemagicUsed = false;
         protected bool _guardWithTwo = false;
         protected bool _canGuardFromHand = true;
+        protected int _minGradeForGuard = 6;
         protected bool _freeSwap = false;
         protected bool _canIntercept = true;
         protected List<Card> PlayerHand;
@@ -867,7 +868,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand)
                 {
-                    if (card.orderType < 0 && card.grade <= _field.GetCircle(PlayerVanguard).grade)
+                    if (card.orderType < 0 && card.grade <= _field.GetCircle(PlayerVanguard).grade && card.grade <= _minGradeForGuard)
                         cards.Add(card);
                 }
             }
@@ -1309,6 +1310,13 @@ namespace VanguardEngine
             if (!_lastPlacedOnRC.ContainsKey(count))
                 return new List<Card>();
             return _lastPlacedOnRC[count];
+        }
+
+        public List<Card> GetLastPlacedOnVC(int count)
+        {
+            if (!_lastPlacedOnVC.ContainsKey(count))
+                return new List<Card>();
+            return _lastPlacedOnVC[count];
         }
 
         public List<Card> GetLastStood(int count)
@@ -1894,8 +1902,6 @@ namespace VanguardEngine
                 if (!_field.Guardians.ContainsKey(target))
                     _field.Guardians[target] = new List<Card>();
                 _field.Guardians[target].Add(card);
-                _lastPlacedOnGC.Clear();
-                _lastPutOnGC.Clear();
                 if (card.location == Location.Hand)
                     PlayerHand.Remove(card);
                 else if (card.location == Location.RC)
@@ -1944,6 +1950,11 @@ namespace VanguardEngine
         public bool CanGuardFromHand()
         {
             return _canGuardFromHand;
+        }
+
+        public void SetMinGradeForGuard(int min)
+        {
+            _minGradeForGuard = min;
         }
 
         public void PerfectGuard(int tempID)
@@ -2520,7 +2531,7 @@ namespace VanguardEngine
                             _field.SetCircle(i, null);
                     }
                 }
-                else if (cardToAdd.location == Location.RC)
+                if (cardToAdd.location == Location.RC)
                 {
                     for (int i = EnemyFrontLeft; i < EnemyVanguard; i++)
                     {
@@ -2528,6 +2539,8 @@ namespace VanguardEngine
                             _field.SetCircle(i, null);
                     }
                 }
+                if (PlayerPrisoners.Contains(cardToAdd))
+                    PlayerPrisoners.Remove(cardToAdd);
                 else if (cardToAdd.location == Location.Deck)
                 {
                     PlayerDeck.Remove(cardToAdd);
@@ -3137,6 +3150,7 @@ namespace VanguardEngine
             _field.UnitsHit.Clear();
             _guardWithTwo = false;
             _canGuardFromHand = true;
+            _minGradeForGuard = 6;
             for (int i = 1; i <= PlayerVanguard; i++)
             {
                 if (_field.GetCircle(i) != null)

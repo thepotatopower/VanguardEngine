@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 2
+	return 4
 end
 
 function GetParam(n)

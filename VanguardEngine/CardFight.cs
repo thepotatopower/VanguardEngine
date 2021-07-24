@@ -118,8 +118,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             player1.Mill(10);
@@ -163,6 +163,8 @@ namespace VanguardEngine
                     args = new CardEventArgs();
                     OnEndPhase(this, args);
                 }
+                _playTimings.AddPlayTiming(Activation.OnEndPhase);
+                ActivateAbilities(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
                 player1.IncrementTurn();
@@ -567,9 +569,11 @@ namespace VanguardEngine
                         else
                             selection2 = -1;
                         if (player2.MustGuardWithTwo())
-                            selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), 2, 2, "Choose card(s) to guard with.");
+                            selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 2, "Choose card(s) to guard with.");
                         else
-                            selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), 1, 1, "Choose card(s) to guard with.");
+                            selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "Choose card(s) to guard with.");
+                        if (selections.Count == 0)
+                            continue;
                         intercept = player2.Guard(selections, selection2);
                         if (!intercept)
                             _playTimings.AddPlayTiming(Activation.PlacedOnGC);
@@ -749,7 +753,6 @@ namespace VanguardEngine
                     cards.Add(player1.GetTrigger(C.Player));
                     abilities.AddRange(_abilities.GetAbilities(activation, cards, i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), i));
-                    abilities.AddRange(_abilities.GetAbilities(activation, player2.GetActiveUnits(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), i));
@@ -881,47 +884,74 @@ namespace VanguardEngine
             int ThenID = 0;
             Ability ThenAbility = null;
             int ThenNum = 0;
-            AddAbilitiesToQueue(player1, player2);
-            while (abilities.Count > 0)
+            bool player1Selected = true;
+            bool player2Selected = true;
+            Player choosingPlayer = player1;
+            Player waitingPlayer = player2;
+            while (player1Selected || player2Selected)
             {
-                continuousAbilities = ContinuousAbilitiesInQueue();
-                foreach (Tuple<Ability, int> ability in continuousAbilities)
+                player1Selected = false;
+                player2Selected = false;
+                AddAbilitiesToQueue(choosingPlayer, waitingPlayer);
+                while (abilities.Count > 0)
                 {
-                    ability.Item1.SetTimingCount(ability.Item2);
-                    ability.Item1.Activate();
-                    abilities.Remove(ability);
-                }
-                if (abilities.Count == 0)
-                    break;
-                selection = _inputManager.SelectAbility(abilities);
-                if (selection == abilities.Count)
-                    break;
-                else
-                {
-                    _currentAbility = abilities[selection].Item1;
-                    Console.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
-                    abilities[selection].Item1.PayCost();
-                    ThenNum = abilities[selection].Item1.Activate();
-                    _playTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
-                    ThenID = abilities[selection].Item1.GetID();
-                    abilities.Clear();
-                    if (ThenNum > 0)
+                    continuousAbilities = ContinuousAbilitiesInQueue();
+                    foreach (Tuple<Ability, int> ability in continuousAbilities)
                     {
-                        ThenAbility = _abilities.GetAbility(ThenID, ThenNum);
-                        if (!ThenAbility.CheckCondition())
-                            continue;
-                        if (ThenAbility.isMandatory)
-                            ThenAbility.Activate();
+                        ability.Item1.SetTimingCount(ability.Item2);
+                        ability.Item1.Activate();
+                        abilities.Remove(ability);
+                    }
+                    if (abilities.Count == 0)
+                    {
+                        break;
+                    }
+                    selection = _inputManager.SelectAbility(abilities);
+                    if (selection == abilities.Count)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        if (choosingPlayer == player1)
+                            player1Selected = true;
                         else
+                            player2Selected = true;
+                        _currentAbility = abilities[selection].Item1;
+                        Console.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
+                        abilities[selection].Item1.PayCost();
+                        ThenNum = abilities[selection].Item1.Activate();
+                        _playTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
+                        ThenID = abilities[selection].Item1.GetID();
+                        abilities.Clear();
+                        if (ThenNum > 0)
                         {
-                            Console.WriteLine("Activate ability?");
-                            if (_inputManager.YesNo(player1, 0))
+                            ThenAbility = _abilities.GetAbility(ThenID, ThenNum);
+                            if (!ThenAbility.CheckCondition())
+                                continue;
+                            if (ThenAbility.isMandatory)
                                 ThenAbility.Activate();
+                            else
+                            {
+                                Console.WriteLine("Activate ability?");
+                                if (_inputManager.YesNo(choosingPlayer, 0))
+                                    ThenAbility.Activate();
+                            }
                         }
                     }
+                    abilities.Clear();
+                    AddAbilitiesToQueue(choosingPlayer, waitingPlayer);
                 }
-                abilities.Clear();
-                AddAbilitiesToQueue(player1, player2);
+                if (choosingPlayer == player1)
+                {
+                    choosingPlayer = player2;
+                    waitingPlayer = player1;
+                }
+                else
+                {
+                    choosingPlayer = player1;
+                    waitingPlayer = player2;
+                }
             }
             abilities.Clear();
             _chosen.Clear();

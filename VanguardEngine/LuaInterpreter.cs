@@ -570,6 +570,13 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool MyVanguardWasPlaced()
+        {
+            if (_player1.GetLastPlacedOnVC(_timingCount).Count > 0)
+                return true;
+            return false;
+        }
+
         public bool HasCardInDeck(string name)
         {
             if (_player1.HasCardInDeck(name))
@@ -1621,6 +1628,13 @@ namespace VanguardEngine
             _player1.AddToDrop(cardsToDrop);
         }
 
+        public void ChooseAddToDrop(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            List<int> cardsToDrop = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum), "Choose card(s) to send to drop.");
+            _player1.AddToDrop(cardsToDrop);
+        }
+
         public void Discard(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
@@ -2127,6 +2141,12 @@ namespace VanguardEngine
             _cardFight.EnemyChooseImprison(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
+        public void EnemyChooseRetire(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            _cardFight.SelectCardToRetire(_player2, _player1, cardsToSelect, GetCount(paramNum), false);
+        }
+
         public void EndOrder()
         {
             _player1.EndOrder();
@@ -2246,6 +2266,11 @@ namespace VanguardEngine
         public void EnemyCannotGuardFromHand()
         {
             _player2.CannotGuardFromHand();
+        }
+
+        public void EnemyMinGradeForGuard(int min)
+        {
+            _player2.SetMinGradeForGuard(min);
         }
 
         public int SelectOption(params string[] list)
@@ -2457,6 +2482,7 @@ namespace VanguardEngine
         public const int OnChosen = 25;
         public const int PutOnGC = 26;
         public const int OnBattlePhase = 27;
+        public const int OnEndPhase = 28;
     }
 
     public class Location
