@@ -16,7 +16,7 @@ namespace VanguardEngine
         public int int_input;
         public int int_input2;
         public List<int> intlist_input = new List<int>();
-        public List<Ability> _abilities = null;
+        public List<Ability> _abilities = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
         public string string_input;
         public int prompt;
@@ -571,7 +571,17 @@ namespace VanguardEngine
 
         public virtual int SelectAbility(List<Ability> abilities)
         {
-            _abilities = abilities;
+            _abilities.Clear();
+            _abilities.AddRange(abilities);
+            WaitForInput(SelectAbility_Input);
+            return int_input;
+        }
+
+        public virtual int SelectAbility(List<Tuple<Ability, int>> abilities)
+        {
+            _abilities.Clear();
+            foreach (Tuple<Ability, int> ability in abilities)
+                _abilities.Add(ability.Item1);
             WaitForInput(SelectAbility_Input);
             return int_input;
         }

@@ -26,7 +26,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and obj.Exists(1) then
+		if obj.LastPlacedOnVC() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then

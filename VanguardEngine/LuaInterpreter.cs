@@ -36,43 +36,45 @@ namespace VanguardEngine
             else
                 Console.WriteLine("loading " + filePath);
             Script.DefaultOptions.ScriptLoader = new MoonSharp.Interpreter.Loaders.FileSystemScriptLoader();
-            script = new Script();
-            UserData.RegisterType<Ability>();
-            UserData.RegisterType<Location>();
-            UserData.RegisterType<Activation>();
-            UserData.RegisterType<Query>();
-            UserData.RegisterType<AbilityType>();
-            UserData.RegisterType<Other>();
-            UserData.RegisterType<FL>();
-            UserData.RegisterType<Property>();
-            UserData.RegisterType<UnitType>();
-            UserData.RegisterType<Trigger>();
-            UserData.RegisterType<Skill>();
-            DynValue l = UserData.Create(new Location());
-            DynValue a = UserData.Create(new Activation());
-            DynValue q = UserData.Create(new Query());
-            DynValue t = UserData.Create(new AbilityType());
-            DynValue o = UserData.Create(new Other());
-            DynValue FL = UserData.Create(new FL());
-            DynValue p = UserData.Create(new Property());
-            DynValue u = UserData.Create(new UnitType());
-            DynValue tt = UserData.Create(new Trigger());
-            DynValue s = UserData.Create(new Skill());
-            DynValue obj;
-            script.Globals.Set("l", l);
-            script.Globals.Set("a", a);
-            script.Globals.Set("q", q);
-            script.Globals.Set("t", t);
-            script.Globals.Set("o", o);
-            script.Globals.Set("FL", FL);
-            script.Globals.Set("p", p);
-            script.Globals.Set("u", u);
-            script.Globals.Set("tt", tt);
-            script.Globals.Set("s", s);
-            script.DoFile(filePath);
-            DynValue numberOfAbilities = script.Call(script.Globals["NumberOfAbilities"]);
+            Script tempScript = new Script();
+            tempScript.DoFile(filePath);
+            DynValue numberOfAbilities = tempScript.Call(tempScript.Globals["NumberOfAbilities"]);
             for (int i = 0; i < numberOfAbilities.Number; i++)
             {
+                script = new Script();
+                UserData.RegisterType<Ability>();
+                UserData.RegisterType<Location>();
+                UserData.RegisterType<Activation>();
+                UserData.RegisterType<Query>();
+                UserData.RegisterType<AbilityType>();
+                UserData.RegisterType<Other>();
+                UserData.RegisterType<FL>();
+                UserData.RegisterType<Property>();
+                UserData.RegisterType<UnitType>();
+                UserData.RegisterType<Trigger>();
+                UserData.RegisterType<Skill>();
+                DynValue l = UserData.Create(new Location());
+                DynValue a = UserData.Create(new Activation());
+                DynValue q = UserData.Create(new Query());
+                DynValue t = UserData.Create(new AbilityType());
+                DynValue o = UserData.Create(new Other());
+                DynValue FL = UserData.Create(new FL());
+                DynValue p = UserData.Create(new Property());
+                DynValue u = UserData.Create(new UnitType());
+                DynValue tt = UserData.Create(new Trigger());
+                DynValue s = UserData.Create(new Skill());
+                DynValue obj;
+                script.Globals.Set("l", l);
+                script.Globals.Set("a", a);
+                script.Globals.Set("q", q);
+                script.Globals.Set("t", t);
+                script.Globals.Set("o", o);
+                script.Globals.Set("FL", FL);
+                script.Globals.Set("p", p);
+                script.Globals.Set("u", u);
+                script.Globals.Set("tt", tt);
+                script.Globals.Set("s", s);
+                script.DoFile(filePath);
                 ability = new Ability(player1, player2, cardFight, card, _abilityID++);
                 success = ability.StoreAbility(script, i + 1, player);
                 if (success)
@@ -109,7 +111,7 @@ namespace VanguardEngine
             return _abilities[tempID][activationNumber - 1];
         }
 
-        public List<Ability> GetAbilities(int activation, List<Card> cards)
+        public List<Ability> GetAbilities(int activation, List<Card> cards, int timingCount)
         {
             List<Ability> abilities = new List<Ability>();
             foreach (Card card in cards)
@@ -118,6 +120,7 @@ namespace VanguardEngine
                     continue;
                 foreach (Ability ability in _abilities[card.tempID])
                 {
+                    ability.SetTimingCount(timingCount);
                     if (ability.GetActivation == activation && ability.CheckCondition())
                     {
                         abilities.Add(ability);
@@ -210,6 +213,7 @@ namespace VanguardEngine
         int _abilityType;
         int _abilityNumber;
         int _abilityID;
+        int _timingCount = 0;
         List<int> _overDressParams = new List<int>();
         Script _script;
         DynValue _abilityActivate;
@@ -226,6 +230,11 @@ namespace VanguardEngine
             _cardFight = cardFight;
             _card = card;
             _abilityID = abilityID;
+        }
+
+        public void SetTimingCount(int timingCount)
+        {
+            _timingCount = timingCount;
         }
 
         public bool StoreAbility(Script script, int num, bool player)
@@ -397,6 +406,11 @@ namespace VanguardEngine
             get => _card.name;
         }
 
+        public int AbilityType
+        {
+            get => _abilityType;
+        }
+
         public int GetID()
         {
             return _card.tempID;
@@ -473,6 +487,31 @@ namespace VanguardEngine
             return (int)Then.Number;
         }
 
+        public int ActivateAsGiven(Card card)
+        {
+            Card originalCard = _card;
+            bool swapped = false;
+            Player temp;
+            if (card.originalOwner != _player1._playerID)
+            {
+                temp = _player1;
+                _player1 = _player2;
+                _player2 = temp;
+                swapped = true;
+            }
+            _card = card;
+            DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
+            _activated = true;
+            _card = originalCard;
+            if (swapped)
+            {
+                temp = _player1;
+                _player1 = _player2;
+                _player2 = temp;
+            }
+            return (int)Then.Number;
+        }
+
         public void PayCost()
         {
             _script.Call(_abilityCost, _abilityNumber);
@@ -523,7 +562,7 @@ namespace VanguardEngine
         }
         public bool IsRodeUponThisTurn()
         {
-            foreach (Card card in _player1.GetRiddenOnThisTurn())
+            foreach (Card card in _player1.GetRiddenOnThisTurn(_timingCount))
             {
                 if (_card.tempID == card.tempID)
                     return true;
@@ -636,7 +675,7 @@ namespace VanguardEngine
                 else if (location == Location.Trigger)
                     currentPool.Add(_player1.GetTrigger(true));
                 else if (location == Location.LastCalled)
-                    currentPool.AddRange(_player1.GetLastPlacedOnRC());
+                    currentPool.AddRange(_player1.GetLastPlacedOnRC(_timingCount));
                 else if (location == Location.PlayerOrder)
                     currentPool.AddRange(_player1.GetPlayerOrder());
                 else if (location == Location.PlayerUnits)
@@ -656,7 +695,7 @@ namespace VanguardEngine
                 else if (location == Location.LastCalledFromPrison)
                     currentPool.AddRange(_player2.GetLastCalledFromPrison());
                 else if (location == Location.LastStood)
-                    currentPool.AddRange(_player1.GetLastStood());
+                    currentPool.AddRange(_player1.GetLastStood(_timingCount));
                 else if (location == Location.InFront)
                     currentPool.AddRange(_player1.GetInFront(_card.tempID));
             }
@@ -910,6 +949,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.SameColumn)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (_player1.GetUnitsAtColumn(_player1.GetColumn(_card.tempID)).Contains(card))
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                 }
             }
             if (param.Names.Count > 0)
@@ -1006,12 +1056,12 @@ namespace VanguardEngine
 
         public bool LastPlacedOnGC()
         {
-            return _player1.IsLastPlacedOnGC(_card.tempID);
+            return _player1.IsLastPlacedOnGC(_card.tempID, _timingCount);
         }
 
         public bool LastPutOnGC()
         {
-            return _player1.IsLastPutOnGC(_card.tempID);
+            return _player1.IsLastPutOnGC(_card.tempID, _timingCount);
         }
 
         public bool IsIntercepting()
@@ -1021,22 +1071,22 @@ namespace VanguardEngine
 
         public bool LastPlacedOnRC()
         {
-            return _player1.IsLastPlacedOnRC(_card.tempID);
+            return _player1.IsLastPlacedOnRC(_card.tempID, _timingCount);
         }
 
         public bool LastPlacedOnRCFromHand()
         {
-            return _player1.IsLastPlacedOnRCFromHand(_card.tempID);
+            return _player1.IsLastPlacedOnRCFromHand(_card.tempID, _timingCount);
         }
 
         public bool LastPlacedOnVC()
         {
-            return _player1.IsLastPlacedOnVC(_card.tempID);
+            return _player1.IsLastPlacedOnVC(_card.tempID, _timingCount);
         }
 
         public bool LastDiscarded()
         {
-            return _player1.IsLastDiscarded(_card.tempID);
+            return _player1.IsLastDiscarded(_card.tempID, _timingCount);
         }
 
         public bool OnTriggerZone()
@@ -1114,6 +1164,13 @@ namespace VanguardEngine
                 return;
             List<Card> cards = ValidCards(paramNum);
             _cardFight.ChooseMoveEnemyRearguard(_player1, cards, circles);
+        }
+
+        public void ChooseGiveAbility(int paramNum, int activationNumber)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            List<int> tempIDs = _cardFight.SelectCards(_player1, cards, GetCount(paramNum), GetMin(paramNum), "Select card to give ability.");
+            _player1.GiveAbility(tempIDs, _card.tempID, activationNumber);
         }
 
         public void Inject(int paramNum, int query, string name)
@@ -1386,7 +1443,7 @@ namespace VanguardEngine
 
         public bool StoodByCardEffect()
         {
-            return _player1.StoodByCardEffect(_card.tempID);
+            return _player1.StoodByCardEffect(_card.tempID, _timingCount);
         }
 
         public int AttackingUnitLocation()
@@ -1434,7 +1491,7 @@ namespace VanguardEngine
             if (circle == FL.OpenCircle)
                 circles.AddRange(_player1.GetOpenCircles(C.Player));
             else
-                circles.Add(circle);
+                circles.Add(_player1.Convert(circle));
             int count = GetCount(paramNum);
             int min = GetMin(paramNum);
             if (count == -1)
@@ -1967,6 +2024,13 @@ namespace VanguardEngine
                 _player1.AllowBackRowAttack(card.tempID);
         }
 
+        public void AllowAttackingBackRow(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.AllowAttackingBackRow(card.tempID);
+        }
+
         public void AllowColumnAttack(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -2021,7 +2085,7 @@ namespace VanguardEngine
             int min = GetMin(paramNum);
             if (min < 0)
                 min = GetCount(paramNum);
-            List<int> selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), min);
+            List<int> selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), min, "Select card(s).");
             foreach (int tempID in selectedCards)
                 _selected.Add(_player1.GetCard(tempID));
         }
@@ -2485,6 +2549,7 @@ namespace VanguardEngine
         public const int GradeOrLess = 20;
         public const int Boosting = 21;
         public const int Locked = 22;
+        public const int SameColumn = 23;
     }
 
     class AbilityType
