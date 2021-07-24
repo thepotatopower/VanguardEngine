@@ -815,6 +815,7 @@ namespace VanguardEngine
             selection = _inputManager.SelectAbility(abilities);
             if (selection == abilities.Count)
                 return;
+            _currentAbility = abilities[selection];
             if (!blitz && player1.CanAlchemagic())
             {
                 _alchemagicQueue.AddRange(_abilities.GetAlchemagicableCards(player1, abilities[selection].GetID()));
@@ -831,6 +832,7 @@ namespace VanguardEngine
                 PlayOrder(player1, player2, abilities[selection].GetID(), false);
                 PlayOrder(player1, player2, _alchemagicQueue[amSelection].GetID(), true);
                 abilities[selection].PayCost();
+                _currentAbility = _alchemagicQueue[amSelection];
                 _alchemagicQueue[amSelection].PayCost();
                 abilities[selection].Activate();
                 _alchemagicQueue[amSelection].Activate();
@@ -859,6 +861,7 @@ namespace VanguardEngine
             else
             {
                 Console.WriteLine("----------\n" + abilities[selection].Name + "'s effect activates!");
+                _currentAbility = abilities[selection];
                 abilities[selection].PayCost();
                 abilities[selection].Activate();
             }
@@ -1118,6 +1121,11 @@ namespace VanguardEngine
         {
             List<int> cardsToRetire = _inputManager.SelectFromList(player1, canRetire, count, count, "Choose card(s) to retire.");
             player1.Retire(cardsToRetire);
+            if (player1.PlayerRetired() && _currentAbility.GetPlayer1() == player1 && _currentAbility.IsPayingCost())
+            {
+                player1.RetiredForPlayerCost(cardsToRetire);
+                _playTimings.AddPlayTiming(Activation.OnRetiredForPlayerCost);
+            }
             if (player1.EnemyRetired())
                 _playTimings.AddPlayTiming(Activation.OnEnemyRetired);
             AddToChosen(cardsToRetire);
@@ -1231,6 +1239,11 @@ namespace VanguardEngine
             return _inputManager.SelectOption(player, list);
         }
 
+        public int SelectColumn(Player player)
+        {
+            return _inputManager.SelectColumn(player);
+        }
+
         public bool YesNo(Player player, string query)
         {
             return _inputManager.YesNo(player, query);
@@ -1259,7 +1272,7 @@ namespace VanguardEngine
                 swapped = true;
             }
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
-            _player1.RearrangeOnBottom(newOrder);
+            player1.RearrangeOnBottom(newOrder);
             if (swapped)
                 _inputManager.SwapPlayers();
         }

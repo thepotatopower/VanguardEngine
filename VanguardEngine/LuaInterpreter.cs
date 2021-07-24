@@ -208,6 +208,7 @@ namespace VanguardEngine
         bool _isSuperiorCall = false;
         bool _activated = false;
         bool _withAlchemagic = true;
+        bool _payingCost = false;
         int _activation;
         List<int> _location = new List<int>();
         int _abilityType;
@@ -411,6 +412,11 @@ namespace VanguardEngine
             get => _abilityType;
         }
 
+        public bool IsPayingCost()
+        {
+            return _payingCost;
+        }
+
         public int GetID()
         {
             return _card.tempID;
@@ -482,6 +488,7 @@ namespace VanguardEngine
 
         public int Activate()
         {
+            _payingCost = false;
             DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
             _activated = true;
             return (int)Then.Number;
@@ -489,6 +496,7 @@ namespace VanguardEngine
 
         public int ActivateAsGiven(Card card)
         {
+            _payingCost = false;
             Card originalCard = _card;
             bool swapped = false;
             Player temp;
@@ -514,6 +522,7 @@ namespace VanguardEngine
 
         public void PayCost()
         {
+            _payingCost = true;
             _script.Call(_abilityCost, _abilityNumber);
         }
         
@@ -1044,6 +1053,12 @@ namespace VanguardEngine
             return cards[0].grade;
         }
 
+        public int GetSelectedUnitType(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            return cards[0].unitType;
+        }
+
         public bool CanOverDress(int tempID, int circle)
         {
             Card card = _player1.GetUnitAt(circle);
@@ -1161,6 +1176,15 @@ namespace VanguardEngine
                     availableCircles.Add(_player1.Convert(FL.EnemyFrontRight));
                 if (openCircles.Contains(_player1.Convert(FL.EnemyFrontLeft)))
                     availableCircles.Add(_player1.Convert(FL.EnemyFrontLeft));
+            }
+            if (param.Locations.Contains(Location.PlayerRC))
+            {
+                openCircles = _player1.GetOpenCircles(C.Player);
+                for (int i = _player1.Convert(FL.PlayerFrontLeft); i < _player1.Convert(FL.PlayerVanguard); i++)
+                {
+                    if (openCircles.Contains(i))
+                        availableCircles.Add(i);
+                }
             }
             return availableCircles;
         }
@@ -1641,6 +1665,11 @@ namespace VanguardEngine
             _cardFight.Discard(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
+        public bool WasRetiredForPlayerCost()
+        {
+            return _player1.WasRetiredForPlayerCost(_card.tempID, _timingCount);
+        }
+
         public void CountsAsTwoRetires(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -1812,7 +1841,13 @@ namespace VanguardEngine
         public void RearrangeOnBottom(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
-            ; _cardFight.RearrangeOnBottom(_player1, cards);
+             _cardFight.RearrangeOnBottom(_player1, cards);
+        }
+
+        public void EnemyRearrangeOnBottom(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            _cardFight.RearrangeOnBottom(_player2, cards);
         }
 
         public void DisplayCards(int paramNum)
@@ -2107,6 +2142,11 @@ namespace VanguardEngine
         public void EndSelect()
         {
             _selected.Clear();
+        }
+
+        public int SelectColumn()
+        {
+            return _cardFight.SelectColumn(_player1);
         }
 
         public void SetPrison()
@@ -2483,6 +2523,7 @@ namespace VanguardEngine
         public const int PutOnGC = 26;
         public const int OnBattlePhase = 27;
         public const int OnEndPhase = 28;
+        public const int OnRetiredForPlayerCost = 29;
     }
 
     public class Location

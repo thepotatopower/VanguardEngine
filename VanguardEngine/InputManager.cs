@@ -760,6 +760,36 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
+        public int SelectColumn(Player player)
+        {
+            bool swapped = false;
+            if (player != _player1)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
+            WaitForInput(SelectColumn_Input);
+            if (swapped)
+                SwapPlayers();
+            return int_input;
+        }
+
+        protected void SelectColumn_Input()
+        {
+            Console.WriteLine("Choose column.\n" +
+                "1. Left.\n" +
+                "2. Center.\n" +
+                "3. Right.");
+            int_input = SelectPrompt(3);
+            if (int_input == 1)
+                int_input = -1;
+            else if (int_input == 2)
+                int_input = 0;
+            else if (int_input == 3)
+                int_input = 1;
+            oSignalEvent.Set();
+        }
+
         public void DisplayCards(List<Card> cards)
         {
             cardsToSelect.Clear();

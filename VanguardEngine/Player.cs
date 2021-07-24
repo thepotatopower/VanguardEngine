@@ -25,6 +25,7 @@ namespace VanguardEngine
         protected List<Card> _isIntercepting = new List<Card>();
         protected Card _lastOrderPlayed = null;
         protected Dictionary<int, List<Card>> _stoodByCardEffect = new Dictionary<int, List<Card>>();
+        protected Dictionary<int, List<Card>> _retiredForPlayerCost = new Dictionary<int, List<Card>>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected List<Card> _canAttackBackRow = new List<Card>();
         protected List<Card> _canColumnAttack = new List<Card>();
@@ -882,7 +883,9 @@ namespace VanguardEngine
 
         public bool CanIntercept(Card card)
         {
-            if (_canIntercept && card != null && !_field.Attacked.Contains(card) && card.skill == 1 && (_field.GetCircle(PlayerFrontLeft) == card || _field.GetCircle(PlayerFrontRight) == card))
+            if (_canIntercept && card != null && !_field.Attacked.Contains(card) && 
+                (card.skill == Skill.Intercept || (_bonusSkills.ContainsKey(card.tempID) && _bonusSkills[card.tempID].Contains(Skill.Intercept)) && 
+                (_field.GetCircle(PlayerFrontLeft) == card || _field.GetCircle(PlayerFrontRight) == card)))
                 return true;
             return false;
         }
@@ -1635,11 +1638,14 @@ namespace VanguardEngine
                 location = EnemyPrisoners;
                 _lastCalledFromPrison.Add(ToBeCalled);
             }
+            else if (_lastRevealedTrigger == ToBeCalled)
+                _lastRevealedTrigger = null;
             if (PlayerLooking.Contains(ToBeCalled))
                 PlayerLooking.Remove(ToBeCalled);
             if (PlayerRevealed.Contains(ToBeCalled))
                 PlayerRevealed.Remove(ToBeCalled);
-            location.Remove(ToBeCalled);
+            if (location != null)
+                location.Remove(ToBeCalled);
             if (location == EnemyPrisoners)
                 EnemyOrder.Remove(ToBeCalled);
             if (_field.GetCircle(circle) != null)
@@ -2135,6 +2141,25 @@ namespace VanguardEngine
                     list.Add(card.tempID);
             }
             Retire(list);
+        }
+
+        public void RetiredForPlayerCost(List<int> tempIDs)
+        {
+            Card card;
+            _retiredForPlayerCost[_retiredForPlayerCost.Keys.Count + 1] = new List<Card>();
+            foreach (int tempID in tempIDs)
+            {
+                card = _field.CardCatalog[tempID];
+                if (card.originalOwner == _playerID)
+                    _retiredForPlayerCost[_retiredForPlayerCost.Keys.Count].Add(card);
+            }
+        }
+
+        public bool WasRetiredForPlayerCost(int tempID, int timingCount)
+        {
+            if (_retiredForPlayerCost.ContainsKey(timingCount) && _retiredForPlayerCost[timingCount].Contains(_field.CardCatalog[tempID]))
+                return true;
+            return false;
         }
 
         public bool EnemyRetired()
@@ -3071,12 +3096,15 @@ namespace VanguardEngine
         public void RearrangeOnBottom(List<int> tempIDs)
         {
             Card card;
-            for (int i = PlayerDeck.Count - 1 - tempIDs.Count; i < tempIDs.Count; i++)
+            for (int i = 0; i < tempIDs.Count; i++)
             {
                 card = _field.CardCatalog[tempIDs[i]];
-                PlayerDeck[i] = card;
+                if (GetActiveUnits().Contains(card) && card != _field.GetCircle(PlayerVanguard))
+                    RemoveFromRC(card.tempID, false);
                 if (PlayerLooking.Contains(card))
                     PlayerLooking.Remove(card);
+                PlayerDeck[PlayerDeck.Count - (tempIDs.Count - i)] = card;
+                card.location = Location.Deck;
             }
         }
 
@@ -3214,6 +3242,7 @@ namespace VanguardEngine
             _lastDiscarded.Clear();
             _lastCalledFromPrison.Clear();
             _lastPlacedOnVC.Clear();
+            _retiredForPlayerCost.Clear();
             _stoodByCardEffect.Clear();
         }
 
