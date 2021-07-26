@@ -147,7 +147,10 @@ namespace VanguardEngine
             if (_abilities[tempID] != null)
             {
                 foreach (Ability ability in _abilities[tempID])
-                    ability.ResetActivation();
+                {
+                    if (!ability.isHardOncePerTurn)
+                        ability.ResetActivation();
+                }
             }
         }
 
@@ -176,7 +179,7 @@ namespace VanguardEngine
             List<Ability> alchemagicable = new List<Ability>();
             foreach (Card card in drop)
             {
-                if (card.orderType == OrderType.Normal && card.name != player1.GetCard(fromHand.GetID()).name)
+                if (card.orderType == OrderType.Normal && ((player1.CanAlchemagicDiff() && card.name != player1.GetCard(fromHand.GetID()).name) || (player1.CanAlchemagicSame() && card.name == player1.GetCard(fromHand.GetID()).name)))
                 {
                     fromDrop = GetAbility(card.tempID, 1);
                     SB = fromHand.GetSB() + fromDrop.GetSB();
@@ -197,9 +200,10 @@ namespace VanguardEngine
         Player _player1;
         Player _player2;
         CardFight _cardFight;
-        Card _card; 
-        bool _isMandatory = true;
-        bool _hasPrompt = true;
+        Card _card;
+        bool _isMandatory = false;
+        bool _hasPrompt = false;
+        bool _hardOncePerTurn = false;
         int _SB = 0;
         int _CB = 0;
         int _retire = 0;
@@ -356,6 +360,10 @@ namespace VanguardEngine
                 {
                     i++;
                 }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.HardOncePerTurn)
+                {
+                    _hardOncePerTurn = true;
+                }
             }
             if (!_forEnemy && !player)
                 return false;
@@ -384,6 +392,11 @@ namespace VanguardEngine
         public bool isContinuous
         {
             get => !_hasPrompt;
+        }
+
+        public bool isHardOncePerTurn
+        {
+            get => _hardOncePerTurn;
         }
 
         public bool isSuperiorCall
@@ -714,6 +727,10 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetLastStood(_timingCount));
                 else if (location == Location.InFront)
                     currentPool.AddRange(_player1.GetInFront(_card.tempID));
+                else if (location == Location.UnitsCalledThisTurn)
+                    currentPool.AddRange(_player1.GetUnitsCalledThisTurn());
+                else if (location == Location.UnitsCalledFromHandThisTurn)
+                    currentPool.AddRange(_player1.GetUnitsCalledFromHandThisTurn());
             }
             if (currentPool.Count == 0)
                 return currentPool;
@@ -1251,7 +1268,7 @@ namespace VanguardEngine
                 if (card.faceup)
                     faceupCards++;
             }
-            if (_withAlchemagic && _card.orderType == OrderType.Normal && _player1.CanAlchemagic() && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
+            if (_withAlchemagic && _card.orderType == OrderType.Normal && (_player1.CanAlchemagicDiff() || _player1.CanAlchemagicSame()) && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
                 faceupCards += _player1.AlchemagicFreeCBAvailable();
             if (faceupCards >= count)
                 return true;
@@ -1520,7 +1537,11 @@ namespace VanguardEngine
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<int> circles = new List<int>();
             if (circle == FL.OpenCircle)
+            {
                 circles.AddRange(_player1.GetOpenCircles(C.Player));
+                if (circles.Count == 0)
+                    return;
+            }
             else
                 circles.Add(_player1.Convert(circle));
             int count = GetCount(paramNum);
@@ -1659,6 +1680,17 @@ namespace VanguardEngine
             _player1.AddToDrop(cardsToDrop);
         }
 
+        public void AddToDamageZone(int paramNum)
+        {
+            List<Card> cardsToSelect = ValidCards(paramNum);
+            List<int> tempIDs = new List<int>();
+            foreach (Card card in cardsToSelect)
+            {
+                tempIDs.Add(card.tempID);
+            }
+            _player1.AddToDamageZone(tempIDs);
+        }
+
         public void Discard(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
@@ -1703,6 +1735,12 @@ namespace VanguardEngine
             foreach (Card card in cards)
                 tempIDs.Add(card.tempID);
             _player1.Bind(tempIDs);
+        }
+
+        public void ChooseBind(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            _cardFight.ChooseBind(_player1, cards, GetCount(paramNum), GetMin(paramNum));
         }
 
         public void Retire(int paramNum)
@@ -1894,6 +1932,11 @@ namespace VanguardEngine
             }
         }
 
+        public void AddBonusDriveCheckPower(int power)
+        {
+            _player1.AddBonusDriveCheckPower(power);
+        }
+
         public int PowerOfThisUnit()
         {
             return _player1.CalculatePowerOfUnit(_player1.GetCircle(_player1.GetCard(_card.tempID)));
@@ -2064,6 +2107,20 @@ namespace VanguardEngine
         public void AllowFreeSwap()
         {
             _player1.AllowFreeSwap();
+        }
+
+        public void AllowAttack(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.AllowAttack(card.tempID);
+        }
+
+        public void DisableAttack(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.DisableAttack(card.tempID);
         }
 
         public void AllowBackRowAttack(int paramNum)
@@ -2251,9 +2308,14 @@ namespace VanguardEngine
             return _player1.OrderPlayed();
         }
 
-        public void SetAlchemagic()
+        public void SetAlchemagicDiff()
         {
-            _player1.SetAlchemagic(_card.tempID);
+            _player1.SetAlchemagicDiff();
+        }
+
+        public void SetAlchemagicSame()
+        {
+            _player1.SetAlchemagicSame();
         }
 
         public void AlchemagicFreeSB()
@@ -2575,6 +2637,8 @@ namespace VanguardEngine
         public const int EnemyDrop = 45;
         public const int InFront = 46;
         public const int PlayerBind = 47;
+        public const int UnitsCalledThisTurn = 48;
+        public const int UnitsCalledFromHandThisTurn = 49;
     }
 
     class Query
@@ -2638,5 +2702,6 @@ namespace VanguardEngine
         public const int CB = 5;
         public const int Retire = 6;
         public const int Discard = 7;
+        public const int HardOncePerTurn = 8;
     }
 }

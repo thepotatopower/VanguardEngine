@@ -297,6 +297,7 @@ namespace VanguardEngine
                             if (_inputManager.YesNo(player1, PromptType.RideFromRideDeck))
                             {
                                 Discard(player1, player2, player1.GetHand(), 1, 1);
+                                ActivateAbilities(player1, player2);
                                 input = _inputManager.SelectCardFromRideDeck();
                                 Ride(player1, player2, 0, input);
                                 break;
@@ -330,7 +331,6 @@ namespace VanguardEngine
             List<int> cardsToDiscard = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose card(s) to discard.");
             player1.Discard(cardsToDiscard);
             _playTimings.AddPlayTiming(Activation.OnDiscard);
-            ActivateAbilities(player1, player2);
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -657,17 +657,22 @@ namespace VanguardEngine
             int check;
             int selection;
             int max;
+            int power = 0;
             List<Card> cards;
             if (drivecheck)
                 Console.WriteLine("----------\nPerforming Drive Check.");
             else
                 Console.WriteLine("----------\nPerforming Damage Check.");
             check = player1.TriggerCheck(drivecheck);
+            if (drivecheck)
+                power = player1.GetBonusDriveCheckPower();
+            else
+                power = 0;
             if (check != Trigger.NotTrigger && check != Trigger.Over && check != Trigger.Front) 
             {
                 Console.WriteLine("----------\nChoose unit to give +10000 power to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000);
-                player1.AddTempPower(selection, 10000, false);
+                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000 + power);
+                player1.AddTempPower(selection, 10000 + power, false);
             }
             if (check == Trigger.Critical) 
             {
@@ -699,15 +704,15 @@ namespace VanguardEngine
                 cards = player1.GetPlayerFrontRow();
                 foreach (Card card in cards)
                 {
-                    player1.AddTempPower(card.tempID, 10000, false);
+                    player1.AddTempPower(card.tempID, 10000 + power, false);
                 }
             }
             else if (check == Trigger.Over) //OVER TRIGGER
             {
                 Draw(player1, player2, 1);
                 Console.WriteLine("Choose unit to give 1000000000 power to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000);
-                player1.AddTempPower(selection, 100000000, false);
+                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
+                player1.AddTempPower(selection, 100000000 + power, false);
                 if (drivecheck)
                 {
                     _playTimings.AddPlayTiming(Activation.OnOverTrigger);
@@ -816,7 +821,7 @@ namespace VanguardEngine
             if (selection == abilities.Count)
                 return;
             _currentAbility = abilities[selection];
-            if (!blitz && player1.CanAlchemagic())
+            if (!blitz && (player1.CanAlchemagicSame() || player1.CanAlchemagicDiff()))
             {
                 _alchemagicQueue.AddRange(_abilities.GetAlchemagicableCards(player1, abilities[selection].GetID()));
                 if (_alchemagicQueue.Count >= 1 && (!abilities[selection].CheckConditionWithoutAlchemagic() || _inputManager.YesNo(player1, "Use Alchemagic?")))
@@ -1275,6 +1280,12 @@ namespace VanguardEngine
             player1.RearrangeOnBottom(newOrder);
             if (swapped)
                 _inputManager.SwapPlayers();
+        }
+
+        public void ChooseBind(Player player1, List<Card> cards, int max, int min)
+        {
+            List<int> toBind = _inputManager.SelectFromList(player1, cards, max, min, "Choose card(s) to bind.");
+            player1.Bind(toBind);
         }
 
         public void DisplayCards(Player player1, List<Card> cardsToDisplay)

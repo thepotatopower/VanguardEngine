@@ -57,7 +57,7 @@ function Activate(n)
 		if obj.Exists(1) then
 			obj.SuperiorCall(1)
 		else
-			obj.AutoAddToSoul(2)
+			obj.AddToSoul(2)
 		end
 		obj.OnRideAbilityResolved()
 	elseif n == 2 then

@@ -17,6 +17,8 @@ namespace VanguardEngine
         protected int _lastPlacedOnRC_Count = 1;
         protected Dictionary<int, List<Card>> _lastPlacedOnRCFromHand = new Dictionary<int, List<Card>>();
         protected int _lastPlacedOnRCFromHand_Count = 1;
+        protected List<Card> _unitsCalledThisTurn = new List<Card>();
+        protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
         protected List<Card> _lastCalledFromPrison = new List<Card>();
         protected Dictionary<int, List<Card>> _lastPlacedOnVC = new Dictionary<int, List<Card>>();
         protected List<Card> _lastRevealedTriggers = new List<Card>();
@@ -29,11 +31,13 @@ namespace VanguardEngine
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected List<Card> _canAttackBackRow = new List<Card>();
         protected List<Card> _canColumnAttack = new List<Card>();
+        protected List<Card> _cannotAttack = new List<Card>();
         protected List<Card> _countsAsTwoRetires = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Dictionary<int, List<Tuple<int, int>>> _givenAbilities = new Dictionary<int, List<Tuple<int, int>>>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
+        protected int _bonusDriveCheckPower = 0;
         protected bool _rearguardDriveCheck = false;
         protected bool _finalRush = false;
         protected bool _darkNight = false;
@@ -53,6 +57,8 @@ namespace VanguardEngine
         protected int _minGradeForGuard = 6;
         protected bool _freeSwap = false;
         protected bool _canIntercept = true;
+        protected bool _canAlchemagicDiff = false;
+        protected bool _canAlchemagicSame = false;
         protected List<Card> PlayerHand;
         protected List<Card> EnemyHand;
         protected List<Card> PlayerDeck;
@@ -796,7 +802,7 @@ namespace VanguardEngine
         public List<Card> GetCardsToAttackWith()
         {
             List<Card> cards = new List<Card>();
-            if (_field.GetCircle(PlayerFrontLeft) != null && _field.GetCircle(PlayerFrontLeft).upright)
+            if (_field.GetCircle(PlayerFrontLeft) != null && _field.GetCircle(PlayerFrontLeft).upright && !_cannotAttack.Contains(_field.GetCircle(PlayerFrontLeft)))
                 cards.Add(_field.GetCircle(PlayerFrontLeft));
             if (_field.GetCircle(PlayerVanguard).upright)
                 cards.Add(_field.GetCircle(PlayerVanguard));
@@ -1308,6 +1314,17 @@ namespace VanguardEngine
             return false;
         }
 
+
+        public List<Card> GetUnitsCalledThisTurn()
+        {
+            return _unitsCalledThisTurn;
+        }
+
+        public List<Card> GetUnitsCalledFromHandThisTurn()
+        {
+            return _unitsCalledFromHandThisTurn;
+        }
+
         public List<Card> GetLastPlacedOnRC(int count)
         {
             if (!_lastPlacedOnRC.ContainsKey(count))
@@ -1604,6 +1621,8 @@ namespace VanguardEngine
                 }
             }
             card.upright = true;
+            _unitsCalledThisTurn.Add(card);
+            _unitsCalledFromHandThisTurn.Add(card);
             _lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
             _lastPlacedOnRC[_lastPlacedOnRC_Count].Add(card);
             _lastPlacedOnRC_Count++;
@@ -1638,6 +1657,8 @@ namespace VanguardEngine
                 location = EnemyPrisoners;
                 _lastCalledFromPrison.Add(ToBeCalled);
             }
+            else if (PlayerDamage.Contains(ToBeCalled))
+                PlayerDamage.Remove(ToBeCalled);
             else if (_lastRevealedTrigger == ToBeCalled)
                 _lastRevealedTrigger = null;
             if (PlayerLooking.Contains(ToBeCalled))
@@ -1701,10 +1722,13 @@ namespace VanguardEngine
             if (!_lastPlacedOnRC.ContainsKey(_lastPlacedOnRC_Count))
                 _lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
             _lastPlacedOnRC[_lastPlacedOnRC_Count].Add(ToBeCalled);
+            _unitsCalledThisTurn.Add(ToBeCalled);
             if (fromHand)
             {
+                _unitsCalledFromHandThisTurn.Add(ToBeCalled);
                 if (!_lastPlacedOnRCFromHand.ContainsKey(_lastPlacedOnRCFromHand_Count))
                     _lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count] = new List<Card>();
+                _lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count].Add(ToBeCalled);
                 return 1;
             }
             return 0;
@@ -2326,6 +2350,16 @@ namespace VanguardEngine
             }
         }
 
+        public void AddBonusDriveCheckPower(int power)
+        {
+            _bonusDriveCheckPower += power;
+        }
+
+        public int GetBonusDriveCheckPower()
+        {
+            return _bonusDriveCheckPower;
+        }
+
         public void AddCirclePower(int location, int power)
         {
             int circle = Convert(location);
@@ -2584,6 +2618,19 @@ namespace VanguardEngine
             }
         }
 
+        public void AddToDamageZone(List<int> tempIDs)
+        {
+            Card card;
+            foreach (int tempID in tempIDs)
+            {
+                card = _field.CardCatalog[tempID];
+                if (GetActiveUnits().Contains(card))
+                    RemoveFromRC(card.tempID, false);
+                PlayerDamage.Add(card);
+                card.faceup = true;
+            }
+        }
+
         public void ChangeLocation(int destination, List<int> selections)
         {
             Card cardToAdd;
@@ -2695,9 +2742,14 @@ namespace VanguardEngine
                 _canColumnAttack.Remove(card);
         }
 
-        public void SetAlchemagic(int tempID)
+        public void SetAlchemagicDiff()
         {
-            _field.CardCatalog[tempID].alchemagic = true;
+            _canAlchemagicDiff = true;
+        }
+
+        public void SetAlchemagicSame()
+        {
+            _canAlchemagicSame = true;
         }
 
         public void EnterAlchemagic()
@@ -2712,14 +2764,14 @@ namespace VanguardEngine
             _alchemagicFreeSB = false;
         }
 
-        public bool CanAlchemagic()
+        public bool CanAlchemagicDiff()
         {
-            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
-            {
-                if (_field.GetCircle(i) != null && _field.GetCircle(i).alchemagic)
-                    return true;
-            }
-            return false;
+            return _canAlchemagicDiff;
+        }
+
+        public bool CanAlchemagicSame()
+        {
+            return _canAlchemagicSame;
         }
 
         public bool IsAlchemagic()
@@ -3132,6 +3184,16 @@ namespace VanguardEngine
             _canAttackBackRow.Add(_field.CardCatalog[tempID]);
         }
 
+        public void DisableAttack(int tempID)
+        {
+            _cannotAttack.Add(_field.CardCatalog[tempID]);
+        }
+
+        public void AllowAttack(int tempID)
+        {
+            _cannotAttack.Remove(_field.CardCatalog[tempID]);
+        }
+
         public void GiveAbility(List<int> tempIDs, int abilityTempID, int activationNumber)
         {
             foreach (int tempID in tempIDs)
@@ -3211,6 +3273,9 @@ namespace VanguardEngine
             _playerRetiredThisTurn = false;
             _enemyRetiredThisTurn = false;
             _canIntercept = true;
+            _bonusDriveCheckPower = 0;
+            _unitsCalledThisTurn.Clear();
+            _unitsCalledFromHandThisTurn.Clear();
             for (int i = 0; i < _field.CirclePower.Length; i++)
                 _field.CirclePower[i] = 0;
             for (int i = 0; i < _field.CircleCritical.Length; i++)
@@ -3227,6 +3292,8 @@ namespace VanguardEngine
                 }
             }
             _freeSwap = false;
+            _canAlchemagicDiff = false;
+            _canAlchemagicSame = false;
         }
 
         public void AllAbilitiesResolved()
@@ -3268,6 +3335,7 @@ namespace VanguardEngine
                 _givenAbilities[card.tempID].Clear();
             _canAttackFromBackRow.Remove(card);
             _canAttackBackRow.Remove(card);
+            _cannotAttack.Remove(card);
             for (int i = 1; i <= PlayerVanguard; i++)
             {
                 if (_field.GetCircle(i) != null)

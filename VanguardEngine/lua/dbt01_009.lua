@@ -54,7 +54,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SetAlchemagic()
+		obj.SetAlchemagicDiff()
 	elseif n == 2 then
 		obj.SuperiorCall(2)
 	end

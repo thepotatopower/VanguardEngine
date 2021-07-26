@@ -302,6 +302,7 @@ namespace VanguardEngine
             _query = query;
             _ints.Clear();
             _ints.AddRange(selectedCircles);
+            _ints2.Clear();
             if (canSelect != null)
                 _ints2.AddRange(canSelect);
             WaitForInput(SelectCallLocation_Input);
