@@ -547,6 +547,32 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CheckConditionAsGiven(Card card)
+        {
+            Card originalCard = _card;
+            bool swapped = false;
+            Player temp;
+            if (card.originalOwner != _player1._playerID)
+            {
+                temp = _player1;
+                _player1 = _player2;
+                _player2 = temp;
+                swapped = true;
+            }
+            _card = card;
+            DynValue check = _script.Call(_checkCondition, _abilityNumber);
+            _card = originalCard;
+            if (swapped)
+            {
+                temp = _player1;
+                _player1 = _player2;
+                _player2 = temp;
+            }
+            if (check.Boolean)
+                return true;
+            return false;
+        }
+
         public bool CheckConditionWithoutAlchemagic()
         {
             _withAlchemagic = false;
@@ -1203,6 +1229,16 @@ namespace VanguardEngine
                         availableCircles.Add(i);
                 }
             }
+            if (param.Locations.Contains(Location.BackRow))
+            {
+                openCircles = _player1.GetOpenCircles(C.Player);
+                if (openCircles.Contains(_player1.Convert(FL.PlayerBackCenter)))
+                    availableCircles.Add(_player1.Convert(FL.PlayerBackCenter));
+                if (openCircles.Contains(_player1.Convert(FL.PlayerBackLeft)))
+                    availableCircles.Add(_player1.Convert(FL.PlayerBackLeft));
+                if (openCircles.Contains(_player1.Convert(FL.PlayerBackRight)))
+                    availableCircles.Add(_player1.Convert(FL.PlayerBackRight));
+            }
             return availableCircles;
         }
 
@@ -1218,6 +1254,15 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             List<int> tempIDs = _cardFight.SelectCards(_player1, cards, GetCount(paramNum), GetMin(paramNum), "Select card to give ability.");
+            _player1.GiveAbility(tempIDs, _card.tempID, activationNumber);
+        }
+
+        public void GiveAbility(int paramNum, int activationNumber)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            List<int> tempIDs = new List<int>();
+            foreach (Card card in cards)
+                tempIDs.Add(card.tempID);
             _player1.GiveAbility(tempIDs, _card.tempID, activationNumber);
         }
 
@@ -1541,6 +1586,12 @@ namespace VanguardEngine
                 circles.AddRange(_player1.GetOpenCircles(C.Player));
                 if (circles.Count == 0)
                     return;
+            }
+            if (circle == FL.BackRow)
+            {
+                circles.Add(_player1.Convert(FL.PlayerBackRight));
+                circles.Add(_player1.Convert(FL.PlayerBackLeft));
+                circles.Add(_player1.Convert(FL.PlayerBackCenter));
             }
             else
                 circles.Add(_player1.Convert(circle));
@@ -2123,11 +2174,32 @@ namespace VanguardEngine
                 _player1.DisableAttack(card.tempID);
         }
 
+        public void DisableMove(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.DisableMove(card.tempID);
+        }
+
         public void AllowBackRowAttack(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
                 _player1.AllowBackRowAttack(card.tempID);
+        }
+
+        public void AllowAttackAllFrontRow(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.AllowAttackAllFrontRow(card.tempID);
+        }
+
+        public void DisableAttackAllFrontRow(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.DisableAttackAllFrontRow(card.tempID);
         }
 
         public void AllowAttackingBackRow(int paramNum)
@@ -2149,6 +2221,13 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
                 _player1.DisableColumnAttack(card.tempID);
+        }
+
+        public void AllowInterceptFromBackRow(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.AllowInterceptFromBackRow(card.tempID);
         }
 
         public void EnemyDisableIntercept()
@@ -2373,6 +2452,16 @@ namespace VanguardEngine
         public void EnemyMinGradeForGuard(int min)
         {
             _player2.SetMinGradeForGuard(min);
+        }
+
+        public void CannotMove()
+        {
+            _player1.CannotMove();
+        }
+
+        public void CannotBoost()
+        {
+            _player1.CannotBoost();
         }
 
         public int SelectOption(params string[] list)

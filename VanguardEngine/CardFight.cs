@@ -795,7 +795,10 @@ namespace VanguardEngine
                     {
                         givenAbility = _abilities.GetAbility(tuple.Item1, tuple.Item2);
                         if (givenAbility.AbilityType == AbilityType.Cont)
+                        {
+                            givenAbility.CheckConditionAsGiven(card);
                             givenAbility.ActivateAsGiven(card);
+                        }
                     }
                 }
             }
@@ -840,7 +843,7 @@ namespace VanguardEngine
                 _currentAbility = _alchemagicQueue[amSelection];
                 _alchemagicQueue[amSelection].PayCost();
                 abilities[selection].Activate();
-                _alchemagicQueue[amSelection].Activate();
+                _alchemagicQueue[amSelection].ActivateAsGiven(player1.GetCard(_alchemagicQueue[amSelection].GetID()));
                 player1.EndAlchemagic();
                 player1.EndOrder();
             }

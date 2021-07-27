@@ -30,8 +30,11 @@ namespace VanguardEngine
         protected Dictionary<int, List<Card>> _retiredForPlayerCost = new Dictionary<int, List<Card>>();
         protected List<Card> _canAttackFromBackRow = new List<Card>();
         protected List<Card> _canAttackBackRow = new List<Card>();
+        protected List<Card> _canAttackAllFrontRow = new List<Card>();
         protected List<Card> _canColumnAttack = new List<Card>();
         protected List<Card> _cannotAttack = new List<Card>();
+        protected List<Card> _cannotMove = new List<Card>();
+        protected List<Card> _canInterceptFromBackRow = new List<Card>();
         protected List<Card> _countsAsTwoRetires = new List<Card>();
         protected Dictionary<int, List<int>> _bonusSkills = new Dictionary<int, List<int>>(); //tempID, skills
         protected Dictionary<int, List<Tuple<int, int>>> _givenAbilities = new Dictionary<int, List<Tuple<int, int>>>();
@@ -57,6 +60,8 @@ namespace VanguardEngine
         protected int _minGradeForGuard = 6;
         protected bool _freeSwap = false;
         protected bool _canIntercept = true;
+        protected bool _canMove = true;
+        protected bool _canBoost = true;
         protected bool _canAlchemagicDiff = false;
         protected bool _canAlchemagicSame = false;
         protected List<Card> PlayerHand;
@@ -810,7 +815,7 @@ namespace VanguardEngine
                 cards.Add(_field.GetCircle(PlayerFrontRight));
             foreach (Card card in _canAttackFromBackRow)
             {
-                if (card.upright)
+                if (card.upright && !cards.Contains(card))
                     cards.Add(card);
             }
             return cards;
@@ -890,8 +895,8 @@ namespace VanguardEngine
         public bool CanIntercept(Card card)
         {
             if (_canIntercept && card != null && !_field.Attacked.Contains(card) && 
-                (card.skill == Skill.Intercept || (_bonusSkills.ContainsKey(card.tempID) && _bonusSkills[card.tempID].Contains(Skill.Intercept)) && 
-                (_field.GetCircle(PlayerFrontLeft) == card || _field.GetCircle(PlayerFrontRight) == card)))
+                (card.skill == Skill.Intercept || (_bonusSkills.ContainsKey(card.tempID) && _bonusSkills[card.tempID].Contains(Skill.Intercept))) && 
+                (_field.GetCircle(PlayerFrontLeft) == card || _field.GetCircle(PlayerFrontRight) == card) || _canInterceptFromBackRow.Contains(card))
                 return true;
             return false;
         }
@@ -1126,6 +1131,8 @@ namespace VanguardEngine
 
         public bool CanMoveRearguard()
         {
+            if (!_canMove)
+                return false;
             for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
             {
                 if (_field.GetCircle(i) != null)
@@ -1186,6 +1193,8 @@ namespace VanguardEngine
 
         public bool CanBoost(Card card)
         {
+            if (!_canBoost)
+                return false;
             if (card.upright)
             {
                 if (card.skill == 0 || (_bonusSkills.ContainsKey(card.tempID) && _bonusSkills[card.tempID].Contains(0)))
@@ -1745,6 +1754,8 @@ namespace VanguardEngine
             Card temp;
             if (location == 0)
             {
+                if (_cannotMove.Contains(_field.GetCircle(PlayerFrontLeft)) || _cannotMove.Contains(_field.GetCircle(PlayerBackLeft)))
+                    return;
                 temp = _field.GetCircle(PlayerFrontLeft);
                 _field.SetCircle(PlayerFrontLeft, _field.GetCircle(PlayerBackLeft));
                 _field.SetCircle(PlayerBackLeft, temp);
@@ -1752,6 +1763,8 @@ namespace VanguardEngine
             }
             else
             {
+                if (_cannotMove.Contains(_field.GetCircle(PlayerFrontRight)) || _cannotMove.Contains(_field.GetCircle(PlayerBackRight)))
+                    return;
                 temp = _field.GetCircle(PlayerFrontRight);
                 _field.SetCircle(PlayerFrontRight, _field.GetCircle(PlayerBackRight));
                 _field.SetCircle(PlayerBackRight, temp);
@@ -1768,6 +1781,10 @@ namespace VanguardEngine
 
         public void MoveRearguard(int location, int direction)
         {
+            if (!_canMove)
+                return;
+            if (_cannotMove.Contains(_field.CardCatalog[location]))
+                return;
             int location1 = GetCircle(_field.CardCatalog[location]);
             int location2 = location1;
             if (location1 == PlayerFrontLeft)
@@ -1808,8 +1825,13 @@ namespace VanguardEngine
 
         public void MoveRearguardSpecific(int tempID, int location)
         {
-            _field.SetCircle(GetCircle(_field.CardCatalog[tempID]), null);
-            _field.SetCircle(location, _field.CardCatalog[tempID]);
+            if (!_canMove)
+                return;
+            if (!_cannotMove.Contains(_field.CardCatalog[tempID]))
+            {
+                _field.SetCircle(GetCircle(_field.CardCatalog[tempID]), null);
+                _field.SetCircle(location, _field.CardCatalog[tempID]);
+            }
         }
 
         public void ActivateACT(int selection)
@@ -1885,6 +1907,18 @@ namespace VanguardEngine
                     circle = EnemyFrontRight;
                 if (_field.GetCircle(circle) != null && !_field.Attacked.Contains(_field.GetCircle(circle)))
                     _field.Attacked.Add(_field.GetCircle(circle));
+            }
+            if (_canAttackAllFrontRow.Contains(Attacker))
+            {
+                if (GetCircle(Attacked) == EnemyFrontLeft || GetCircle(Attacked) == EnemyVanguard || GetCircle(Attacked) == EnemyFrontRight)
+                {
+                    if (_field.GetCircle(EnemyFrontLeft) != null && !_field.Attacked.Contains(_field.GetCircle(EnemyFrontLeft)))
+                        _field.Attacked.Add(_field.GetCircle(EnemyFrontLeft));
+                    if (_field.GetCircle(EnemyVanguard) != null && !_field.Attacked.Contains(_field.GetCircle(EnemyVanguard)))
+                        _field.Attacked.Add(_field.GetCircle(EnemyVanguard));
+                    if (_field.GetCircle(EnemyFrontRight) != null && !_field.Attacked.Contains(_field.GetCircle(EnemyFrontRight)))
+                        _field.Attacked.Add(_field.GetCircle(EnemyFrontRight));
+                }
             }
             Console.WriteLine("----------");
             foreach (Card card in _field.Attacked)
@@ -2026,6 +2060,16 @@ namespace VanguardEngine
             }
         }
 
+        public void CannotMove()
+        {
+            _canMove = false;
+        }
+
+        public void CannotBoost()
+        {
+            _canBoost = false;
+        }
+
         public void Bind(List<int> tempIDs)
         {
             Card card;
@@ -2036,6 +2080,8 @@ namespace VanguardEngine
                     PlayerDrop.Remove(card);
                 else if (IsRearguard(tempID))
                     RemoveFromRC(tempID, false);
+                else if (PlayerOrder.Contains(card))
+                    PlayerOrder.Remove(card);
                 PlayerBind.Add(card);
                 card.location = Location.Bind;
             }
@@ -2704,13 +2750,13 @@ namespace VanguardEngine
 
         public void EndOrder()
         {
-            if (_playedOrder != null && (_playedOrder.orderType == OrderType.Normal || _playedOrder.orderType == OrderType.Blitz))
+            if (PlayerOrder.Contains(_playedOrder) && (_playedOrder.orderType == OrderType.Normal || _playedOrder.orderType == OrderType.Blitz))
             {
                 PlayerOrder.Remove(_playedOrder);
                 PlayerDrop.Add(_playedOrder);
                 _playedOrder.location = Location.Drop;
-                _playedOrder = null;
             }
+            _playedOrder = null;
         }
 
         public bool OrderPlayed()
@@ -2740,6 +2786,13 @@ namespace VanguardEngine
             Card card = _field.CardCatalog[tempID];
             if (_canColumnAttack.Contains(card))
                 _canColumnAttack.Remove(card);
+        }
+
+        public void AllowInterceptFromBackRow(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (!_canInterceptFromBackRow.Contains(card))
+                _canInterceptFromBackRow.Add(card);
         }
 
         public void SetAlchemagicDiff()
@@ -3176,22 +3229,42 @@ namespace VanguardEngine
 
         public void AllowBackRowAttack(int tempID)
         {
-            _canAttackFromBackRow.Add(_field.CardCatalog[tempID]);
+            if (!_canAttackFromBackRow.Contains(_field.CardCatalog[tempID]))
+                _canAttackFromBackRow.Add(_field.CardCatalog[tempID]);
+        }
+
+        public void AllowAttackAllFrontRow(int tempID)
+        {
+            if (!_canAttackAllFrontRow.Contains(_field.CardCatalog[tempID]))
+                _canAttackAllFrontRow.Add(_field.CardCatalog[tempID]);
+        }
+
+        public void DisableAttackAllFrontRow(int tempID)
+        {
+            _canAttackAllFrontRow.Remove(_field.CardCatalog[tempID]);
         }
 
         public void AllowAttackingBackRow(int tempID)
         {
-            _canAttackBackRow.Add(_field.CardCatalog[tempID]);
+            if (!_canAttackBackRow.Contains(_field.CardCatalog[tempID]))
+                _canAttackBackRow.Add(_field.CardCatalog[tempID]);
         }
 
         public void DisableAttack(int tempID)
         {
-            _cannotAttack.Add(_field.CardCatalog[tempID]);
+            if (!_cannotAttack.Contains(_field.CardCatalog[tempID]))
+                _cannotAttack.Add(_field.CardCatalog[tempID]);
         }
 
         public void AllowAttack(int tempID)
         {
             _cannotAttack.Remove(_field.CardCatalog[tempID]);
+        }
+
+        public void DisableMove(int tempID)
+        {
+            if (!_cannotMove.Contains(_field.CardCatalog[tempID]))
+                _cannotMove.Add(_field.CardCatalog[tempID]);
         }
 
         public void GiveAbility(List<int> tempIDs, int abilityTempID, int activationNumber)
@@ -3262,8 +3335,11 @@ namespace VanguardEngine
             _alchemagicUsed = false;
             _field.SetPersonaRide(false, _playerID);
             _canAttackFromBackRow.Clear();
+            _canAttackAllFrontRow.Clear();
             _canAttackBackRow.Clear();
+            _canInterceptFromBackRow.Clear();
             _canColumnAttack.Clear();
+            _cannotMove.Clear();
             _bonusSkills.Clear();
             _stoodByCardEffect.Clear();
             _countsAsTwoRetires.Clear();
@@ -3273,6 +3349,8 @@ namespace VanguardEngine
             _playerRetiredThisTurn = false;
             _enemyRetiredThisTurn = false;
             _canIntercept = true;
+            _canBoost = true;
+            _canMove = true;
             _bonusDriveCheckPower = 0;
             _unitsCalledThisTurn.Clear();
             _unitsCalledFromHandThisTurn.Clear();
@@ -3335,7 +3413,9 @@ namespace VanguardEngine
                 _givenAbilities[card.tempID].Clear();
             _canAttackFromBackRow.Remove(card);
             _canAttackBackRow.Remove(card);
+            _canInterceptFromBackRow.Remove(card);
             _cannotAttack.Remove(card);
+            _cannotMove.Remove(card);
             for (int i = 1; i <= PlayerVanguard; i++)
             {
                 if (_field.GetCircle(i) != null)
