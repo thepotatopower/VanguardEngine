@@ -28,7 +28,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Cataclysmic Bullet of Dust Storm, Randor") then
+		if obj.WasRodeUponBy("Cataclysmic Bullet of Dust Storm, Randor") then
 			return true
 		end
 	elseif n == 2 then

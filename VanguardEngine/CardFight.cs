@@ -337,6 +337,7 @@ namespace VanguardEngine
         {
             int selection;
             Tuple<int, int> selections;
+            List<int> canSelect = new List<int>();
             int location;
             int max;
             int input;
@@ -358,7 +359,8 @@ namespace VanguardEngine
                     if (player1.CanCallRearguard())
                     {
                         input = _inputManager.SelectRearguardToCall();
-                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), null);
+                        canSelect.AddRange(player1.GetAvailableCircles(input));
+                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
                         if (_abilities.CanOverDress(input, location))
                         {
                             Console.WriteLine("Perform overDress?");
@@ -441,7 +443,17 @@ namespace VanguardEngine
             foreach (int tempID in selections)
             {
                 if (circles != null)
-                    canSelect.AddRange(circles);
+                {
+                    foreach (int circle in circles)
+                    {
+                        if (player1.GetAvailableCircles(tempID).Contains(circle))
+                            canSelect.Add(circle);
+                    }
+                }
+                else
+                    canSelect.AddRange(player1.GetAvailableCircles(tempID));
+                if (canSelect.Count == 0)
+                    continue;
                 if (canSelect.Count == 1)
                     selectedCircle = canSelect[0];
                 else
@@ -785,8 +797,15 @@ namespace VanguardEngine
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetActiveUnits(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetGC(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetOrderZone(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetDrop(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetDeck(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetHand(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetActiveUnits(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetGC(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetOrderZone(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetDrop(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetDeck(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetHand(), 0));
             foreach (Card card in player1.GetAllUnitsOnField())
             {
                 if (player1.GetGivenAbility(card.tempID) != null)

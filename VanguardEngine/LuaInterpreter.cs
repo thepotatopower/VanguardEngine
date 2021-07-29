@@ -13,11 +13,49 @@ namespace VanguardEngine
         public string luaPath;
         public CardFight cardFight;
         int _abilityID = 0;
-        
+        DynValue l;
+        DynValue a;
+        DynValue q;
+        DynValue t;
+        DynValue o;
+        DynValue FL;
+        DynValue p;
+        DynValue u;
+        DynValue tt;
+        DynValue s;
+        DynValue ps;
+        DynValue cs;
+
+
         public LuaInterpreter(string path, CardFight cf)
         {
             luaPath = path;
             cardFight = cf;
+            UserData.RegisterType<Ability>();
+            UserData.RegisterType<Location>();
+            UserData.RegisterType<Activation>();
+            UserData.RegisterType<Query>();
+            UserData.RegisterType<AbilityType>();
+            UserData.RegisterType<Other>();
+            UserData.RegisterType<FL>();
+            UserData.RegisterType<Property>();
+            UserData.RegisterType<UnitType>();
+            UserData.RegisterType<Trigger>();
+            UserData.RegisterType<Skill>();
+            UserData.RegisterType<PlayerState>();
+            UserData.RegisterType<CardState>();
+            l = UserData.Create(new Location());
+            a = UserData.Create(new Activation());
+            q = UserData.Create(new Query());
+            t = UserData.Create(new AbilityType());
+            o = UserData.Create(new Other());
+            FL = UserData.Create(new FL());
+            p = UserData.Create(new Property());
+            u = UserData.Create(new UnitType());
+            tt = UserData.Create(new Trigger());
+            s = UserData.Create(new Skill());
+            ps = UserData.Create(new PlayerState());
+            cs = UserData.Create(new CardState());
         }
 
         public List<Ability> GetAbilities(Card card, Player player1, Player player2, bool player)
@@ -42,27 +80,6 @@ namespace VanguardEngine
             for (int i = 0; i < numberOfAbilities.Number; i++)
             {
                 script = new Script();
-                UserData.RegisterType<Ability>();
-                UserData.RegisterType<Location>();
-                UserData.RegisterType<Activation>();
-                UserData.RegisterType<Query>();
-                UserData.RegisterType<AbilityType>();
-                UserData.RegisterType<Other>();
-                UserData.RegisterType<FL>();
-                UserData.RegisterType<Property>();
-                UserData.RegisterType<UnitType>();
-                UserData.RegisterType<Trigger>();
-                UserData.RegisterType<Skill>();
-                DynValue l = UserData.Create(new Location());
-                DynValue a = UserData.Create(new Activation());
-                DynValue q = UserData.Create(new Query());
-                DynValue t = UserData.Create(new AbilityType());
-                DynValue o = UserData.Create(new Other());
-                DynValue FL = UserData.Create(new FL());
-                DynValue p = UserData.Create(new Property());
-                DynValue u = UserData.Create(new UnitType());
-                DynValue tt = UserData.Create(new Trigger());
-                DynValue s = UserData.Create(new Skill());
                 DynValue obj;
                 script.Globals.Set("l", l);
                 script.Globals.Set("a", a);
@@ -74,6 +91,8 @@ namespace VanguardEngine
                 script.Globals.Set("u", u);
                 script.Globals.Set("tt", tt);
                 script.Globals.Set("s", s);
+                script.Globals.Set("ps", ps);
+                script.Globals.Set("cs", cs);
                 script.DoFile(filePath);
                 ability = new Ability(player1, player2, cardFight, card, _abilityID++);
                 success = ability.StoreAbility(script, i + 1, player);
@@ -618,6 +637,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool WasRodeUponBy(string name)
+        {
+            return _player1.RodeUponBy(_timingCount, _card.tempID, name, false);
+        }
+
+        public bool WasRodeUponByNameContains(string name)
+        {
+            return _player1.RodeUponBy(_timingCount, _card.tempID, name, true);
+        }
+
         public bool MyVanguardWasPlaced()
         {
             if (_player1.GetLastPlacedOnVC(_timingCount).Count > 0)
@@ -759,7 +788,11 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetUnitsCalledFromHandThisTurn());
             }
             if (currentPool.Count == 0)
+            {
+                if (param.Others.Contains(Other.This))
+                    currentPool.Add(_player1.GetCard(_card.tempID));
                 return currentPool;
+            }
             if (param.FLs.Count > 0)
             {
                 foreach (Card card in currentPool)
@@ -2490,6 +2523,13 @@ namespace VanguardEngine
         {
             _player1.Shuffle();
         }
+
+        public void AddContinuousState(int paramNum, int state)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+                _player1.CardStates.AddContinuousState(card.tempID, state);
+        }
     }
 
     class Param
@@ -2725,6 +2765,7 @@ namespace VanguardEngine
         public const int PlayerBind = 47;
         public const int UnitsCalledThisTurn = 48;
         public const int UnitsCalledFromHandThisTurn = 49;
+        public const int Anywhere = 50;
     }
 
     class Query

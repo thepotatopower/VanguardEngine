@@ -31,7 +31,6 @@ namespace VanguardEngine
         public int unitType = -1;
         public int orderType = -1;
         public int skill = -1;
-        public int drive = -1;
         public int format = -1;
         public int tempID = 0;
         public string id = "";
@@ -50,7 +49,6 @@ namespace VanguardEngine
         {
             Card card = new Card();
             card.critical = critical;
-            card.drive = drive;
             card.effect = effect;
             card.format = format;
             card.grade = grade;

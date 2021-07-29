@@ -1,27 +1,28 @@
--- Sylvan Horned Beast, Tealuf (this card will be addressed later)
+-- Sylvan Horned Beast, Tealuf 
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 0
+	return 1
 end
 
 function GetParam(n)
+	if n == 1 then
+		return q.Other, o.This
+	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and obj.IsBooster() and obj.EnemyVanguardHit() then
-			return true
-		end
+		return true
 	end
 	return false
 end
@@ -38,7 +39,9 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Mill(5)
+		obj.AddContinuousState(1, cs.CannotBeRidden)
+		obj.AddContinuousState(1, cs.CannotBeCalledToFrontRow)
+		obj.AddContinuousState(1, cs.CannotMoveToFrontRow)
 	end
 	return 0
 end

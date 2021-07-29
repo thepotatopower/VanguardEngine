@@ -29,7 +29,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) then
+		if obj.WasRodeUponBy("Chakrabarthi Divine Dragon, Nirvana") and obj.CanSB(2) then
 			return true
 		end
 	elseif n == 2 then

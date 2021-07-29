@@ -810,5 +810,8 @@ namespace VanguardEngine
         public const int BonusShield = 13;
         public const int Resist = 14;
         public const int CannotBeHitByGrade = 15;
+        public const int CannotBeRidden = 16;
+        public const int CannotBeCalledToFrontRow = 17;
+        public const int CannotMoveToFrontRow = 18;
     }
 }

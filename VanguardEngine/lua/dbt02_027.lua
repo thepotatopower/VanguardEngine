@@ -32,7 +32,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(2) and obj.IsRodeUponThisTurn() and obj.Exists(1) then
+		if obj.WasRodeUponByNameContains("Overlord") and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then

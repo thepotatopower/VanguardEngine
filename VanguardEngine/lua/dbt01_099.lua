@@ -28,7 +28,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Pentagleam Sorceress") and obj.CanCB(2) then
+		if obj.WasRodeUponBy("Pentagleam Sorceress") and obj.CanCB(2) then
 			return true
 		end
 	elseif n == 2 then

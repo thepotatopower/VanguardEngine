@@ -11,6 +11,7 @@ namespace VanguardEngine
         protected int _startingTurn = -1;
         protected bool _guarding = false;
         protected Dictionary<int, List<Card>> _riddenOnThisTurn = new Dictionary<int, List<Card>>();
+        protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
         protected Dictionary<int, List<Card>> _lastPlacedOnGC = new Dictionary<int, List<Card>>();
         protected Dictionary<int, List<Card>> _lastPutOnGC = new Dictionary<int, List<Card>>();
         protected Dictionary<int, List<Card>> _lastPlacedOnRC = new Dictionary<int, List<Card>>();
@@ -312,6 +313,24 @@ namespace VanguardEngine
                 return _riddenOnThisTurn[count];
             else
                 return new List<Card>();
+        }
+
+        public bool RodeUponBy(int count, int tempID, string name, bool contains)
+        {
+            Tuple<int, string> tuple = new Tuple<int, string>(tempID, name);
+            if (!_field.GetUnit(PlayerVanguard).soul.Contains(_field.CardCatalog[tempID]))
+                return false;
+            if (contains)
+            {
+                if (_cardRiddenBy.ContainsKey(count) && _cardRiddenBy[count].Item1 == tempID && _cardRiddenBy[count].Item2.Contains(name))
+                    return true;
+            }
+            else
+            {
+                if (_cardRiddenBy.ContainsKey(count) && _cardRiddenBy[count].Equals(tuple))
+                    return true;
+            }
+            return false;
         }
 
         public Card GetUnitAt(int circle)
@@ -731,7 +750,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerRideDeck)
                 {
-                    if (card.unitType >= 0 && card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1)
+                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1))
                         cards.Add(card);
                 }
             }
@@ -739,7 +758,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand)
                 {
-                    if (card.unitType >= 0 && card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1)
+                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1))
                         cards.Add(card);
                 }
             }
@@ -812,7 +831,7 @@ namespace VanguardEngine
             Card Attacker = _field.GetUnit(_field.Attacker);
             for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
             {
-                if (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
+                if (_field.GetUnit(i) != null && _field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
                     cards.Add(_field.GetUnit(i));
             }
             return cards;
@@ -1032,7 +1051,8 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in rideDeck)
             {
-                if (VG.grade + 1 == card.grade)
+                if (VG.grade + 1 == card.grade &&
+                    !_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden))
                     return true;
             }
             return false;
@@ -1044,7 +1064,8 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
             {
-                if (card.unitType >= 0 && (card.grade == VG.grade || card.grade - 1 == VG.grade))
+                if (card.unitType >= 0 && (card.grade == VG.grade || card.grade - 1 == VG.grade) &&
+                    !_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden))
                     return true;
             }
             return false;
@@ -1069,7 +1090,9 @@ namespace VanguardEngine
             for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
             {
                 if (_field.GetUnit(i) != null)
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -1413,22 +1436,15 @@ namespace VanguardEngine
         {
             CardEventArgs args = new CardEventArgs();
             List<Card> list;
-            Card card = null;
+            Card card = _field.CardCatalog[selection];
             _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count + 1] = new List<Card>();
             _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count].Add(_field.GetUnit(PlayerVanguard));
             _lastPlacedOnVC[_lastPlacedOnVC.Keys.Count + 1] = new List<Card>();
+            _cardRiddenBy[_cardRiddenBy.Keys.Count + 1] = new Tuple<int, string>(_field.GetUnit(PlayerVanguard).tempID, card.name);
             if (location == 0)
                 list = PlayerRideDeck;
             else
                 list = PlayerHand;
-            foreach (Card item in list)
-            {
-                if (item.tempID == selection)
-                {
-                    card = item;
-                    break;
-                }
-            }
             if (card.name == _field.GetUnit(PlayerVanguard).name && _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
                 _field.SetPersonaRide(true, _playerID);
@@ -1681,7 +1697,9 @@ namespace VanguardEngine
             Card temp;
             if (location == 0)
             {
-                if (_field.CardStates.HasState(_field.GetUnit(PlayerFrontLeft).tempID, CardState.CannotMove) || _field.CardStates.HasState(_field.GetUnit(PlayerBackLeft).tempID, CardState.CannotMove))
+                if ((_field.GetUnit(PlayerFrontLeft) != null && _field.CardStates.HasState(_field.GetUnit(PlayerFrontLeft).tempID, CardState.CannotMove)) || (_field.GetUnit(PlayerBackLeft) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackLeft).tempID, CardState.CannotMove)))
+                    return;
+                if (_field.GetUnit(PlayerBackLeft) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackLeft).tempID, CardState.CannotMoveToFrontRow))
                     return;
                 temp = _field.GetUnit(PlayerFrontLeft);
                 _field.SetUnit(PlayerFrontLeft, _field.GetUnit(PlayerBackLeft));
@@ -1690,7 +1708,9 @@ namespace VanguardEngine
             }
             else
             {
-                if (_field.CardStates.HasState(_field.GetUnit(PlayerFrontRight).tempID, CardState.CannotMove) || _field.CardStates.HasState(_field.GetUnit(PlayerBackRight).tempID, CardState.CannotMove))
+                if ((_field.GetUnit(PlayerFrontRight) != null && _field.CardStates.HasState(_field.GetUnit(PlayerFrontRight).tempID, CardState.CannotMove)) || (_field.GetUnit(PlayerBackRight) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackRight).tempID, CardState.CannotMove)))
+                    return;
+                if (_field.GetUnit(PlayerBackRight) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackRight).tempID, CardState.CannotMoveToFrontRow))
                     return;
                 temp = _field.GetUnit(PlayerFrontRight);
                 _field.SetUnit(PlayerFrontRight, _field.GetUnit(PlayerBackRight));
@@ -1722,7 +1742,11 @@ namespace VanguardEngine
             else if (location1 == PlayerBackLeft)
             {
                 if (direction == Direction.Up)
+                {
+                    if (_field.CardStates.HasState(location, CardState.CannotMoveToFrontRow))
+                        return;
                     location2 = PlayerFrontLeft;
+                }
                 else if (direction == Direction.Right)
                     location2 = PlayerBackCenter;
             }
@@ -1741,7 +1765,11 @@ namespace VanguardEngine
             else if (location1 == PlayerBackRight)
             {
                 if (direction == Direction.Up)
+                {
+                    if (_field.CardStates.HasState(location, CardState.CannotMoveToFrontRow))
+                        return;
                     location2 = PlayerFrontRight;
+                }
                 else if (direction == Direction.Left)
                     location2 = PlayerBackCenter;
             }
@@ -1754,7 +1782,10 @@ namespace VanguardEngine
         {
             if (!MyStates.HasState(PlayerState.CannotMove))
                 return;
-            if (!_field.CardStates.HasState(location, CardState.CannotMove))
+            if ((location == PlayerFrontLeft || location == PlayerFrontRight) &&
+                _field.CardStates.HasState(tempID, CardState.CannotMoveToFrontRow))
+                return;
+            if (!_field.CardStates.HasState(tempID, CardState.CannotMove))
             {
                 _field.SetUnit(GetCircle(_field.CardCatalog[tempID]), null);
                 _field.SetUnit(location, _field.CardCatalog[tempID]);
@@ -3181,6 +3212,7 @@ namespace VanguardEngine
             _lastPlacedOnGC.Clear();
             _lastPutOnGC.Clear();
             _riddenOnThisTurn.Clear();
+            _cardRiddenBy.Clear();
             _lastRevealedTriggers.Clear();
             _lastDiscarded.Clear();
             _lastCalledFromPrison.Clear();
@@ -3347,6 +3379,20 @@ namespace VanguardEngine
                     cardsWithName.Add(card);
             }
             return cardsWithName;
+        }
+
+        public List<int> GetAvailableCircles(int tempID)
+        {
+            List<int> circles = new List<int>();
+            circles.Add(PlayerBackRight);
+            circles.Add(PlayerBackCenter);
+            circles.Add(PlayerBackLeft);
+            if (!_field.CardStates.HasState(tempID, CardState.CannotBeCalledToFrontRow))
+            {
+                circles.Add(PlayerFrontRight);
+                circles.Add(PlayerFrontLeft);
+            }
+            return circles;
         }
 
         public Card GetCard(int tempID)

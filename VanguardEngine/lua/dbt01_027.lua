@@ -30,7 +30,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Heavy Artillery of Dust Storm, Eugene") and obj.Exists(1) then
+		if obj.WasRodeUponBy("Heavy Artillery of Dust Storm, Eugene") and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then

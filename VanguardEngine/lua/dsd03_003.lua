@@ -32,7 +32,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.VanguardIs("Knight of Heavenly Spear, Rooks") and obj.CanReveal(1) then
+		if obj.WasRodeUponBy("Knight of Heavenly Spear, Rooks") and obj.CanReveal(1) then
 			return true
 		end
 	elseif n == 2 then
