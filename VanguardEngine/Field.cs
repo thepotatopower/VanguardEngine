@@ -49,6 +49,9 @@ namespace VanguardEngine
         protected Player _player2Player;
         protected int[] _shuffleKey;
         protected int _turn = 1;
+        protected CardStates _cardStates = new CardStates();
+        protected PlayerStates _player1States = new PlayerStates();
+        protected PlayerStates _player2States = new PlayerStates();
 
         public List<Card> Player1Deck
         {
@@ -83,16 +86,26 @@ namespace VanguardEngine
             get => _player2Hand;
         }
 
-        public Card GetCircle(int circle)
+        public Card GetUnit(int circle)
         {
             if (_circles[circle] == null)
                 return null;
             return _circles[circle].Unit;
         }
 
-        public void SetCircle(int circle, Card card)
+        public void SetUnit(int circle, Card card)
         {
             _circles[circle].Unit = card;
+        }
+
+        public int GetRow(int circle)
+        {
+            return _circles[circle].Row;
+        }
+
+        public int GetColumn(int circle)
+        {
+            return _circles[circle].Column;
         }
 
         public int[] CirclePower
@@ -250,6 +263,21 @@ namespace VanguardEngine
         public Card Player2World
         {
             get => _player2World;
+        }
+
+        public CardStates CardStates
+        {
+            get => _cardStates;
+        }
+
+        public PlayerStates Player1States
+        {
+            get => _player1States;
+        }
+
+        public PlayerStates Player2States
+        {
+            get => _player2States;
         }
 
         public int Turn
@@ -501,5 +529,286 @@ namespace VanguardEngine
         {
             return 14;
         }
+    }
+
+    public class PlayerStates
+    {
+        List<int> _continuous = new List<int>();
+        Dictionary<int, int> _continuousValues = new Dictionary<int, int>();
+        List<int> _untilEndOfTurn = new List<int>();
+        Dictionary<int, int> _untilEndOfTurnValues = new Dictionary<int, int>();
+        List<int> _untilEndOfNextTurn = new List<int>();
+        List<int> _untilEndOfBattle = new List<int>();
+        Dictionary<int, int> _untilEndOfBattleValues = new Dictionary<int, int>();
+
+        public void AddContinuousState(int state)
+        {
+            if (!_continuous.Contains(state))
+                _continuous.Add(state);
+        }
+
+        public void AddContinuousValue(int state, int value)
+        {
+            _continuousValues[state] = value;
+        }
+
+        public void RefreshContinuousStates()
+        {
+            _continuous.Clear();
+            _continuousValues.Clear();
+        }
+
+        public void AddUntilEndOfTurnState(int state)
+        {
+            if (!_untilEndOfTurn.Contains(state))
+                _untilEndOfTurn.Add(state);
+        }
+
+        public void AddUntilEndOfTurnValue(int state, int value)
+        {
+            _untilEndOfTurnValues[state] = value;
+        }
+
+        public void AddUntilEndOfNextTurnState(int state)
+        {
+            if (!_untilEndOfNextTurn.Contains(state))
+                _untilEndOfNextTurn.Add(state);
+        }
+
+        public void EndTurn()
+        {
+            _untilEndOfTurn.Clear();
+            _untilEndOfTurnValues.Clear();
+            _untilEndOfTurn.AddRange(_untilEndOfNextTurn);
+            _untilEndOfNextTurn.Clear();
+        }
+
+        public void AddUntilEndOfBattleState(int state)
+        {
+            if (!_untilEndOfBattle.Contains(state))
+                _untilEndOfBattle.Add(state);
+        }
+
+        public void AddUntilEndOfBattleValue(int state, int value)
+        {
+            _untilEndOfBattleValues[state] = value;
+        }
+
+        public void EndAttack()
+        {
+            _untilEndOfBattle.Clear();
+            _untilEndOfBattleValues.Clear();
+        }
+
+        public bool HasState(int state)
+        {
+            if (_continuous.Contains(state) || _untilEndOfTurn.Contains(state) || _untilEndOfBattle.Contains(state) || _untilEndOfNextTurn.Contains(state))
+                return true;
+            return false;
+        }
+
+        public int GetValue(int state)
+        {
+            if (_continuousValues.ContainsKey(state))
+                return _continuousValues[state];
+            if (_untilEndOfTurnValues.ContainsKey(state))
+                return _untilEndOfTurnValues[state];
+            if (_untilEndOfBattleValues.ContainsKey(state))
+                return _untilEndOfBattleValues[state];
+            return -1;
+        }
+    }
+
+    public class CardStates
+    {
+        Dictionary<int, List<int>> _continuous = new Dictionary<int, List<int>>();
+        Dictionary<Tuple<int, int>, List<int>> _continuousValues = new Dictionary<Tuple<int, int>, List<int>>();
+        Dictionary<int, List<int>> _untilEndOfTurn = new Dictionary<int, List<int>>();
+        Dictionary<Tuple<int, int>, List<int>> _untilEndOfTurnValues = new Dictionary<Tuple<int, int>, List<int>>();
+        Dictionary<int, List<int>> _untilEndOfNextTurn = new Dictionary<int, List<int>>();
+        Dictionary<int, List<int>> _untilEndOfBattle = new Dictionary<int, List<int>>();
+        Dictionary<Tuple<int, int>, List<int>> _untilEndOfBattleValues = new Dictionary<Tuple<int, int>, List<int>>();
+
+        public void AddContinuousState(int tempID, int state)
+        {
+            if (!_continuous.ContainsKey(tempID))
+                _continuous[tempID] = new List<int>();
+            if (!_continuous[tempID].Contains(state))
+                _continuous[tempID].Add(state);
+        }
+
+        public void AddContinuousValue(int tempID, int state, int value)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_continuousValues.ContainsKey(tuple))
+                _continuousValues[tuple] = new List<int>();
+            _continuousValues[tuple].Add(value);
+        }
+
+        public void RefreshContinuousStates()
+        {
+            foreach (int key in _continuous.Keys)
+                _continuous[key].Clear();
+        }
+
+        public void AddUntilEndOfTurnState(int tempID, int state)
+        {
+            if (!_untilEndOfTurn.ContainsKey(tempID))
+                _untilEndOfTurn[tempID] = new List<int>();
+            if (!_untilEndOfTurn[tempID].Contains(state))
+                _untilEndOfTurn[tempID].Add(state);
+        }
+
+        public void AddUntilEndOfTurnValue(int tempID, int state, int value)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_untilEndOfTurnValues.ContainsKey(tuple))
+                _untilEndOfTurnValues[tuple] = new List<int>();
+            _untilEndOfTurnValues[tuple].Add(value);
+        }
+
+        public void AddUntilEndOfNextTurnState(int tempID, int state)
+        {
+            if (!_untilEndOfNextTurn.ContainsKey(tempID))
+                _untilEndOfNextTurn[tempID] = new List<int>();
+            if (!_untilEndOfNextTurn[tempID].Contains(state))
+                _untilEndOfNextTurn[tempID].Add(state);
+        }
+
+        public void AddUntilEndOfBattleState(int tempID, int state)
+        {
+            if (!_untilEndOfBattle.ContainsKey(tempID))
+                _untilEndOfBattle[tempID] = new List<int>();
+            if (!_untilEndOfBattle[tempID].Contains(state))
+                _untilEndOfBattle[tempID].Add(state);
+        }
+
+        public void AddUntilEndOfBattleValue(int tempID, int state, int value)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_untilEndOfBattleValues.ContainsKey(tuple))
+                _untilEndOfBattleValues[tuple] = new List<int>();
+            _untilEndOfBattleValues[tuple].Add(value);
+        }
+
+        public void EndAttack()
+        {
+            foreach (int key in _untilEndOfBattle.Keys)
+                _untilEndOfBattle[key].Clear();
+            foreach (Tuple<int, int> key in _untilEndOfBattleValues.Keys)
+                _untilEndOfBattleValues[key].Clear();
+        }
+
+        public void EndTurn()
+        {
+            foreach (int key in _untilEndOfTurn.Keys)
+                _untilEndOfTurn[key].Clear();
+            foreach (Tuple<int, int> key in _untilEndOfTurnValues.Keys)
+                _untilEndOfTurnValues[key].Clear();
+            foreach (int key in _untilEndOfNextTurn.Keys)
+            {
+                if (!_untilEndOfTurn.ContainsKey(key))
+                    _untilEndOfTurn[key] = new List<int>();
+                _untilEndOfTurn[key].AddRange(_untilEndOfNextTurn[key]);
+                _untilEndOfNextTurn[key].Clear();
+            }
+        }
+
+        public bool HasState(int tempID, int state)
+        {
+            if (_continuous.ContainsKey(tempID) && _continuous[tempID].Contains(state))
+                return true;
+            if (_untilEndOfTurn.ContainsKey(tempID) && _untilEndOfTurn[tempID].Contains(state))
+                return true;
+            if (_untilEndOfNextTurn.ContainsKey(tempID) && _untilEndOfNextTurn[tempID].Contains(state))
+                return true;
+            if (_untilEndOfBattle.ContainsKey(tempID) && _untilEndOfBattle[tempID].Contains(state))
+                return true;
+            return false;
+        }
+
+        public List<int> GetValues(int tempID, int state)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            List<int> values = new List<int>();
+            if (_continuousValues.ContainsKey(tuple))
+            {
+                values.AddRange(_continuousValues[tuple]);
+            }
+            if (_untilEndOfTurnValues.ContainsKey(tuple))
+            {
+                values.AddRange(_untilEndOfTurnValues[tuple]);
+            }
+            if (_untilEndOfBattleValues.ContainsKey(tuple))
+            {
+                values.AddRange(_untilEndOfBattleValues[tuple]);
+            }
+            return values;
+        }
+
+        public void ResetCardValues(int tempID)
+        {
+            if (_untilEndOfBattle.ContainsKey(tempID))
+                _untilEndOfBattle[tempID].Clear();
+            foreach (Tuple<int, int> key in _untilEndOfBattleValues.Keys)
+            {
+                if (key.Item1 == tempID)
+                    _untilEndOfBattleValues[key].Clear();
+            }
+            if (_untilEndOfNextTurn.ContainsKey(tempID))
+                _untilEndOfNextTurn[tempID].Clear();
+            if (_untilEndOfTurn.ContainsKey(tempID))
+                _untilEndOfTurn[tempID].Clear();
+            foreach (Tuple<int, int> key in _untilEndOfTurnValues.Keys)
+            {
+                if (key.Item1 == tempID)
+                    _untilEndOfTurnValues[key].Clear();
+            }
+            if (_continuous.ContainsKey(tempID))
+                _continuous[tempID].Clear();
+            foreach (Tuple<int, int> key in _continuousValues.Keys)
+            {
+                if (key.Item1 == tempID)
+                    _continuousValues[key].Clear();
+            }
+
+        }
+    }
+
+    public class PlayerState
+    {
+        public const int FinalRush = 1;
+        public const int DarkNight = 2;
+        public const int AbyssalDarkNight = 3;
+        public const int FreeSBAvailable = 4;
+        public const int GuardWithTwo = 5;
+        public const int CannotGuardFromHand = 6;
+        public const int FreeSwap = 7;
+        public const int CannotIntercept = 8;
+        public const int CannotMove = 9;
+        public const int CannotBoost = 10;
+        public const int CanAlchemagicDiff = 11;
+        public const int CanAlchemagicSame = 12;
+        public const int MinGradeForGuard = 13;
+        public const int RearguardDriveCheck = 14;
+    }
+
+    public class CardState
+    {
+        public const int CanAttackFromBackRow = 1;
+        public const int CanAttackBackRow = 2;
+        public const int CanColumnAttack = 3;
+        public const int CanAttackAllFrontRow = 4;
+        public const int CannotAttack = 5;
+        public const int CannotMove = 6;
+        public const int CanInterceptFromBackRow = 7;
+        public const int CountsAsTwoRetires = 8;
+        public const int BonusPower = 9;
+        public const int BonusCritical = 10;
+        public const int BonusDrive = 11;
+        public const int BonusSkills = 12;
+        public const int BonusShield = 13;
+        public const int Resist = 14;
+        public const int CannotBeHitByGrade = 15;
     }
 }

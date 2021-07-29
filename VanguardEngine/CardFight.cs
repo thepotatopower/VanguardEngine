@@ -739,10 +739,10 @@ namespace VanguardEngine
             player1.PerfectGuard(target);
         }
 
-        public void TargetImmunity(Player player1, Player player2, int tempID)
+        public void Resist(Player player1, Player player2, int tempID)
         {
-            _player1.TargetImmunity(tempID);
-            _player2.TargetImmunity(tempID);
+            _player1.Resist(tempID);
+            _player2.Resist(tempID);
         }
 
         public void AddAbilitiesToQueue(Player player1, Player player2)
@@ -1105,12 +1105,6 @@ namespace VanguardEngine
         {
             player1.AddSkill(card.tempID, skill);
             player2.AddSkill(card.tempID, skill);
-        }
-
-        public void RemoveSkill(Player player1, Player player2, Card card, int skill)
-        {
-            _player1.RemoveSkill(card.tempID, skill);
-            _player2.RemoveSkill(card.tempID, skill);
         }
 
         public void AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, int min)

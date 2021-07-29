@@ -880,7 +880,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.originalOwner == _player1._playerID || !card.targetImmunity)
+                            if (card.originalOwner == _player1._playerID || !_player1.CardStates.HasState(card.tempID, CardState.Resist))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -1374,7 +1374,7 @@ namespace VanguardEngine
             int count = 0;
             foreach (Card card in units)
             {
-                if (!(card.targetImmunity && _player1.IsEnemy(card.tempID)))
+                if (!(_player1.CardStates.HasState(card.tempID, CardState.Resist) && _player1.IsEnemy(card.tempID)))
                 {
                     count++;
                     if (_player1.CanCountAsTwoRetires(card.tempID))
@@ -1762,9 +1762,7 @@ namespace VanguardEngine
 
         public void DoesNotCountAsTwoRetires(int paramNum)
         {
-            List<Card> cards = ValidCards(paramNum);
-            foreach (Card card in cards)
-                _player1.DoesNotCountAsTwoRetires(card.tempID);
+
         }
 
         public void ChooseRetire(int paramNum)
@@ -1773,7 +1771,7 @@ namespace VanguardEngine
             List<Card> canRetire = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
-                if (!card.targetImmunity)
+                if (!_player1.CardStates.HasState(card.tempID, CardState.Resist))
                     canRetire.Add(card);
             }
             _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum - 1].Counts[0], false); 
@@ -1979,7 +1977,16 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _cardFight.TargetImmunity(_player1, _player2, card.tempID);
+                _cardFight.Resist(_player1, _player2, card.tempID);
+            }
+        }
+
+        public void Resist(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+            {
+                _cardFight.Resist(_player1, _player2, card.tempID);
             }
         }
 
@@ -2024,7 +2031,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityPower(_card.tempID, _abilityNumber, card.tempID, power);
+                _player1.SetAbilityPower(card.tempID, power);
             }
         }
 
@@ -2033,7 +2040,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityShield(_card.tempID, _abilityNumber, card.tempID, shield);
+                _player1.SetAbilityShield(card.tempID, shield);
             }
         }
 
@@ -2042,7 +2049,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityDrive(_card.tempID, _abilityNumber, card.tempID, drive);
+                _player1.SetAbilityDrive(card.tempID, drive);
             }
         }
 
@@ -2051,7 +2058,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityCritical(_card.tempID, _abilityNumber, card.tempID, critical);
+                _player1.SetAbilityCritical(card.tempID, critical);
             }
         }
 
@@ -2148,11 +2155,7 @@ namespace VanguardEngine
 
         public void RemoveSkill(int paramNum, int skill)
         {
-            List<Card> cards = ValidCards(paramNum);
-            foreach (Card card in cards)
-            {
-                _cardFight.RemoveSkill(_player1, _player2, card, skill);
-            }
+
         }
 
         public void AllowFreeSwap()
@@ -2162,9 +2165,7 @@ namespace VanguardEngine
 
         public void AllowAttack(int paramNum)
         {
-            List<Card> cards = ValidCards(paramNum);
-            foreach (Card card in cards)
-                _player1.AllowAttack(card.tempID);
+
         }
 
         public void DisableAttack(int paramNum)
@@ -2197,9 +2198,7 @@ namespace VanguardEngine
 
         public void DisableAttackAllFrontRow(int paramNum)
         {
-            List<Card> cards = ValidCards(paramNum);
-            foreach (Card card in cards)
-                _player1.DisableAttackAllFrontRow(card.tempID);
+
         }
 
         public void AllowAttackingBackRow(int paramNum)
@@ -2218,9 +2217,7 @@ namespace VanguardEngine
 
         public void DisableColumnAttack(int paramNum)
         {
-            List<Card> cards = ValidCards(paramNum);
-            foreach (Card card in cards)
-                _player1.DisableColumnAttack(card.tempID);
+
         }
 
         public void AllowInterceptFromBackRow(int paramNum)
@@ -2303,7 +2300,7 @@ namespace VanguardEngine
             List<Card> cardsToImprison = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
-                if (!card.targetImmunity)
+                if (!_player1.CardStates.HasState(card.tempID, CardState.Resist))
                     cardsToImprison.Add(card);
             }
             _cardFight.ChooseImprison(_player1, _player2, cardsToImprison, GetCount(paramNum), GetMin(paramNum));
@@ -2360,7 +2357,7 @@ namespace VanguardEngine
 
         public void NoWorld()
         {
-            _player1.NoWorld();
+            
         }
 
         public bool WorldPlayed()

@@ -477,7 +477,7 @@ namespace VanguardEngine
         protected virtual void SelectUnitToAttack_Input()
         {
             int selection = 0;
-            List<Card> cards = _player1.GetAttackableUnits();
+            List<Card> cards = _player1.GetPotentialAttackTargets();
             Console.WriteLine("Choose unit to attack.");
             for (int i = 0; i < cards.Count; i++)
                 Console.WriteLine(i + 1 + ". " + cards[i].name);
