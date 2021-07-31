@@ -13,17 +13,6 @@ namespace VanguardEngine
         public int race = -1;
         public int grade = -1;
         public int power = -1;
-        //public int bonusPower = 0;
-        //public int tempPower = 0;
-        //public int battleOnlyPower = 0;
-        //public int tempCritical = 0;
-        //public int battleOnlyCritical = 0;
-        //public int tempDrive = 0;
-        //public Dictionary<Tuple<int, int>, int> abilityPower = new Dictionary<Tuple<int, int>, int>();
-        //public Dictionary<Tuple<int, int>, int> abilityShield = new Dictionary<Tuple<int, int>, int>();
-        //public Dictionary<Tuple<int, int>, int> abilityDrive = new Dictionary<Tuple<int, int>, int>();
-        //public Dictionary<Tuple<int, int>, int> abilityCritical = new Dictionary<Tuple<int, int>, int>();
-        //public int tempShield = 0;
         public int shield = -1;
         public int critical = -1;
         public int trigger = -1;
@@ -43,7 +32,7 @@ namespace VanguardEngine
         public bool alchemagic = false;
         public int location = Location.Deck;
         public int originalOwner = 0;
-        public List<Card> soul = new List<Card>();
+        //public List<Card> soul = new List<Card>();
 
         public Card Clone()
         {

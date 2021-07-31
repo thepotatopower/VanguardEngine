@@ -2736,7 +2736,6 @@ namespace VanguardEngine
         public const int EnemyVC = 18;
         public const int originalDress = 19;
         public const int EnemyHand = 20;
-        public const int OrderZone = 21;
         public const int Revealed = 22;
         public const int RevealedTriggers = 23;
         public const int Selected = 24;

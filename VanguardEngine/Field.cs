@@ -6,16 +6,16 @@ namespace VanguardEngine
 {
     public class Field
     {
-        protected List<Card> _player1Hand = new List<Card>();
-        protected List<Card> _player2Hand = new List<Card>();
-        protected List<Card> _player1Deck = new List<Card>();
-        protected List<Card> _player2Deck = new List<Card>();
+        protected Zone _player1Hand;
+        protected Zone _player2Hand;
+        protected Deck _player1Deck;
+        protected Deck _player2Deck;
         protected List<Card> _tokens = new List<Card>();
         protected Card[] _cardCatalog = new Card[200];
         protected readonly Circle[] _circles = new Circle[14];
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
-        protected List<Card> _GC = new List<Card>();
+        protected Zone _GC;
         protected Dictionary<int, List<Card>> _guardians = new Dictionary<int, List<Card>>();
         protected List<Card> _sentinel = new List<Card>();
         protected int _attacker = -1;
@@ -23,43 +23,42 @@ namespace VanguardEngine
         protected int _booster = -1;
         protected bool _player1PersonaRide = false;
         protected bool _player2PersonaRide = false;
-        protected List<Card> _player1Drop = new List<Card>();
-        protected List<Card> _player2Drop = new List<Card>();
-        protected List<Card> _player1Damage = new List<Card>();
-        protected List<Card> _player2Damage = new List<Card>();
-        protected List<Card> _player1Bind = new List<Card>();
-        protected List<Card> _player2Bind = new List<Card>();
-        protected Card[] _player1Trigger = new Card[1];
-        protected Card[] _player2Trigger = new Card[1];
-        protected List<Card> _player1Order = new List<Card>();
-        protected List<Card> _player2Order = new List<Card>();
-        protected List<Card> _player1RideDeck = new List<Card>();
-        protected List<Card> _player2RideDeck = new List<Card>();
-        protected List<Card> _player1Revealed = new List<Card>();
-        protected List<Card> _player2Revealed = new List<Card>();
-        protected List<Card> _player1Looking = new List<Card>();
-        protected List<Card> _player2Looking = new List<Card>();
+        protected Drop _player1Drop;
+        protected Drop _player2Drop;
+        protected Zone _player1Damage;
+        protected Zone _player2Damage;
+        protected Zone _player1Bind;
+        protected Zone _player2Bind;
+        protected Zone _player1Trigger;
+        protected Zone _player2Trigger;
+        protected Zone _player1Order;
+        protected Zone _player2Order;
+        protected Zone _player1RideDeck;
+        protected Zone _player2RideDeck;
+        protected PsuedoZone _player1Revealed;
+        protected PsuedoZone _player2Revealed;
+        protected PsuedoZone _player1Looking;
+        protected PsuedoZone _player2Looking;
         protected Card _player1Prison = null;
         protected Card _player2Prison = null;
         protected Card _player1World = null;
         protected Card _player2World = null;
-        protected List<Card> _player1Prisoners = new List<Card>();
-        protected List<Card> _player2Prisoners = new List<Card>();
+        protected PsuedoZone _player1Prisoners;
+        protected PsuedoZone _player2Prisoners;
         protected List<Card> _unitsHit = new List<Card>();
-        protected Player _player2Player;
         protected int[] _shuffleKey;
         protected int _turn = 1;
         protected CardStates _cardStates = new CardStates();
         protected PlayerStates _player1States = new PlayerStates();
         protected PlayerStates _player2States = new PlayerStates();
 
-        public List<Card> Player1Deck
+        public Deck Player1Deck
         {
             get => _player1Deck;
             set => _player1Deck = value;
         }
 
-        public List<Card> Player2Deck
+        public Deck Player2Deck
         {
             get => _player2Deck;
             set => _player2Deck = value;
@@ -76,12 +75,12 @@ namespace VanguardEngine
             get => _shuffleKey;
             set => _shuffleKey = value;
         }
-        public List<Card> Player1Hand
+        public Zone Player1Hand
         {
             get => _player1Hand;
         }
 
-        public List<Card> Player2Hand
+        public Zone Player2Hand
         {
             get => _player2Hand;
         }
@@ -90,12 +89,22 @@ namespace VanguardEngine
         {
             if (_circles[circle] == null)
                 return null;
-            return _circles[circle].Unit;
+            return _circles[circle].Index(0);
         }
 
-        public void SetUnit(int circle, Card card)
+        public void SetUnit(int circle, Card card, Zone previousZone)
         {
-            _circles[circle].Unit = card;
+            _circles[circle].Add(card, previousZone);
+        }
+
+        public void RideUnit(int circle, Card card, Zone previousZone)
+        {
+            _circles[circle].AddRide(card, previousZone);
+        }
+
+        public void RemoveUnit(int circle, Zone destination)
+        {
+            destination.Add(GetUnit(circle), _circles[circle]);
         }
 
         public int GetRow(int circle)
@@ -108,6 +117,16 @@ namespace VanguardEngine
             return _circles[circle].Column;
         }
 
+        public List<Card> GetSoul(int circle)
+        {
+            return _circles[circle].GetSoul();
+        }
+
+        public Soul GetSoulZone(int circle)
+        {
+            return _circles[circle].GetSoulZone();
+        }
+
         public int[] CirclePower
         {
             get => _circlePower;
@@ -118,17 +137,17 @@ namespace VanguardEngine
             get => _circleCritical;
         }
 
-        public List<Card> Player1RideDeck
+        public Zone Player1RideDeck
         {
             get => _player1RideDeck;
         }
 
-        public List<Card> Player2RideDeck
+        public Zone Player2RideDeck
         {
             get => _player2RideDeck;
         }
 
-        public List<Card> GC
+        public Zone GC
         {
             get => _GC;
         }
@@ -143,52 +162,52 @@ namespace VanguardEngine
             get => _sentinel;
         }
 
-        public List<Card> Player1Drop
+        public Zone Player1Drop
         {
             get => _player1Drop;
         }
 
-        public List<Card> Player2Drop
+        public Zone Player2Drop
         {
             get => _player2Drop;
         }
 
-        public List<Card> Player1Bind
+        public Zone Player1Bind
         {
             get => _player1Bind;
         }
 
-        public List<Card> Player2Bind
+        public Zone Player2Bind
         {
             get => _player2Bind;
         }
 
-        public List<Card> Player1Order
+        public Zone Player1Order
         {
             get => _player1Order;
         }
 
-        public List<Card> Player2Order
+        public Zone Player2Order
         {
             get => _player2Order;
         }
 
-        public List<Card> Player1Revealed
+        public Zone Player1Revealed
         {
             get => _player1Revealed;
         }
 
-        public List<Card> Player2Revealed
+        public Zone Player2Revealed
         {
             get => _player2Revealed;
         }
 
-        public List<Card> Player1Looking
+        public Zone Player1Looking
         {
             get => _player1Looking;
         }
 
-        public List<Card> Player2Looking
+        public Zone Player2Looking
         {
             get => _player2Looking;
         }
@@ -210,22 +229,22 @@ namespace VanguardEngine
             set => _booster = value;
         }
 
-        public Card[] Player1Trigger
+        public Zone Player1Trigger
         {
             get => _player1Trigger;
         }
 
-        public Card[] Player2Trigger
+        public Zone Player2Trigger
         {
             get => _player2Trigger;
         }
 
-        public List<Card> Player1DamageZone
+        public Zone Player1DamageZone
         {
             get => _player1Damage;
         }
 
-        public List<Card> Player2DamageZone
+        public Zone Player2DamageZone
         {
             get => _player2Damage;
         }
@@ -240,12 +259,12 @@ namespace VanguardEngine
             get => _player2Prison;
         }
 
-        public List<Card> Player1Prisoners
+        public Zone Player1Prisoners
         {
             get => _player1Prisoners;
         }
 
-        public List<Card> Player2Prisoners
+        public Zone Player2Prisoners
         {
             get => _player2Prisoners;
         }
@@ -292,106 +311,115 @@ namespace VanguardEngine
 
         public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens)
         {
+            List<Card> cards = new List<Card>();
+            List<Card> cards2 = new List<Card>();
+            _player1Hand = new Zone(this);
+            _player2Hand = new Zone(this);
+            _player1Deck = new Deck(this);
+            _player2Deck = new Deck(this);
+            _player1Drop = new Drop(this);
+            _player2Drop = new Drop(this);
+            _player1Damage = new Zone(this);
+            _player2Damage = new Zone(this);
+            _player1Bind = new Zone(this);
+            _player2Bind = new Zone(this);
+            _player1Trigger = new Zone(this);
+            _player2Trigger = new Zone(this);
+            _player1Order = new Zone(this);
+            _player2Order = new Zone(this);
+            _player1RideDeck = new PsuedoZone(this);
+            _player2RideDeck = new PsuedoZone(this);
+            _player1Revealed = new PsuedoZone(this);
+            _player2Revealed = new PsuedoZone(this);
+            _player1Looking = new PsuedoZone(this);
+            _player2Looking = new PsuedoZone(this);
+            _player1Prisoners = new PsuedoZone(this);
+            _player2Prisoners = new PsuedoZone(this);
             foreach (Card card in tokens)
                 _tokens.Add(card);
             for (int i = 1; i < 14; i++)
             {
                 if (i == FL.PlayerFrontLeft)
-                    _circles[i] = new Circle(0, -1);
+                    _circles[i] = new RearguardCircle(0, -1, this);
                 else if (i == FL.PlayerBackLeft)
-                    _circles[i] = new Circle(1, -1);
+                    _circles[i] = new RearguardCircle(1, -1, this);
                 else if (i == FL.PlayerVanguard)
-                    _circles[i] = new Circle(0, 0);
+                    _circles[i] = new VanguardCircle(0, 0, this);
                 else if (i == FL.PlayerBackCenter)
-                    _circles[i] = new Circle(1, 0);
+                    _circles[i] = new RearguardCircle(1, 0, this);
                 else if (i == FL.PlayerFrontRight)
-                    _circles[i] = new Circle(0, 1);
+                    _circles[i] = new RearguardCircle(0, 1, this);
                 else if (i == FL.PlayerBackRight)
-                    _circles[i] = new Circle(1, 1);
+                    _circles[i] = new RearguardCircle(1, 1, this);
                 else if (i == FL.EnemyFrontLeft)
-                    _circles[i] = new Circle(0, 1);
+                    _circles[i] = new RearguardCircle(0, 1, this);
                 else if (i == FL.EnemyBackLeft)
-                    _circles[i] = new Circle(1, 1);
+                    _circles[i] = new RearguardCircle(1, 1, this);
                 else if (i == FL.EnemyVanguard)
-                    _circles[i] = new Circle(0, 0);
+                    _circles[i] = new VanguardCircle(0, 0, this);
                 else if (i == FL.EnemyBackCenter)
-                    _circles[i] = new Circle(1, 0);
+                    _circles[i] = new RearguardCircle(1, 0, this);
                 else if (i == FL.EnemyFrontRight)
-                    _circles[i] = new Circle(0, -1);
+                    _circles[i] = new RearguardCircle(0, -1, this);
                 else if (i == FL.EnemyBackRight)
-                    _circles[i] = new Circle(1, -1);
+                    _circles[i] = new RearguardCircle(1, -1, this);
                 else if (i == 7)
-                    _circles[i] = new Circle(100, 100);
+                    _circles[i] = new RearguardCircle(100, 100, this);
             }
-            _circles[FL.PlayerVanguard].Unit = deck1[0].Clone();
-            _circles[FL.PlayerVanguard].Unit.faceup = false;
-            _circles[FL.PlayerVanguard].Unit.location = Location.VC;
-            _circles[FL.EnemyVanguard].Unit = deck2[0].Clone();
-            _circles[FL.EnemyVanguard].Unit.faceup = false;
-            _circles[FL.EnemyVanguard].Unit.location = Location.VC;
+            cards.Clear();
+            cards2.Clear();
+            cards.Add(deck1[0].Clone());
+            cards[0].faceup = false;
+            cards[0].location = Location.VC;
+            _circles[FL.PlayerVanguard].Initialize(cards);
+            cards2.Add(deck2[0].Clone());
+            cards2[0].faceup = false;
+            cards2[0].location = Location.VC;
             for (int i = 1; i < 4; i++)
             {
-                _player1RideDeck.Add(deck1[i].Clone());
-                _player1RideDeck[_player1RideDeck.Count - 1].location = Location.RideDeck;
-                _player2RideDeck.Add(deck2[i].Clone());
-                _player2RideDeck[_player2RideDeck.Count - 1].location = Location.RideDeck;
+                cards.Clear();
+                cards.Add(deck1[i].Clone());
+                cards[cards.Count - 1].location = Location.RideDeck;
+                _player1RideDeck.Initialize(cards);
+                cards.Clear();
+                cards.Add(deck2[i].Clone());
+                cards[cards.Count - 1].location = Location.RideDeck;
+                _player2RideDeck.Initialize(cards);
+                cards.Clear();
             }
             for (int i = 4; i < 50; i++)
             {
-                _player1Deck.Add(deck1[i].Clone());
-                _player2Deck.Add(deck2[i].Clone());
+                cards.Add(deck1[i].Clone());
+                cards2.Add(deck2[i].Clone());
+                _player1Deck.Initialize(cards);
+                _player2Deck.Initialize(cards2);
+                cards.Clear();
+                cards2.Clear();
             }
-            foreach (Card card in _player1Deck)
+            foreach (Card card in _player1Deck.GetCards())
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 1;
             }
-            foreach (Card card in _player1RideDeck)
+            foreach (Card card in _player1RideDeck.GetCards())
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 1;
             }
-            foreach (Card card in _player2Deck)
+            foreach (Card card in _player2Deck.GetCards())
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 2;
             }
-            foreach (Card card in _player2RideDeck)
+            foreach (Card card in _player2RideDeck.GetCards())
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 2;
             }
-            _cardCatalog[_circles[FL.PlayerVanguard].Unit.tempID] = _circles[FL.PlayerVanguard].Unit;
-            _cardCatalog[_circles[FL.EnemyVanguard].Unit.tempID] = _circles[FL.EnemyVanguard].Unit;
-            Shuffle(_player1Deck);
-            Shuffle(_player2Deck);
-        }
-
-        static public class FisherYates
-        {
-            static Random r = new Random();
-            //  Based on Java code from wikipedia:
-            //  http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
-            static public int[] Shuffle(List<Card> list)
-            {
-                Card temp;
-                int k;
-                int[] key = new int[list.Count];
-                for (int n = list.Count - 1; n > 0; --n)
-                {
-                    k = r.Next(n + 1);
-                    key[n] = k;
-                    temp = list[n];
-                    list[n] = list[k];
-                    list[k] = temp;
-                }
-                return key;
-            }
-        }
-
-        public void Shuffle(List<Card> list)
-        {
-            FisherYates.Shuffle(list);
+            _cardCatalog[_circles[FL.PlayerVanguard].Index(0).tempID] = _circles[FL.PlayerVanguard].Index(0);
+            _cardCatalog[_circles[FL.EnemyVanguard].Index(0).tempID] = _circles[FL.EnemyVanguard].Index(0);
+            _player1Deck.Shuffle();
+            _player2Deck.Shuffle();
         }
 
         //public void sendShuffleKey(List<Card> list)
@@ -450,27 +478,55 @@ namespace VanguardEngine
             }
             return -1;
         }
+
+        public void RemoveFromPsuedoZones(Card card)
+        {
+            _player1Revealed.RemoveCard(card);
+            _player2Revealed.RemoveCard(card);
+            _player1Looking.RemoveCard(card);
+            _player2Looking.RemoveCard(card);
+            _player1Prisoners.RemoveCard(card);
+            _player2Prisoners.RemoveCard(card);
+        }
     }
 
-    public class Circle
+    public class Circle : Zone
     {
-        Card _unit = null;
+        protected Soul _soul; //doubles as originalDress for rearguard circles
         List<Card> _overloadedUnits = new List<Card>();
         int _row = 0;
         int _column = 0;
         int _power = 0;
         int _critical = 0;
 
-        public Circle(int row, int column)
+        public Circle(int row, int column, Field field) : base(field)
         {
             _row = row;
             _column = column;
+            _soul = new Soul(field);
         }
 
-        public Card Unit
+        public override Card Add(Card card, Zone previousZone)
         {
-            get => _unit;
-            set => _unit = value;
+            card.faceup = true;
+            card.upright = true;
+            return base.Add(card, previousZone);
+        }
+
+        public virtual Card AddRide(Card card, Zone previousZone)
+        {
+            _soul.Add(_cards[0], this);
+            return base.Add(card, previousZone);
+        }
+
+        public List<Card> GetSoul()
+        {
+            return _soul.GetCards();
+        }
+
+        public Soul GetSoulZone()
+        {
+            return _soul;
         }
 
         public List<Card> OverloadedUnits
@@ -496,6 +552,95 @@ namespace VanguardEngine
         public int Critical
         {
             get => _critical;
+        }
+    }
+
+    public class RearguardCircle : Circle
+    {
+        public RearguardCircle(int row, int column, Field field) : base(row, column, field)
+        {
+
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            card.location = Location.RC;
+            if (_cards.Count > 0)
+            {
+                OverloadedUnits.AddRange(_cards);
+                _cards.Clear();
+            }
+            return base.Add(card, previousZone);
+        }
+
+        public override Card AddRide(Card card, Zone previousZone)
+        {
+            card.location = Location.RC;
+            base.AddRide(card, previousZone);
+            foreach (Card c in _soul.GetCards())
+            {
+                c.location = Location.originalDress;
+            }
+            card.overDress = true;
+            return card;
+        }
+
+        public bool ClearOverloadedCards()
+        {
+            if (_cards.Count > 0 && _cards[0].orderType >= 0)
+            {
+                if (_cards[0].originalOwner == 1)
+                    _field.Player1Drop.Add(_cards[0], this);
+                else
+                    _field.Player2Drop.Add(_cards[0], this);
+            }
+            if (OverloadedUnits.Count > 0)
+            {
+                foreach (Card card in OverloadedUnits)
+                {
+                    if (card.originalOwner == 1)
+                        _field.Player1Drop.Add(card, this);
+                    else
+                        _field.Player2Drop.Add(card, this);
+                }
+                OverloadedUnits.Clear();
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public class VanguardCircle : Circle
+    {
+        public VanguardCircle(int row, int column, Field field) : base(row, column, field)
+        {
+            
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            card.location = Location.VC;
+            return base.Add(card, previousZone);
+        }
+
+        public override Card AddRide(Card card, Zone previousZone)
+        {
+            card.location = Location.VC;
+            return base.AddRide(card, previousZone);
+        }
+    }
+
+    public class Soul : Zone
+    {
+        public Soul(Field field) : base(field)
+        {
+
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            card.location = Location.Soul;
+            return base.Add(card, previousZone);
         }
     }
 
@@ -625,6 +770,7 @@ namespace VanguardEngine
         Dictionary<Tuple<int, int>, List<int>> _continuousValues = new Dictionary<Tuple<int, int>, List<int>>();
         Dictionary<int, List<int>> _untilEndOfTurn = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfTurnValues = new Dictionary<Tuple<int, int>, List<int>>();
+        Dictionary<int, List<Tuple<int, int>>> _untilEndOfTurnAbilities = new Dictionary<int, List<Tuple<int, int>>>();
         Dictionary<int, List<int>> _untilEndOfNextTurn = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> _untilEndOfBattle = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfBattleValues = new Dictionary<Tuple<int, int>, List<int>>();
@@ -667,6 +813,15 @@ namespace VanguardEngine
             _untilEndOfTurnValues[tuple].Add(value);
         }
 
+        public void AddUntilEndOfTurnAbility(int tempID, int abilityTempID, int activationNumber)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(abilityTempID, activationNumber);
+            if (!_untilEndOfTurnAbilities.ContainsKey(tempID))
+                _untilEndOfTurnAbilities[tempID] = new List<Tuple<int, int>>();
+            if (!_untilEndOfTurnAbilities[tempID].Contains(tuple))
+                _untilEndOfTurnAbilities[tempID].Add(tuple);
+        }
+
         public void AddUntilEndOfNextTurnState(int tempID, int state)
         {
             if (!_untilEndOfNextTurn.ContainsKey(tempID))
@@ -705,6 +860,8 @@ namespace VanguardEngine
                 _untilEndOfTurn[key].Clear();
             foreach (Tuple<int, int> key in _untilEndOfTurnValues.Keys)
                 _untilEndOfTurnValues[key].Clear();
+            foreach (int key in _untilEndOfTurnAbilities.Keys)
+                _untilEndOfTurn[key].Clear();
             foreach (int key in _untilEndOfNextTurn.Keys)
             {
                 if (!_untilEndOfTurn.ContainsKey(key))
@@ -764,6 +921,8 @@ namespace VanguardEngine
                 if (key.Item1 == tempID)
                     _untilEndOfTurnValues[key].Clear();
             }
+            if (_untilEndOfTurnAbilities.ContainsKey(tempID))
+                _untilEndOfTurnAbilities[tempID].Clear();
             if (_continuous.ContainsKey(tempID))
                 _continuous[tempID].Clear();
             foreach (Tuple<int, int> key in _continuousValues.Keys)
@@ -813,5 +972,145 @@ namespace VanguardEngine
         public const int CannotBeRidden = 16;
         public const int CannotBeCalledToFrontRow = 17;
         public const int CannotMoveToFrontRow = 18;
+    }
+
+    public class Zone
+    {
+        protected List<Card> _cards = new List<Card>();
+        protected Field _field;
+
+        public Zone(Field field)
+        {
+            _field = field;
+        }
+
+        public void Initialize(List<Card> cards)
+        {
+            _cards.AddRange(cards);
+        }
+
+        protected virtual void Remove(Card card)
+        {
+            _cards.Remove(card);
+            _field.RemoveFromPsuedoZones(card);
+        }
+
+        public virtual Card Add(Card card, Zone previousZone)
+        {
+            _field.CardStates.ResetCardValues(card.tempID);
+            card.overDress = false;
+            previousZone.Remove(card);
+            _cards.Add(card);
+            return card;
+        }
+
+        public Card Add(int tempID, Zone previousZone)
+        {
+            Card card = _field.CardCatalog[tempID];
+            return Add(tempID, previousZone);
+        }
+
+        public List<Card> GetCards()
+        {
+            List<Card> newList = new List<Card>();
+            foreach (Card card in _cards)
+                newList.Add(card);
+            return newList;
+        }
+
+        public int Count()
+        {
+            return _cards.Count;
+        }
+
+        public bool Contains(Card card)
+        {
+            if (_cards.Contains(card))
+                return true;
+            return false;
+        }
+
+        public Card Index(int index)
+        {
+            if (index < _cards.Count)
+                return _cards[index];
+            return null;
+        }
+
+        public void Shuffle()
+        {
+            FisherYates.Shuffle(_cards);
+        }
+    }
+
+    public class PsuedoZone : Zone
+    {
+        public PsuedoZone(Field field) : base(field)
+        {
+
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            _cards.Add(card);
+            return card;
+        }
+
+        public void RemoveCard(Card card)
+        {
+            _cards.Remove(card);
+        }
+    }
+
+    public class Deck : Zone
+    {
+        public Deck(Field field) : base(field)
+        {
+
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            card.faceup = false;
+            card.upright = true;
+            card.location = Location.Deck;
+            return base.Add(card, previousZone);
+        }
+    }
+
+    public class Drop : Zone
+    {
+        public Drop(Field field) : base(field)
+        {
+
+        }
+
+        public override Card Add(Card card, Zone previousZone)
+        {
+            card.location = Location.Drop;
+            return base.Add(card, previousZone);
+        }
+    }
+
+    static public class FisherYates
+    {
+        static Random r = new Random();
+        //  Based on Java code from wikipedia:
+        //  http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
+        static public int[] Shuffle(List<Card> list)
+        {
+            Card temp;
+            int k;
+            int[] key = new int[list.Count];
+            for (int n = list.Count - 1; n > 0; --n)
+            {
+                k = r.Next(n + 1);
+                key[n] = k;
+                temp = list[n];
+                list[n] = list[k];
+                list[k] = temp;
+            }
+            return key;
+        }
     }
 }
