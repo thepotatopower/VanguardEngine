@@ -112,18 +112,18 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
-            player1.Mill(10);
-            player2.Mill(10);
+            //player1.Mill(10);
+            //player2.Mill(10);
             while (true)
             {
                 actingPlayer = player1;
@@ -298,14 +298,14 @@ namespace VanguardEngine
                             {
                                 Discard(player1, player2, player1.GetHand(), 1, 1);
                                 ActivateAbilities(player1, player2);
-                                input = _inputManager.SelectCardFromRideDeck();
+                                input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "Select card to ride.")[0];
                                 Ride(player1, player2, 0, input);
                                 break;
                             }
                         }
                         if (CanRideFromHand)
                         {
-                            input = _inputManager.SelectCardFromHandToRide();
+                            input = input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "Select card to ride.")[0];
                             Ride(player1, player2, 1, input);
                             break;
                         }

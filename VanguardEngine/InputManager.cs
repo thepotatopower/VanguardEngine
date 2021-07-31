@@ -25,10 +25,10 @@ namespace VanguardEngine
         public int int_value2;
         public bool bool_value;
         public Card card_input;
-        string _query;
-        string[] _list;
-        List<int> _ints = new List<int>();
-        List<int> _ints2 = new List<int>();
+        public string _query;
+        public string[] _list;
+        public List<int> _ints = new List<int>();
+        public List<int> _ints2 = new List<int>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
 
@@ -702,7 +702,7 @@ namespace VanguardEngine
             return intlist_input;
         }
 
-        protected void SelectFromList_Input()
+        protected virtual void SelectFromList_Input()
         {
             int selection;
             int count = int_value;
