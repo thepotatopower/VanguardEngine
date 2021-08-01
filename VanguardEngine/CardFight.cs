@@ -430,6 +430,8 @@ namespace VanguardEngine
             _playTimings.AddPlayTiming(Activation.PlacedOnRC);
             _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand);
             ActivateAbilities(player1, player2);
+            player1.ClearOverloadedCards();
+            player2.ClearOverloadedCards();
         }
 
         public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing)
@@ -492,7 +494,6 @@ namespace VanguardEngine
         public void BattlePhaseMenu(Player player1, Player player2)
         {
             int selection;
-            int target;
             CardEventArgs args;
             if (OnBattlePhase != null)
             {

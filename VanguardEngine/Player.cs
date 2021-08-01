@@ -59,13 +59,13 @@ namespace VanguardEngine
         protected Zone EnemyOrder;
         protected Zone PlayerRideDeck;
         protected Zone EnemyRideDeck;
-        protected Zone PlayerRevealed;
-        protected Zone EnemyRevealed;
-        protected Zone PlayerLooking;
+        protected PseudoZone PlayerRevealed;
+        protected PseudoZone EnemyRevealed;
+        protected PseudoZone PlayerLooking;
         protected Card PlayerPrison;
         protected Card EnemyPrison;
-        protected Zone PlayerPrisoners;
-        protected Zone EnemyPrisoners;
+        protected PseudoZone PlayerPrisoners;
+        protected PseudoZone EnemyPrisoners;
         protected Card PlayerWorld = null;
         protected Card EnemyWorld = null;
         public PlayerStates MyStates;
@@ -455,7 +455,7 @@ namespace VanguardEngine
             CardEventArgs args = new CardEventArgs();
             for (int i = 0; i < count && PlayerDeck.Count() > 0; i++)
             {
-                cardsAdded.Add(PlayerHand.Add(PlayerDeck.Index(0), PlayerDeck));
+                cardsAdded.Add(PlayerHand.Add(PlayerDeck.Index(0)));
             }
             args.i = count;
             args.cardList = cardsAdded;
@@ -472,7 +472,7 @@ namespace VanguardEngine
             Card milled;
             for (int i = 0; i < count && PlayerDeck.Count() > 0; i++)
             {
-                milled = PlayerDrop.Add(PlayerDeck.Index(0), PlayerDeck);
+                milled = PlayerDrop.Add(PlayerDeck.Index(0));
             }
         }
 
@@ -490,7 +490,7 @@ namespace VanguardEngine
         {
             CardEventArgs args = new CardEventArgs();
             Card card;
-            card = PlayerDeck.Add(selection, PlayerHand);
+            card = PlayerDeck.Add(selection);
             args.card = card;
             args.playerID = _playerID;
             if (OnReturnCardFromHandToDeck != null)
@@ -506,7 +506,7 @@ namespace VanguardEngine
             _lastDiscarded[_lastDiscarded.Keys.Count + 1] = new List<Card>();
             foreach (int tempID in list)
             {
-                card = PlayerDrop.Add(tempID, PlayerHand);
+                card = PlayerDrop.Add(tempID);
                 _lastDiscarded[_lastDiscarded.Keys.Count].Add(card);
                 args.cardList.Add(card);
             }
@@ -1180,7 +1180,7 @@ namespace VanguardEngine
                 return false;
             foreach (Card card in _lastPlacedOnRC[count])
             {
-                if (card.tempID == tempID && card.location == Location.RC)
+                if (card.tempID == tempID && IsRearguard(tempID))
                     return true;
             }
             return false;
@@ -1192,7 +1192,7 @@ namespace VanguardEngine
                 return false;
             foreach (Card card in _lastPlacedOnRCFromHand[count])
             {
-                if (card.tempID == tempID && card.location == Location.RC)
+                if (card.tempID == tempID && IsRearguard(tempID))
                     return true;
             }
             return false;
@@ -1369,7 +1369,7 @@ namespace VanguardEngine
                 _field.SetPersonaRide(true, _playerID);
                 Draw(1);
             }
-            _field.RideUnit(PlayerVanguard, card, zone);
+            _field.RideUnit(PlayerVanguard, card);
             if (_field.GetPersonaRide(_playerID))
                 Console.WriteLine("---------\nPersona Ride!! " + _field.GetUnit(PlayerVanguard).name + "!");
             else
@@ -1396,135 +1396,28 @@ namespace VanguardEngine
 
         public void Call(int location, int selection, bool overDress)
         {
-            //Card card = _field.CardCatalog[selection];
-            //Card toBeRetired = null;
-            //List<Card> retired = new List<Card>();
-            //CardEventArgs args;
-            ////location = Convert(location);
-            //if (!overDress && _field.GetUnit(location) != null)
-            //{
-            //    _playerRetiredThisTurn = true;
-            //    toBeRetired = _field.GetUnit(location);
-            //    retired.Add(toBeRetired);
-            //    foreach (Card soul in _field.GetUnit(location).soul)
-            //    {
-            //        PlayerDrop.Insert(0, soul);
-            //        soul.location = Location.Drop;
-            //        soul.overDress = false;
-            //        retired.Add(soul);
-            //    }
-            //    ResetCardValues(toBeRetired);
-            //    toBeRetired.upright = true;
-            //    toBeRetired.overDress = false;
-            //    _field.GetUnit(location).soul.Clear();
-            //    retired.Add(_field.GetUnit(location));
-            //    if (_field.GetUnit(location).unitType == UnitType.Token)
-            //        _field.SetUnit(location, null);
-            //    else
-            //    {
-            //        PlayerDrop.Insert(0, _field.GetUnit(location));
-            //        _field.GetUnit(location).location = Location.Drop;
-            //    }
-            //    if (OnRetire != null)
-            //    {
-            //        args = new CardEventArgs();
-            //        args.playerID = _playerID;
-            //        args.cardList = retired;
-            //        OnRetire(this, args);
-            //    }
-            //}
-            //hand.Remove(card);
-            //if (overDress)
-            //{
-            //    card.soul.Add(_field.GetUnit(location));
-            //    card.soul.AddRange(_field.GetUnit(location).soul);
-            //    _field.GetUnit(location).soul.Clear();
-            //    foreach (Card c in card.soul)
-            //    {
-            //        c.location = Location.originalDress;
-            //        c.overDress = false;
-            //    }
-            //    ResetCardValues(_field.GetUnit(location));
-            //    _field.SetUnit(location, card);
-            //    card.location = Location.RC;
-            //    card.overDress = true;
-            //    Console.WriteLine("---------\nOverDress! " + card.name + "!");
-            //    if (OnCallFromHand != null)
-            //    {
-            //        args = new CardEventArgs();
-            //        args.card = card;
-            //        args.i = location;
-            //        args.playerID = _playerID;
-            //        args.b = true;
-            //        OnCallFromHand(this, args);
-            //    }
-            //}
-            //else
-            //{
-            //    _field.SetUnit(location, card);
-            //    card.location = Location.RC;
-            //    Console.WriteLine("---------\nCall! " + card.name + "!");
-            //    if (OnCallFromHand != null)
-            //    {
-            //        args = new CardEventArgs();
-            //        args.card = card;
-            //        args.i = location;
-            //        args.playerID = _playerID;
-            //        args.b = false;
-            //        OnCallFromHand(this, args);
-            //    }
-            //}
-            //card.upright = true;
-            //_unitsCalledThisTurn.Add(card);
-            //_unitsCalledFromHandThisTurn.Add(card);
-            //_lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
-            //_lastPlacedOnRC[_lastPlacedOnRC_Count].Add(card);
-            //_lastPlacedOnRC_Count++;
-            //_lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count] = new List<Card>();
-            //_lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count].Add(card);
-            //_lastPlacedOnRCFromHand_Count++;
             SuperiorCall(location, selection, overDress, true);
             DoneSuperiorCalling();
+            _field.ClearOverloadedCards();
         }
 
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
         {
             bool fromHand = false;
+            bool shuffle = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
-            int loc = ToBeCalled.location;
-            Zone location = null;
-            //circle = Convert(circle);
-            if (loc == Location.Drop)
-                location = PlayerDrop;
-            else if (loc == Location.Deck)
-            {
-                location = PlayerDeck;
-            }
-            else if (loc == Location.Hand)
-            {
-                location = PlayerHand;
-                fromHand = true;
-            }
-            else if (loc == Location.Soul)
-                location = _field.GetSoulZone(PlayerVanguard);
-            else if (loc == Location.Prison)
-            {
-                location = EnemyPrisoners;
+            if (PlayerPrisoners.Contains(_field.CardCatalog[tempID]))
                 _lastCalledFromPrison.Add(ToBeCalled);
-            }
-            else if (loc == Location.Damage)
-                location = PlayerDamage;
-            else if (loc == Location.Trigger)
-                location = PlayerTrigger;
-            else if (loc == Location.Order)
-                location = PlayerOrder;
+            if (PlayerDeck.Contains(ToBeCalled))
+                shuffle = true;
+            _lastCalledFromPrison.Add(ToBeCalled);
             if (!overDress)
             {
-                _field.SetUnit(circle, ToBeCalled, location);
+                _field.SetUnit(circle, ToBeCalled);
             }
             else
             {
-                _field.RideUnit(circle, ToBeCalled, location);
+                _field.RideUnit(circle, ToBeCalled);
             }
             if (!standing)
                 ToBeCalled.upright = false;
@@ -1532,7 +1425,7 @@ namespace VanguardEngine
                 Console.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else
                 Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
-            if (loc == Location.Deck)
+            if (shuffle)
                 PlayerDeck.Shuffle();
             if (!_lastPlacedOnRC.ContainsKey(_lastPlacedOnRC_Count))
                 _lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
@@ -1555,6 +1448,12 @@ namespace VanguardEngine
             _lastPlacedOnRCFromHand_Count++;
         }
 
+        public void ClearOverloadedCards()
+        {
+            if (_field.ClearOverloadedCards())
+                _playerRetiredThisTurn = true;
+        }
+
         public void MoveRearguard(int location)
         {
             Card temp;
@@ -1565,8 +1464,7 @@ namespace VanguardEngine
                 if (_field.GetUnit(PlayerBackLeft) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackLeft).tempID, CardState.CannotMoveToFrontRow))
                     return;
                 temp = _field.GetUnit(PlayerFrontLeft);
-                _field.SetUnit(PlayerFrontLeft, _field.GetUnit(PlayerBackLeft));
-                _field.SetUnit(PlayerBackLeft, temp);
+                _field.SwapUnits(PlayerFrontLeft, PlayerBackLeft);
                 Console.WriteLine("----------\nLeft column Rearguard(s) changed position.");
             }
             else
@@ -1575,9 +1473,7 @@ namespace VanguardEngine
                     return;
                 if (_field.GetUnit(PlayerBackRight) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackRight).tempID, CardState.CannotMoveToFrontRow))
                     return;
-                temp = _field.GetUnit(PlayerFrontRight);
-                _field.SetUnit(PlayerFrontRight, _field.GetUnit(PlayerBackRight));
-                _field.SetUnit(PlayerBackRight, temp);
+                _field.SwapUnits(PlayerFrontRight, PlayerBackRight);
                 Console.WriteLine("----------\nRight column Rearguard(s) changed position.");
             }
             if (OnChangeColumn != null)
@@ -1636,9 +1532,7 @@ namespace VanguardEngine
                 else if (direction == Direction.Left)
                     location2 = PlayerBackCenter;
             }
-            Card temp = _field.GetUnit(location1);
-            _field.SetUnit(location1, _field.GetUnit(location2));
-            _field.SetUnit(location2, temp);
+            _field.SwapUnits(location1, location2);
         }
 
         public void MoveRearguardSpecific(int tempID, int location)
@@ -1650,8 +1544,7 @@ namespace VanguardEngine
                 return;
             if (!_field.CardStates.HasState(tempID, CardState.CannotMove))
             {
-                _field.SetUnit(GetCircle(_field.CardCatalog[tempID]), null);
-                _field.SetUnit(location, _field.CardCatalog[tempID]);
+                _field.SwapUnits(GetCircle(_field.CardCatalog[tempID]), location);
             }
         }
 
@@ -1787,17 +1680,12 @@ namespace VanguardEngine
                 if (!_field.Guardians.ContainsKey(target))
                     _field.Guardians[target] = new List<Card>();
                 _field.Guardians[target].Add(card);
-                if (card.location == Location.Hand)
-                    PlayerHand.Remove(card);
-                else if (card.location == Location.RC)
+                if (IsRearguard(selection))
                 {
-                    _field.SetUnit(GetCircle(card), null);
-                    _isIntercepting.Add(card);
                     intercept = true;
+                    _isIntercepting.Add(card);
                 }
-                card.upright = false;
-                card.location = Location.GC;
-                _field.GC.Insert(0, card);
+                _field.GC.Add(card);
                 _lastPutOnGC[_lastPutOnGC.Keys.Count].Add(card);
                 if (!intercept)
                 {
@@ -1888,15 +1776,7 @@ namespace VanguardEngine
             Card card;
             foreach (int tempID in tempIDs)
             {
-                card = _field.CardCatalog[tempID];
-                if (PlayerDrop.Contains(card))
-                    PlayerDrop.Remove(card);
-                else if (IsRearguard(tempID))
-                    RemoveFromRC(tempID, false);
-                else if (PlayerOrder.Contains(card))
-                    PlayerOrder.Remove(card);
-                PlayerBind.Add(card);
-                card.location = Location.Bind;
+                PlayerBind.Add(tempID);
             }
         }
 
@@ -1919,37 +1799,37 @@ namespace VanguardEngine
             return false;
         }
 
-        public void RemoveFromRC(int tempID, bool imprison)
-        {
-            Card card = _field.CardCatalog[tempID];
-            if (GetAllUnitsOnField().Contains(card))
-            {
-                foreach (Card originalDress in card.soul)
-                {
-                    if (imprison)
-                    {
-                        if (card.originalOwner == _playerID)
-                        {
-                            EnemyPrisoners.Add(originalDress);
-                            EnemyOrder.Add(originalDress);
-                        }
-                        else
-                        {
-                            PlayerPrisoners.Add(originalDress);
-                            PlayerOrder.Add(originalDress);
-                        }
-                        originalDress.location = Location.Prison;
-                    }
-                    else
-                    {
-                        PlayerDrop.Add(originalDress);
-                        originalDress.location = Location.Drop;
-                    }
-                }
-                card.soul.Clear();
-                _field.SetUnit(GetCircle(card), null);
-            }
-        }
+        //public void RemoveFromRC(int tempID, bool imprison)
+        //{
+        //    Card card = _field.CardCatalog[tempID];
+        //    if (GetAllUnitsOnField().Contains(card))
+        //    {
+        //        foreach (Card originalDress in card.soul)
+        //        {
+        //            if (imprison)
+        //            {
+        //                if (card.originalOwner == _playerID)
+        //                {
+        //                    EnemyPrisoners.Add(originalDress);
+        //                    EnemyOrder.Add(originalDress);
+        //                }
+        //                else
+        //                {
+        //                    PlayerPrisoners.Add(originalDress);
+        //                    PlayerOrder.Add(originalDress);
+        //                }
+        //                originalDress.location = Location.Prison;
+        //            }
+        //            else
+        //            {
+        //                PlayerDrop.Add(originalDress);
+        //                originalDress.location = Location.Drop;
+        //            }
+        //        }
+        //        card.soul.Clear();
+        //        _field.SetUnit(GetCircle(card), null);
+        //    }
+        //}
 
         public void Retire(List<int> tempIDs)
         {
@@ -1963,19 +1843,7 @@ namespace VanguardEngine
                 {
                     if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == tempID)
                     {
-                        drop = EnemyDrop;
-                        toBeRetired = _field.GetUnit(i);
-                        _field.SetUnit(i, null);
-                        toBeRetired.location = Location.Drop;
-                        toBeRetired.overDress = false;
-                        drop.Insert(0, toBeRetired);
-                        ResetCardValues(toBeRetired);
-                        foreach (Card card in toBeRetired.soul)
-                        {
-                            card.location = Location.Drop;
-                            drop.Insert(0, card);
-                        }
-                        toBeRetired.soul.Clear();
+                        _field.RemoveUnit(i, EnemyDrop);
                         _enemyRetired = true;
                         _enemyRetiredThisTurn = true;
                         break;
@@ -1985,19 +1853,7 @@ namespace VanguardEngine
                 {
                     if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == tempID)
                     {
-                        drop = PlayerDrop;
-                        toBeRetired = _field.GetUnit(i);
-                        _field.SetUnit(i, null);
-                        toBeRetired.location = Location.Drop;
-                        toBeRetired.overDress = false;
-                        drop.Insert(0, toBeRetired);
-                        ResetCardValues(toBeRetired);
-                        foreach (Card card in toBeRetired.soul)
-                        {
-                            card.location = Location.Drop;
-                            drop.Insert(0, card);
-                        }
-                        toBeRetired.soul.Clear();
+                        _field.RemoveUnit(i, PlayerDrop);
                         _playerRetired = true;
                         _playerRetiredThisTurn = true;
                         break;
@@ -2059,14 +1915,10 @@ namespace VanguardEngine
         public void RetireGC()
         {
             _isIntercepting.Clear();
-            foreach (Card card in _field.GC)
+            foreach (Card card in _field.GC.GetCards())
             {
-                card.upright = true;
-                card.location = Location.Drop;
-                ResetCardValues(card);
-                PlayerDrop.Insert(0, card);
+                PlayerDrop.Add(card);
             }
-            _field.GC.Clear();
         }
 
         public bool IsIntercepting(int tempID)
@@ -2079,15 +1931,13 @@ namespace VanguardEngine
         public void SendToDeck(List<int> cardsToSend, bool bottom)
         {
             Card card;
-            List<Card> deck;
-            List<Card> hand;
-            List<Card> drop;
+            Zone deck;
+            Zone hand;
+            Zone drop;
             List<Card> leftover = new List<Card>();
             foreach (int tempID in cardsToSend)
             {
                 card = _field.CardCatalog[tempID];
-                if (PlayerLooking.Contains(card))
-                    PlayerLooking.Remove(card);
                 if (card.originalOwner == _playerID)
                 {
                     deck = PlayerDeck;
@@ -2100,39 +1950,16 @@ namespace VanguardEngine
                     hand = EnemyHand;
                     drop = EnemyDrop;
                 }
-                if (card.unitType == UnitType.Token)
-                    _field.SetUnit(GetCircle(card), null);
+                if (bottom)
+                    deck.Add(card);
                 else
-                {
-                    if (card.location == Location.RC)
-                    {
-                        foreach (Card originalDress in card.soul)
-                            leftover.Add(originalDress);
-                        _field.SetUnit(GetCircle(card), null);
-                    }
-                    else if (card.location == Location.Deck)
-                        deck.Remove(card);
-                    else if (card.location == Location.Hand)
-                        hand.Remove(card);
-                    card.location = Location.Deck;
-                    if (bottom)
-                        deck.Add(card);
-                    else
-                        deck.Insert(0, card);
-                    foreach (Card originalDress in leftover)
-                        drop.Add(originalDress);
-                }
+                    deck.AddToTop(card);
             }
         }
 
         public int TriggerCheck(bool drivecheck)
         {
-            Card trigger = PlayerDeck[0];
-            trigger.upright = false;
-            trigger.faceup = true;
-            trigger.location = Location.Trigger;
-            PlayerDeck.Remove(trigger);
-            PlayerTrigger[0] = trigger;
+            Card trigger = PlayerTrigger.Add(PlayerDeck.Index(0));
             _lastRevealedTriggers.Add(trigger);
             _lastRevealedTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
@@ -2176,7 +2003,7 @@ namespace VanguardEngine
         public void AddTempPower(int selection, int power, bool battleOnly)
         {
             Card target = _field.CardCatalog[selection];
-            if (target.location != Location.RC && target.location != Location.VC)
+            if (!GetAllUnitsOnField().Contains(target))
                 return;
             if (battleOnly)
                 _field.CardStates.AddUntilEndOfBattleValue(target.tempID, CardState.BonusPower, power);
@@ -2296,59 +2123,22 @@ namespace VanguardEngine
 
         public void Heal(int selection)
         {
-            foreach (Card card in PlayerDamage)
-            {
-                if (card.tempID == selection)
-                {
-                    card.faceup = true;
-                    card.upright = true;
-                    card.location = Location.Drop;
-                    PlayerDamage.Remove(card);
-                    PlayerDrop.Insert(0, card);
-                    Console.WriteLine("----------\nDamage healed!");
-                    return;
-                }
-            }
-        }
-
-        public void RemoveTrigger()
-        {
-            PlayerTrigger[0] = null;
+            PlayerDrop.Add(_field.CardCatalog[selection]);
+            Console.WriteLine("----------\nDamage healed!");
         }
 
         public void AddTriggerToHand()
         {
-            Card card = PlayerTrigger[0];
-            if (card != null)
-            {
-                card.location = Location.Hand;
-                PlayerTrigger[0] = null;
-                card.upright = true;
-                PlayerHand.Add(card);
-            }
+            if (PlayerTrigger.Index(0) != null)
+                PlayerHand.Add(PlayerTrigger.Index(0));
         }
 
         public void AddToHand(List<int> selections)
         {
             Card cardToAdd;
-            List<Card> drop;
-            drop = PlayerDrop;
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
-                if (drop.Contains(cardToAdd))
-                    drop.Remove(cardToAdd);
-                else if (cardToAdd.location == Location.RC)
-                    RemoveFromRC(tempID, false);
-                else if (_field.GetUnit(PlayerVanguard).soul.Contains(cardToAdd))
-                    _field.GetUnit(PlayerVanguard).soul.Remove(cardToAdd);
-                else if (PlayerBind.Contains(cardToAdd))
-                    PlayerBind.Remove(cardToAdd);
-                if (PlayerLooking.Contains(cardToAdd))
-                    PlayerLooking.Remove(cardToAdd);
-                if (PlayerRevealed.Contains(cardToAdd))
-                    PlayerRevealed.Remove(cardToAdd);
-                cardToAdd.location = Location.Hand;
                 PlayerHand.Add(cardToAdd);
             }
             Console.WriteLine(selections.Count + " card(s) added to hand.");
@@ -2360,44 +2150,7 @@ namespace VanguardEngine
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
-                if (cardToAdd.location == Location.RC)
-                {
-                    for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
-                    {
-                        if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == cardToAdd.tempID)
-                            _field.SetUnit(i, null);
-                    }
-                    for (int i = EnemyFrontLeft; i < EnemyVanguard; i++)
-                    {
-                        if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == cardToAdd.tempID)
-                            _field.SetUnit(i, null);
-                    }
-                }
-                else if (cardToAdd.location == Location.Deck)
-                {
-                    PlayerDeck.Remove(cardToAdd);
-                }
-                else if (cardToAdd.location == Location.Drop)
-                {
-                    PlayerDrop.Remove(cardToAdd);
-                }
-                else if (cardToAdd.location == Location.Order)
-                {
-                    if (cardToAdd == _playedOrder)
-                        _playedOrder = null;
-                    PlayerOrder.Remove(cardToAdd);
-                }
-                else if (cardToAdd.location == Location.Hand)
-                {
-                    PlayerHand.Remove(cardToAdd);
-                }
-                if (PlayerLooking.Contains(cardToAdd))
-                    PlayerLooking.Remove(cardToAdd);
-                cardToAdd.location = Location.Soul;
-                cardToAdd.faceup = true;
-                cardToAdd.upright = true;
-                ResetCardValues(cardToAdd);
-                _field.GetUnit(PlayerVanguard).soul.Add(cardToAdd);
+                _field.GetSoulZone(PlayerVanguard).Add(cardToAdd);
             }
         }
 
@@ -2407,38 +2160,6 @@ namespace VanguardEngine
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
-                if (cardToAdd.location == Location.RC)
-                {
-                    for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
-                    {
-                        if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == cardToAdd.tempID)
-                            _field.SetUnit(i, null);
-                    }
-                }
-                if (cardToAdd.location == Location.RC)
-                {
-                    for (int i = EnemyFrontLeft; i < EnemyVanguard; i++)
-                    {
-                        if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == cardToAdd.tempID)
-                            _field.SetUnit(i, null);
-                    }
-                }
-                if (PlayerPrisoners.Contains(cardToAdd))
-                    PlayerPrisoners.Remove(cardToAdd);
-                else if (cardToAdd.location == Location.Deck)
-                {
-                    PlayerDeck.Remove(cardToAdd);
-                }
-                else if (PlayerBind.Contains(cardToAdd))
-                    PlayerBind.Remove(cardToAdd);
-                if (PlayerLooking.Contains(cardToAdd))
-                    PlayerLooking.Remove(cardToAdd);
-                if (PlayerRevealed.Contains(cardToAdd))
-                    PlayerRevealed.Remove(cardToAdd);
-                cardToAdd.location = Location.Drop;
-                cardToAdd.faceup = true;
-                cardToAdd.upright = true;
-                ResetCardValues(cardToAdd);
                 PlayerDrop.Add(cardToAdd);
             }
         }
@@ -2449,76 +2170,33 @@ namespace VanguardEngine
             foreach (int tempID in tempIDs)
             {
                 card = _field.CardCatalog[tempID];
-                if (GetActiveUnits().Contains(card))
-                    RemoveFromRC(card.tempID, false);
                 PlayerDamage.Add(card);
-                card.faceup = true;
-            }
-        }
-
-        public void ChangeLocation(int destination, List<int> selections)
-        {
-            Card cardToAdd;
-            foreach (int tempID in selections)
-            {
-                cardToAdd = _field.CardCatalog[tempID];
-                if (cardToAdd.location == Location.RC)
-                {
-                    for (int i = 0; i < FL.MaxFL(); i++)
-                    {
-                        if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == cardToAdd.tempID)
-                        {
-                            _field.SetUnit(i, null);
-                            break;
-                        }
-                    }
-                }
-                else if (cardToAdd.location == Location.Deck)
-                {
-                    PlayerDeck.Remove(cardToAdd);
-                }
-                if (destination == Location.Hand)
-                {
-                    cardToAdd.location = Location.Hand;
-                    PlayerHand.Add(cardToAdd);
-                }
-                else if (destination == Location.Drop)
-                {
-                    cardToAdd.location = Location.Drop;
-                    PlayerDrop.Insert(0, cardToAdd);
-                }
-                ResetCardValues(cardToAdd);
             }
         }
 
         public void TakeDamage()
         {
-            Card card = PlayerTrigger[0];
-            card.location = Location.Damage;
-            card.faceup = true;
-            PlayerTrigger[0] = null;
-            PlayerDamage.Add(card);
-            Console.WriteLine("----------\nDamage taken!");
+            if (PlayerTrigger.Index(0) != null)
+            {
+                PlayerDamage.Add(PlayerTrigger.Index(0));
+                Console.WriteLine("----------\nDamage taken!");
+            }
         }
 
         public void PlayOrder(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
-            if (card.location == Location.Drop)
+            if (PlayerDrop.Contains(card))
             {
                 PlayerBind.Add(card);
-                PlayerDrop.Remove(card);
-                card.location = Location.Bind;
                 _isAlchemagic = true;
             }
-            else if (card.location == Location.Hand)
+            else if (PlayerHand.Contains(card))
             {
                 _playedOrder = card;
                 _lastOrderPlayed = card;
                 _orderPlayed = true;
-                PlayerHand.Remove(card);
                 PlayerOrder.Add(card);
-                card.location = Location.Order;
             }
         }
 
@@ -2531,9 +2209,7 @@ namespace VanguardEngine
         {
             if (PlayerOrder.Contains(_playedOrder) && (_playedOrder.orderType == OrderType.Normal || _playedOrder.orderType == OrderType.Blitz))
             {
-                PlayerOrder.Remove(_playedOrder);
                 PlayerDrop.Add(_playedOrder);
-                _playedOrder.location = Location.Drop;
             }
             _playedOrder = null;
         }
@@ -2640,23 +2316,12 @@ namespace VanguardEngine
 
         public void Imprison(List<int> cardsToImprison)
         {
+            if (!HasPrison())
+                return;
             Card card;
             foreach (int tempID in cardsToImprison)
             {
                 card = _field.CardCatalog[tempID];
-                if (card.location == Location.Hand)
-                {
-                    EnemyHand.Remove(card);
-                }
-                else if (card.location == Location.RC)
-                {
-                    RemoveFromRC(tempID, true);
-                }
-                else if (card.location == Location.Drop)
-                {
-                    PlayerDrop.Remove(card);
-                }
-                card.location = Location.Prison;
                 PlayerPrisoners.Add(card);
                 PlayerOrder.Add(card);
             }
@@ -2689,7 +2354,7 @@ namespace VanguardEngine
 
         public bool OnlyWorlds()
         {
-            foreach (Card card in PlayerOrder)
+            foreach (Card card in PlayerOrder.GetCards())
             {
                 if (card.orderType != OrderType.World)
                     return false;
@@ -2700,7 +2365,7 @@ namespace VanguardEngine
         public int NumWorlds()
         {
             int count = 0;
-            foreach (Card card in PlayerOrder)
+            foreach (Card card in PlayerOrder.GetCards())
             {
                 if (card.orderType == OrderType.World)
                     count++;
@@ -2743,7 +2408,7 @@ namespace VanguardEngine
         public bool CanCB(int count)
         {
             int faceup = 0;
-            foreach (Card card in PlayerDamage)
+            foreach (Card card in PlayerDamage.GetCards())
             {
                 if (card.faceup)
                     faceup++;
@@ -2770,7 +2435,7 @@ namespace VanguardEngine
         {
             List<Card> damage = null;
             _CBUsed = 0;
-            damage = PlayerDamage;
+            damage = PlayerDamage.GetCards();
             foreach (int tempID in cardsToCB)
             {
                 foreach (Card card in damage)
@@ -2792,29 +2457,16 @@ namespace VanguardEngine
 
         public bool CanSB(int count)
         {
-            if (_alchemagicFreeSB || _field.GetUnit(PlayerVanguard).soul.Count >= count)
+            if (_alchemagicFreeSB || _field.GetSoul(PlayerVanguard).Count >= count)
                 return true;
             return false;
         }
 
         public void SoulBlast(List<int> cardsToSB)
         {
-            List<Card> soul = null;
-            List<Card> drop = null;
-            soul = _field.GetUnit(PlayerVanguard).soul;
-            drop = PlayerDrop;
             foreach (int tempID in cardsToSB)
             {
-                foreach (Card card in soul)
-                {
-                    if (card.tempID == tempID)
-                    {
-                        soul.Remove(card);
-                        drop.Insert(0, card);
-                        card.location = Location.Drop;
-                        break;
-                    }
-                }
+                PlayerDrop.Add(_field.CardCatalog[tempID]);
             }
         }
 
@@ -2828,20 +2480,11 @@ namespace VanguardEngine
 
         public void SoulCharge(int count)
         {
-            Card card;
-            int location = 0;
-            List<Card> deck = null;
-            location = PlayerVanguard;
-            deck = PlayerDeck;
             Console.WriteLine("Soul Charging " + count + " card(s)!");
             _soulChargedThisTurn = true;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count && PlayerDeck.GetCards().Count > 0; i++)
             {
-                card = deck[0];
-                deck.RemoveAt(0);
-                _field.GetUnit(location).soul.Add(card);
-                card.location = Location.Soul;
-                card.faceup = true;
+                _field.GetSoulZone(PlayerVanguard).Add(PlayerDeck.Index(0));
             }
         }
 
@@ -2852,26 +2495,10 @@ namespace VanguardEngine
 
         public void Search(List<int> cardsToSearch)
         {
-            List<Card> hand = null;
-            List<Card> deck = null;
-            int handLocation = 0;
-            hand = PlayerHand;
-            deck = PlayerDeck;
-            handLocation = Location.Hand;
             foreach (int tempID in cardsToSearch)
             {
-                foreach (Card card in deck)
-                {
-                    if (card.tempID == tempID)
-                    {
-                        deck.Remove(card);
-                        card.faceup = true;
-                        hand.Add(card);
-                        card.location = handLocation;
-                        _field.Shuffle(PlayerDeck);
-                        break;
-                    }
-                }
+                if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
+                    PlayerHand.Add(_field.CardCatalog[tempID]);
             }
         }
 
@@ -2899,33 +2526,26 @@ namespace VanguardEngine
         public void Reveal(List<int> cardsToReveal)
         {
             Card card;
-            List<Card> revealed = null;
             string dialogue = "";
-            revealed = PlayerRevealed;
             EndReveal();
             foreach (int tempID in cardsToReveal)
             {
                 card = _field.CardCatalog[tempID];
                 card.faceup = true;
-                revealed.Add(card);
-                if (card.location == Location.Hand)
+                PlayerRevealed.Add(card);
+                if (PlayerHand.Contains(card))
                     dialogue = "hand";
+                else if (PlayerDeck.Contains(card))
+                    dialogue = "deck";
                 Console.WriteLine("----------\n" + card.name + " revealed from " + dialogue + "!");
             }
         }
 
         public void RevealFromDeck(int count)
         {
-            List<Card> deck = null;
-            List<Card> revealed = null;
-            EndReveal();
-            deck = PlayerDeck;
-            revealed = PlayerRevealed;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count && PlayerDeck.GetCards().Count > i; i++)
             {
-                revealed.Add(deck[i]);
-                deck[i].faceup = true;
-                Console.WriteLine("----------\n" + deck[i].name + " revealed from deck!");
+                PlayerRevealed.Add(PlayerDeck.Index(i));
             }
         }
 
@@ -2942,19 +2562,17 @@ namespace VanguardEngine
         public void LookAtTopOfDeck(int count)
         {
             PlayerLooking.Clear();
-            for (int i = 0; i < count; i++)
-                PlayerLooking.Add(PlayerDeck[i]);
+            for (int i = 0; i < count && PlayerDeck.GetCards().Count > i; i++)
+                PlayerLooking.Add(PlayerDeck.Index(i));
         }
 
         public void RearrangeOnTop(List<int> tempIDs)
         {
             Card card;
-            for (int i = 0; i < tempIDs.Count; i++)
+            for (int i = tempIDs.Count - 1; i >= 0; i--)
             {
                 card = _field.CardCatalog[tempIDs[i]];
-                PlayerDeck[i] = card;
-                if (PlayerLooking.Contains(card))
-                    PlayerLooking.Remove(card);
+                PlayerDeck.AddToTop(card);
             }
         }
 
@@ -2964,12 +2582,7 @@ namespace VanguardEngine
             for (int i = 0; i < tempIDs.Count; i++)
             {
                 card = _field.CardCatalog[tempIDs[i]];
-                if (GetActiveUnits().Contains(card) && card != _field.GetUnit(PlayerVanguard))
-                    RemoveFromRC(card.tempID, false);
-                if (PlayerLooking.Contains(card))
-                    PlayerLooking.Remove(card);
-                PlayerDeck[PlayerDeck.Count - (tempIDs.Count - i)] = card;
-                card.location = Location.Deck;
+                PlayerDeck.Add(card);
             }
         }
 
@@ -3009,19 +2622,14 @@ namespace VanguardEngine
             {
                 if (GetAllUnitsOnField().Contains(_field.CardCatalog[tempID]))
                 {
-                    if (!_givenAbilities.ContainsKey(tempID))
-                        _givenAbilities[tempID] = new List<Tuple<int, int>>();
-                    if (!_givenAbilities[tempID].Contains(new Tuple<int, int>(abilityTempID, activationNumber)))
-                        _givenAbilities[tempID].Add(new Tuple<int, int>(abilityTempID, activationNumber));
+                    _field.CardStates.AddUntilEndOfTurnAbility(tempID, abilityTempID, activationNumber);
                 }
             }
         }
 
         public List<Tuple<int, int>> GetGivenAbility(int tempID)
         {
-            if (_givenAbilities.ContainsKey(tempID))
-                return _givenAbilities[tempID];
-            return null;
+            return _field.CardStates.GetAbilities(tempID);
         }
 
         public void EndAttack()
@@ -3046,7 +2654,6 @@ namespace VanguardEngine
             _alchemagicUsed = false;
             _field.SetPersonaRide(false, _playerID);
             _stoodByCardEffect.Clear();
-            _givenAbilities.Clear();
             _orderPlayed = false;
             _soulChargedThisTurn = false;
             _playerRetiredThisTurn = false;
@@ -3113,35 +2720,7 @@ namespace VanguardEngine
 
         public List<Card> Soul()
         {
-            return _field.GetUnit(PlayerVanguard).soul;
-        }
-
-        public List<Card> CardsForOnRide()
-        {
-            List<Card> cards =  new List<Card>();
-            cards.AddRange(PlayerHand);
-            for (int i = PlayerFrontLeft; i < PlayerVanguard + 1; i++)
-                cards.Add(_field.GetUnit(i));
-            cards.AddRange(Soul());
-            return cards;
-        }
-
-        public List<Card> CardsForOnAttack()
-        {
-            List<Card> cards = new List<Card>();
-            cards.AddRange(PlayerHand);
-            for (int i = 1; i <= PlayerVanguard; i++)
-            {
-                if (_field.GetUnit(i) != null)
-                    cards.Add(_field.GetUnit(i));
-            }
-            cards.AddRange(Soul());
-            return cards;
-        }
-
-        public string PlayerVanguardName()
-        {
-            return _field.GetUnit(PlayerVanguard).name;
+            return _field.GetSoul(PlayerVanguard);
         }
 
         public Card Vanguard()
@@ -3180,18 +2759,11 @@ namespace VanguardEngine
 
         public bool HasCardInDeck(string name)
         {
-            foreach (Card card in PlayerDeck)
+            foreach (Card card in PlayerDeck.GetCards())
             {
                 if (card.name == name)
                     return true;
             }
-            return false;
-        }
-
-        public bool IsTopSoul(Card card)
-        {
-            if (card == _field.GetUnit(PlayerVanguard).soul[0])
-                return true;
             return false;
         }
 
@@ -3226,20 +2798,7 @@ namespace VanguardEngine
         public int NumOriginalDress(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
-            if (card.overDress)
-                return card.soul.Count;
-            return 0;
-        }
-
-        public List<Card> GetCardsWithName(string name)
-        {
-            List<Card> cardsWithName = new List<Card>();
-            foreach (Card card in PlayerDeck)
-            {
-                if (card.name == name)
-                    cardsWithName.Add(card);
-            }
-            return cardsWithName;
+            return _field.GetSoul(GetCircle(card)).Count;
         }
 
         public List<int> GetAvailableCircles(int tempID)

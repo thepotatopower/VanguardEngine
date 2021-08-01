@@ -520,8 +520,6 @@ namespace VanguardEngine
             for (int i = 0; i < cards.Count; i++)
             {
                 output = i + 1 + ". " + cards[i].name;
-                if (cards[i].location == Location.PlayerRC)
-                    output += " [Intercept]";
                 Console.WriteLine(output);
             }
             selection = SelectPrompt(cards.Count) - 1;

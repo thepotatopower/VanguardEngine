@@ -1465,12 +1465,8 @@ namespace VanguardEngine
 
         public bool IsRearguard()
         {
-            List<Card> units = _player1.GetActiveUnits();
-            foreach (Card card in units)
-            {
-                if (card.tempID == _card.tempID && card.location == Location.RC)
-                    return true;
-            }
+            if (_player1.IsRearguard(_card.tempID))
+                return true;
             return false;
         }
 
@@ -1721,7 +1717,7 @@ namespace VanguardEngine
             List<int> IDs = new List<int>();
             foreach (Card card in cardsToAdd)
                 IDs.Add(card.tempID);
-            _player1.ChangeLocation(Location.Hand, IDs);
+            _player1.AddToHand(IDs);
         }
 
         public void ChooseAddToSoul(int paramNum)
