@@ -6,8 +6,8 @@ namespace VanguardEngine
 {
     public class Field
     {
-        protected Zone _player1Hand;
-        protected Zone _player2Hand;
+        protected Hand _player1Hand;
+        protected Hand _player2Hand;
         protected Deck _player1Deck;
         protected Deck _player2Deck;
         protected List<Card> _tokens = new List<Card>();
@@ -27,16 +27,16 @@ namespace VanguardEngine
         protected bool _player2PersonaRide = false;
         protected Drop _player1Drop;
         protected Drop _player2Drop;
-        protected Zone _player1Damage;
-        protected Zone _player2Damage;
-        protected Zone _player1Bind;
-        protected Zone _player2Bind;
-        protected Zone _player1Trigger;
-        protected Zone _player2Trigger;
-        protected Zone _player1Order;
-        protected Zone _player2Order;
-        protected Zone _player1RideDeck;
-        protected Zone _player2RideDeck;
+        protected Damage _player1Damage;
+        protected Damage _player2Damage;
+        protected Bind _player1Bind;
+        protected Bind _player2Bind;
+        protected TriggerZone _player1Trigger;
+        protected TriggerZone _player2Trigger;
+        protected Order _player1Order;
+        protected Order _player2Order;
+        protected RideDeck _player1RideDeck;
+        protected RideDeck _player2RideDeck;
         protected PseudoZone _player1Revealed;
         protected PseudoZone _player2Revealed;
         protected PseudoZone _player1Looking;
@@ -327,22 +327,22 @@ namespace VanguardEngine
         {
             List<Card> cards = new List<Card>();
             List<Card> cards2 = new List<Card>();
-            _player1Hand = new Zone(this);
-            _player2Hand = new Zone(this);
+            _player1Hand = new Hand(this);
+            _player2Hand = new Hand(this);
             _player1Deck = new Deck(this);
             _player2Deck = new Deck(this);
             _player1Drop = new Drop(this);
             _player2Drop = new Drop(this);
-            _player1Damage = new Zone(this);
-            _player2Damage = new Zone(this);
-            _player1Bind = new Zone(this);
-            _player2Bind = new Zone(this);
-            _player1Trigger = new Zone(this);
-            _player2Trigger = new Zone(this);
-            _player1Order = new Zone(this);
-            _player2Order = new Zone(this);
-            _player1RideDeck = new PseudoZone(this);
-            _player2RideDeck = new PseudoZone(this);
+            _player1Damage = new Damage(this);
+            _player2Damage = new Damage(this);
+            _player1Bind = new Bind(this);
+            _player2Bind = new Bind(this);
+            _player1Trigger = new TriggerZone(this);
+            _player2Trigger = new TriggerZone(this);
+            _player1Order = new Order(this);
+            _player2Order = new Order(this);
+            _player1RideDeck = new RideDeck(this);
+            _player2RideDeck = new RideDeck(this);
             _player1Revealed = new PseudoZone(this);
             _player2Revealed = new PseudoZone(this);
             _player1Looking = new PseudoZone(this);
@@ -417,6 +417,7 @@ namespace VanguardEngine
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 1;
+                card.fromRideDeck = true;
             }
             foreach (Card card in _player2Deck.GetCards())
             {
@@ -427,6 +428,7 @@ namespace VanguardEngine
             {
                 _cardCatalog[card.tempID] = card;
                 card.originalOwner = 2;
+                card.fromRideDeck = true;
             }
             _cardCatalog[_circles[FL.PlayerVanguard].Index(0).tempID] = _circles[FL.PlayerVanguard].Index(0);
             _cardCatalog[_circles[FL.EnemyVanguard].Index(0).tempID] = _circles[FL.EnemyVanguard].Index(0);
@@ -1064,6 +1066,8 @@ namespace VanguardEngine
                 while (associatedCards.Count > 0)
                     AddToZone(associatedCards[0], bottom);
             }
+            if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
+                throw new ArgumentException("deck out.");
             return card;
         }
 
@@ -1154,6 +1158,28 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
+            if (card.fromRideDeck)
+            {
+                if (card.originalOwner == 1)
+                    return _field.Player1RideDeck.Add(card);
+                else
+                    return _field.Player2RideDeck.Add(card);
+            }
+            card.faceup = false;
+            card.upright = true;
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class RideDeck : Zone
+    {
+        public RideDeck(Field field) : base(field)
+        {
+
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
             card.faceup = false;
             card.upright = true;
             return base.AddToZone(card, bottom);
@@ -1194,6 +1220,66 @@ namespace VanguardEngine
     public class Bind : Zone
     {
         public Bind(Field field) : base(field)
+        {
+
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            card.upright = true;
+            card.faceup = true;
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class Hand : Zone
+    {
+        public Hand(Field field) : base(field)
+        {
+
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            card.upright = true;
+            card.faceup = false;
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class Damage : Zone
+    {
+        public Damage(Field field) : base(field)
+        {
+
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            card.upright = false;
+            card.faceup = true;
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class TriggerZone : Zone
+    {
+        public TriggerZone(Field field) : base(field)
+        {
+
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            card.upright = false;
+            card.faceup = true;
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class Order : Zone
+    {
+        public Order(Field field) : base(field)
         {
 
         }

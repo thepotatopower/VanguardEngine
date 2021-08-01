@@ -30,9 +30,8 @@ namespace VanguardEngine
         public bool upright = true;
         public bool overDress = false;
         public bool alchemagic = false;
-        //public int location = Location.Deck;
         public int originalOwner = 0;
-        //public List<Card> soul = new List<Card>();
+        public bool fromRideDeck = false;
 
         public Card Clone()
         {
