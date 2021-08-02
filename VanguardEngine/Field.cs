@@ -17,7 +17,7 @@ namespace VanguardEngine
         protected readonly Circle[] _circles = new Circle[14];
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
-        protected Zone _GC;
+        protected GuardianCircle _GC;
         protected Dictionary<int, List<Card>> _guardians = new Dictionary<int, List<Card>>();
         protected List<Card> _sentinel = new List<Card>();
         protected int _attacker = -1;
@@ -53,6 +53,7 @@ namespace VanguardEngine
         protected CardStates _cardStates = new CardStates();
         protected PlayerStates _player1States = new PlayerStates();
         protected PlayerStates _player2States = new PlayerStates();
+        public event EventHandler<CardEventArgs> OnZoneChanged;
 
         public Deck Player1Deck
         {
@@ -349,37 +350,37 @@ namespace VanguardEngine
             _player2Looking = new PseudoZone(this);
             _player1Prisoners = new PseudoZone(this);
             _player2Prisoners = new PseudoZone(this);
-            _GC = new Zone(this);
+            _GC = new GuardianCircle(this);
             foreach (Card card in tokens)
                 _tokens.Add(card);
             for (int i = 1; i < 14; i++)
             {
                 if (i == FL.PlayerFrontLeft)
-                    _circles[i] = new RearguardCircle(0, -1, this);
+                    _circles[i] = new RearguardCircle(0, -1, i, this);
                 else if (i == FL.PlayerBackLeft)
-                    _circles[i] = new RearguardCircle(1, -1, this);
+                    _circles[i] = new RearguardCircle(1, -1, i, this);
                 else if (i == FL.PlayerVanguard)
-                    _circles[i] = new VanguardCircle(0, 0, this);
+                    _circles[i] = new VanguardCircle(0, 0, i, this);
                 else if (i == FL.PlayerBackCenter)
-                    _circles[i] = new RearguardCircle(1, 0, this);
+                    _circles[i] = new RearguardCircle(1, 0, i, this);
                 else if (i == FL.PlayerFrontRight)
-                    _circles[i] = new RearguardCircle(0, 1, this);
+                    _circles[i] = new RearguardCircle(0, 1, i, this);
                 else if (i == FL.PlayerBackRight)
-                    _circles[i] = new RearguardCircle(1, 1, this);
+                    _circles[i] = new RearguardCircle(1, 1, i, this);
                 else if (i == FL.EnemyFrontLeft)
-                    _circles[i] = new RearguardCircle(0, 1, this);
+                    _circles[i] = new RearguardCircle(0, 1, i, this);
                 else if (i == FL.EnemyBackLeft)
-                    _circles[i] = new RearguardCircle(1, 1, this);
+                    _circles[i] = new RearguardCircle(1, 1, i, this);
                 else if (i == FL.EnemyVanguard)
-                    _circles[i] = new VanguardCircle(0, 0, this);
+                    _circles[i] = new VanguardCircle(0, 0, i, this);
                 else if (i == FL.EnemyBackCenter)
-                    _circles[i] = new RearguardCircle(1, 0, this);
+                    _circles[i] = new RearguardCircle(1, 0, i, this);
                 else if (i == FL.EnemyFrontRight)
-                    _circles[i] = new RearguardCircle(0, -1, this);
+                    _circles[i] = new RearguardCircle(0, -1, i, this);
                 else if (i == FL.EnemyBackRight)
-                    _circles[i] = new RearguardCircle(1, -1, this);
+                    _circles[i] = new RearguardCircle(1, -1, i, this);
                 else if (i == 7)
-                    _circles[i] = new RearguardCircle(100, 100, this);
+                    _circles[i] = new RearguardCircle(100, 100, i, this);
             }
             cards.Clear();
             cards2.Clear();
@@ -434,6 +435,14 @@ namespace VanguardEngine
             _cardCatalog[_circles[FL.EnemyVanguard].Index(0).tempID] = _circles[FL.EnemyVanguard].Index(0);
             _player1Deck.Shuffle();
             _player2Deck.Shuffle();
+        }
+
+        public void ActivateEvent(CardEventArgs args)
+        {
+            if (OnZoneChanged != null)
+            {
+                OnZoneChanged(this, args);
+            }
         }
 
         //public void sendShuffleKey(List<Card> list)
@@ -542,16 +551,17 @@ namespace VanguardEngine
     {
         protected Soul _soul; //doubles as originalDress for rearguard circles
         protected List<Card> _overloadedUnits = new List<Card>();
-        int _row = 0;
-        int _column = 0;
-        int _power = 0;
-        int _critical = 0;
+        protected int _row = 0;
+        protected int _column = 0;
+        protected int _power = 0;
+        protected int _critical = 0;
 
-        public Circle(int row, int column, Field field) : base(field)
+        public Circle(int row, int column, int FL, Field field) : base(field)
         {
             _row = row;
             _column = column;
-            _soul = new Soul(field);
+            _soul = new Soul(field, FL);
+            _FL = FL;
         }
 
         protected override List<Card> AssociatedCards()
@@ -570,6 +580,11 @@ namespace VanguardEngine
         {
             _soul.Add(_cards[0]);
             return base.AddToZone(card, true);
+        }
+
+        protected override void ActivateEvent()
+        {
+            base.ActivateEvent();
         }
 
         public List<Card> GetSoul()
@@ -610,9 +625,9 @@ namespace VanguardEngine
 
     public class RearguardCircle : Circle
     {
-        public RearguardCircle(int row, int column, Field field) : base(row, column, field)
+        public RearguardCircle(int row, int column, int FL, Field field) : base(row, column, FL, field)
         {
-
+            location = Location.RC;
         }
 
         protected override List<Card> Remove(Card card)
@@ -628,6 +643,7 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
+
             if (_cards.Count > 0)
             {
                 OverloadedUnits.AddRange(_cards);
@@ -664,17 +680,24 @@ namespace VanguardEngine
 
     public class VanguardCircle : Circle
     {
-        public VanguardCircle(int row, int column, Field field) : base(row, column, field)
+        public VanguardCircle(int row, int column, int FL, Field field) : base(row, column, FL, field)
         {
-            
+            location = Location.VC;
         }
     }
 
     public class Soul : Zone
     {
-        public Soul(Field field) : base(field)
-        {
 
+        public Soul(Field field, int FL) : base(field)
+        {
+            location = Location.Soul;
+            _FL = FL;
+        }
+
+        protected override void ActivateEvent()
+        {
+            base.ActivateEvent();
         }
     }
 
@@ -1019,6 +1042,11 @@ namespace VanguardEngine
     {
         protected List<Card> _cards = new List<Card>();
         protected Field _field;
+        public event EventHandler<CardEventArgs> OnZoneChanged;
+        protected CardEventArgs args = new CardEventArgs();
+        protected Zone previousZone;
+        protected int location = -1;
+        protected int _FL = -1;
 
         public Zone(Field field)
         {
@@ -1050,7 +1078,7 @@ namespace VanguardEngine
         {
             _field.CardStates.ResetCardValues(card.tempID);
             card.overDress = false;
-            Zone previousZone = _field.CardLocations[card.tempID];
+            previousZone = _field.CardLocations[card.tempID];
             List<Card> associatedCards = new List<Card>();
             if (previousZone != null)
                 associatedCards.AddRange(previousZone.Remove(card));
@@ -1066,6 +1094,11 @@ namespace VanguardEngine
                 while (associatedCards.Count > 0)
                     AddToZone(associatedCards[0], bottom);
             }
+            args = new CardEventArgs();
+            args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());
+            args.currentLocation = new Tuple<int, int>(location, _FL);
+            args.card = card;
+            ActivateEvent();
             if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
                 throw new ArgumentException("deck out.");
             return card;
@@ -1090,6 +1123,11 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             return AddToZone(card, true);
+        }
+
+        protected virtual void ActivateEvent()
+        {
+            _field.ActivateEvent(args);
         }
 
         public List<Card> GetCards()
@@ -1123,6 +1161,16 @@ namespace VanguardEngine
         {
             FisherYates.Shuffle(_cards);
         }
+
+        public int GetLocation()
+        {
+            return location;
+        }
+
+        public int GetFL()
+        {
+            return _FL;
+        }
     }
 
     public class PseudoZone : Zone
@@ -1153,7 +1201,7 @@ namespace VanguardEngine
     {
         public Deck(Field field) : base(field)
         {
-
+            location = Location.Deck;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1175,7 +1223,7 @@ namespace VanguardEngine
     {
         public RideDeck(Field field) : base(field)
         {
-
+            location = Location.RideDeck;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1190,7 +1238,7 @@ namespace VanguardEngine
     {
         public Drop(Field field) : base(field)
         {
-
+            location = Location.Drop;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1206,7 +1254,7 @@ namespace VanguardEngine
     {
         public GuardianCircle(Field field) : base(field)
         {
-
+            location = Location.GC;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1221,7 +1269,7 @@ namespace VanguardEngine
     {
         public Bind(Field field) : base(field)
         {
-
+            location = Location.Bind;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1236,7 +1284,7 @@ namespace VanguardEngine
     {
         public Hand(Field field) : base(field)
         {
-
+            location = Location.Hand;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1251,7 +1299,7 @@ namespace VanguardEngine
     {
         public Damage(Field field) : base(field)
         {
-
+            location = Location.Damage;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1266,7 +1314,7 @@ namespace VanguardEngine
     {
         public TriggerZone(Field field) : base(field)
         {
-
+            location = Location.Trigger;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1281,7 +1329,7 @@ namespace VanguardEngine
     {
         public Order(Field field) : base(field)
         {
-
+            location = Location.Order;
         }
 
         protected override Card AddToZone(Card card, bool bottom)

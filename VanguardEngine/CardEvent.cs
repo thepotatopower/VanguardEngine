@@ -13,6 +13,9 @@ namespace VanguardEngine
         public int playerID { get; set; }
         public int i { get; set; }
         public bool b { get; set; }
+        public Tuple<int, int> previousLocation { get; set; }
+        public Tuple<int, int> currentLocation { get; set; }
+        //public int FL { get; set; }
 
         public CardEventArgs()
         {

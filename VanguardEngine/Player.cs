@@ -104,6 +104,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnDriveCheck;
         public event EventHandler<CardEventArgs> OnDamageCheck;
         public event EventHandler<CardEventArgs> OnRetire;
+        public event EventHandler<CardEventArgs> OnZoneChanged;
 
         public void Initialize(int playerID, Field field)
         {
@@ -184,6 +185,15 @@ namespace VanguardEngine
             EnemyFrontRight = Convert(FL.EnemyFrontRight);
             EnemyBackRight = Convert(FL.EnemyBackRight);
             CardStates = _field.CardStates;
+            _field.OnZoneChanged += _fieldOnZoneChanged;
+        }
+
+        public void _fieldOnZoneChanged(object sender, CardEventArgs e)
+        {
+            if (OnZoneChanged != null)
+            {
+                OnZoneChanged(this, e);
+            }
         }
 
         public int Turn

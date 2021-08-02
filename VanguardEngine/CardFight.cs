@@ -16,7 +16,7 @@ namespace VanguardEngine
         public bool _gameOver = false;
         public bool _activatedOrder = false;
         public LuaInterpreter luaInterpreter;
-        protected InputManager _inputManager;
+        public InputManager _inputManager;
         public List<Card> _deck1;
         public List<Card> _deck2;
         public Abilities _abilities;
