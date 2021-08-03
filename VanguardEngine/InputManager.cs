@@ -62,14 +62,14 @@ namespace VanguardEngine
             return selection;
         }
 
-        protected virtual void WaitForInput(ThreadStart start)
-        {
-            Thread InputThread = new Thread(start);
-            InputThread.Start();
-            oSignalEvent.WaitOne();
-            oSignalEvent.Reset();
-            InputThread.Abort();
-        }
+        //protected virtual void WaitForInput(ThreadStart start)
+        //{
+        //    Thread InputThread = new Thread(start);
+        //    InputThread.Start();
+        //    oSignalEvent.WaitOne();
+        //    oSignalEvent.Reset();
+        //    InputThread.Abort();
+        //}
 
         public virtual bool YesNo(Player actingPlayer, int request)
         {
@@ -81,7 +81,7 @@ namespace VanguardEngine
             }
             prompt = request;
             string_input = "";
-            WaitForInput(YesNo_Input);
+            YesNo_Input();
             if (swapped)
                 SwapPlayers();
             return bool_input;
@@ -97,7 +97,7 @@ namespace VanguardEngine
             }
             prompt = PromptType.UniqueQuery;
             string_input = query;
-            WaitForInput(YesNo_Input);
+            YesNo_Input();
             if (swapped)
                 SwapPlayers();
             return bool_input;
@@ -119,7 +119,7 @@ namespace VanguardEngine
 
         public virtual int RPS()
         {
-            WaitForInput(RPS_Input);
+            RPS_Input();
             return int_input;
         }
 
@@ -131,31 +131,6 @@ namespace VanguardEngine
                     "3. Scissors");
             int_input = SelectPrompt(3) - 1;
             oSignalEvent.Set();
-        }
-
-        public virtual int SelectCardFromHand()
-        {
-            WaitForInput(SelectCardFromHand_Input);
-            return int_input;
-        }
-
-        protected virtual void SelectCardFromHand_Input()
-        {
-            List<Card> hand = _player1.GetHand();
-            Console.WriteLine("----------\nSelect card from hand:");
-            for (int i = 0; i < hand.Count; i++)
-            {
-                Console.WriteLine(i + 1 + ". " + hand[i].name);
-            }
-            int_input = SelectPrompt(hand.Count) - 1;
-            oSignalEvent.Set();
-        }
-
-        public virtual List<int> SelectCardsFromHand(int count)
-        {
-            int_input = count;
-            WaitForInput(SelectCardsFromHand_Input);
-            return intlist_input;
         }
 
         protected virtual void SelectCardsFromHand_Input()
@@ -185,7 +160,7 @@ namespace VanguardEngine
 
         public virtual List<int> SelectCardsToMulligan()
         {
-            WaitForInput(SelectCardsToMulligan_Input);
+            SelectCardsToMulligan_Input();
             return intlist_input;
         }
 
@@ -216,45 +191,9 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectCardFromRideDeck()
-        {
-            WaitForInput(SelectCardFromRideDeck_Input);
-            return int_input;
-        }
-
-        protected virtual void SelectCardFromRideDeck_Input()
-        {
-            int selection;
-            List<Card> cards = _player1.GetRideableCards(true);
-            Console.WriteLine("----------\nSelect card from Ride Deck to Ride.");
-            for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". G" + cards[i].grade + " " + cards[i].name);
-            selection = SelectPrompt(cards.Count) - 1;
-            int_input = cards[selection].tempID;
-            oSignalEvent.Set();
-        }
-
-        public virtual int SelectCardFromHandToRide()
-        {
-            WaitForInput(SelectCardFromHandToRide_Input);
-            return int_input;
-        }
-
-        protected virtual void SelectCardFromHandToRide_Input()
-        {
-            int selection;
-            List<Card> cards = _player1.GetRideableCards(false);
-            Console.WriteLine("----------\nSelect card from hand to Ride.");
-            for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". G" + cards[i].grade + " " + cards[i].name);
-            selection = SelectPrompt(cards.Count) - 1;
-            int_input = cards[selection].tempID;
-            oSignalEvent.Set();
-        }
-
         public virtual int SelectMainPhaseAction()
         {
-            WaitForInput(SelectMainPhaseAction_Input);
+            SelectMainPhaseAction_Input();
             return int_input;
         }
 
@@ -275,7 +214,7 @@ namespace VanguardEngine
 
         public virtual int SelectRearguardToCall()
         {
-            WaitForInput(SelectRearguardToCall_Input);
+            SelectRearguardToCall_Input();
             return int_input;
         }
 
@@ -305,7 +244,7 @@ namespace VanguardEngine
             _ints2.Clear();
             if (canSelect != null)
                 _ints2.AddRange(canSelect);
-            WaitForInput(SelectCallLocation_Input);
+            SelectCallLocation_Input();
             if (swapped)
                 SwapPlayers();
             return int_input;
@@ -356,7 +295,7 @@ namespace VanguardEngine
             _actingPlayer = actingPlayer;
             intlist_input.Clear();
             intlist_input.AddRange(availableCircles);
-            WaitForInput(SelectCircle_Input);
+            SelectCircle_Input();
             return int_input;
         }
 
@@ -384,7 +323,7 @@ namespace VanguardEngine
 
         public virtual int SelectRearguardColumn()
         {
-            WaitForInput(SelectRearguardColumn_Input);
+            SelectRearguardColumn_Input();
             return int_input;
         }
         
@@ -407,7 +346,7 @@ namespace VanguardEngine
         {
             cardsToSelect = _player1.GetActiveUnits();
             cardsToSelect.RemoveAt(cardsToSelect.Count - 1);
-            WaitForInput(MoveRearguards_Input);
+            MoveRearguards_Input();
             return new Tuple<int, int>(int_input, int_input2);
         }
 
@@ -435,7 +374,7 @@ namespace VanguardEngine
 
         public virtual int SelectBattlePhaseAction()
         {
-            WaitForInput(SelectBattlePhaseAction_Input);
+            SelectBattlePhaseAction_Input();
             return int_input;
         }
 
@@ -452,7 +391,7 @@ namespace VanguardEngine
 
         public virtual int SelectAttackingUnit()
         {
-            WaitForInput(SelectAttackingUnit_Input);
+            SelectAttackingUnit_Input();
             return int_input;
         }
 
@@ -470,7 +409,7 @@ namespace VanguardEngine
 
         public virtual int SelectUnitToAttack()
         {
-            WaitForInput(SelectUnitToAttack_Input);
+            SelectUnitToAttack_Input();
             return int_input;
         }
 
@@ -488,7 +427,7 @@ namespace VanguardEngine
 
         public virtual int SelectGuardPhaseAction()
         {
-            WaitForInput(SelectGuardPhaseAction_Input);
+            SelectGuardPhaseAction_Input();
             return int_input;
         }
 
@@ -507,7 +446,7 @@ namespace VanguardEngine
 
         public virtual int SelectCardToGuardWith()
         {
-            WaitForInput(SelectCardToGuardWith_Input);
+            SelectCardToGuardWith_Input();
             return int_input;
         }
 
@@ -529,7 +468,7 @@ namespace VanguardEngine
 
         public virtual int SelectCardToGuard()
         {
-            WaitForInput(SelectCardToGuard_Input);
+            SelectCardToGuard_Input();
             return int_input;
         }
 
@@ -553,7 +492,7 @@ namespace VanguardEngine
         {
             prompt = request;
             value = amount;
-            WaitForInput(SelectActiveUnit_Input);
+            SelectActiveUnit_Input();
             return int_input;
         }
 
@@ -572,7 +511,7 @@ namespace VanguardEngine
         {
             _abilities.Clear();
             _abilities.AddRange(abilities);
-            WaitForInput(SelectAbility_Input);
+            SelectAbility_Input();
             return int_input;
         }
 
@@ -581,7 +520,7 @@ namespace VanguardEngine
             _abilities.Clear();
             foreach (Tuple<Ability, int> ability in abilities)
                 _abilities.Add(ability.Item1);
-            WaitForInput(SelectAbility_Input);
+            SelectAbility_Input();
             return int_input;
         }
 
@@ -630,7 +569,7 @@ namespace VanguardEngine
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
             intlist_input.Clear();
-            WaitForInput(ChooseOrder_Input);
+            ChooseOrder_Input();
             if (swapped)
                 SwapPlayers();
             return intlist_input;
@@ -694,7 +633,7 @@ namespace VanguardEngine
             }
             int_value = count;
             int_value2 = min;
-            WaitForInput(SelectFromList_Input);
+            SelectFromList_Input();
             if (swapped)
                 SwapPlayers();
             return intlist_input;
@@ -740,7 +679,7 @@ namespace VanguardEngine
                 swapped = true;
             }
             _list = list;
-            WaitForInput(SelectOption_Input);
+            SelectOption_Input();
             if (swapped)
                 SwapPlayers();
             return int_input;
@@ -767,7 +706,7 @@ namespace VanguardEngine
                 SwapPlayers();
                 swapped = true;
             }
-            WaitForInput(SelectColumn_Input);
+            SelectColumn_Input();
             if (swapped)
                 SwapPlayers();
             return int_input;
@@ -793,7 +732,7 @@ namespace VanguardEngine
         {
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cards);
-            WaitForInput(DisplayCards_Input);
+            DisplayCards_Input();
         }
 
         protected void DisplayCards_Input()

@@ -697,7 +697,7 @@ namespace VanguardEngine
 
         protected override void ActivateEvent()
         {
-            base.ActivateEvent();
+            //base.ActivateEvent();
         }
     }
 
