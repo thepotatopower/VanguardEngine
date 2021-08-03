@@ -26,6 +26,7 @@ namespace VanguardEngine
         public PlayTimings _playTimings = new PlayTimings();
         public Dictionary<int, List<int>> _chosen = new Dictionary<int, List<int>>();
         public Ability _currentAbility = null;
+        public EventHandler<CardEventArgs> OnStandPhase;
         public EventHandler<CardEventArgs> OnDrawPhase;
         public EventHandler<CardEventArgs> OnRidePhase;
         public EventHandler<CardEventArgs> OnMainPhase;
@@ -128,11 +129,15 @@ namespace VanguardEngine
             {
                 actingPlayer = player1;
                 _phase = Phase.Stand;
+                if (OnStandPhase != null)
+                    OnStandPhase(this, new CardEventArgs());
                 player1.StandAll();
+                _phase = Phase.Draw;
+                if (OnDrawPhase != null)
+                    OnDrawPhase(this, new CardEventArgs());
                 if (_turn > 1)
                 {
                     Console.WriteLine("----------\nSTAND AND DRAW");
-                    _phase = Phase.Draw;
                     Draw(player1, player2, 1);
                 }
                 Console.WriteLine("----------\nRIDE PHASE");
@@ -274,8 +279,7 @@ namespace VanguardEngine
         public void RidePhaseMenu(Player player1, Player player2)
         {
             int input;
-            bool CanRideFromRideDeck = player1.CanRideFromRideDeck();
-            bool CanRideFromHand = player1.CanRideFromHand();
+            int selection = 0;
             CardEventArgs args;
             if (OnRidePhase != null)
             {
@@ -286,41 +290,38 @@ namespace VanguardEngine
             ActivateAbilities(player1, player2);
             while (true)
             {
-                if (CanRideFromRideDeck || CanRideFromHand)
+                selection = _inputManager.SelectRidePhaseAction();
+                if (selection == RidePhaseAction.RideFromRideDeck)
                 {
-                    Console.WriteLine("----------\nDo you wish to Ride?");
-                    if (_inputManager.YesNo(player1, PromptType.Ride))
+                    if (player1.CanRideFromRideDeck())
                     {
-                        if (CanRideFromRideDeck)
-                        {
-                            Console.WriteLine("----------\nRide from Ride Deck?");
-                            if (_inputManager.YesNo(player1, PromptType.RideFromRideDeck))
-                            {
-                                Discard(player1, player2, player1.GetHand(), 1, 1);
-                                ActivateAbilities(player1, player2);
-                                input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "Select card to ride.")[0];
-                                Ride(player1, player2, 0, input);
-                                break;
-                            }
-                        }
-                        if (CanRideFromHand)
-                        {
-                            input = input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "Select card to ride.")[0];
-                            Ride(player1, player2, 1, input);
-                            break;
-                        }
+                        Discard(player1, player2, player1.GetHand(), 1, 1);
+                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "Select card to ride.")[0];
+                        Ride(player1, player2, 0, input);
+                        ActivateAbilities(player1, player2);
                     }
                     else
-                        break;
+                        Console.WriteLine("Invalid.");
                 }
-                else
+                else if (selection == RidePhaseAction.RideFromHand)
+                {
+                    if (player1.CanRideFromHand())
+                    {
+                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "Select card to ride.")[0];
+                        Ride(player1, player2, 0, input);
+                        ActivateAbilities(player1, player2);
+                    }
+                    else
+                        Console.WriteLine("Invalid.");
+                }
+                else if (selection == RidePhaseAction.End)
                     break;
             }
         }
 
         public void Ride(Player player1, Player player2, int location, int selection)
         {
-            player1.Ride(location, selection);
+            player1.Ride(selection);
             _playTimings.AddPlayTiming(Activation.OnRide);
             _playTimings.AddPlayTiming(Activation.PlacedOnVC);
             ActivateAbilities(player1, player2);

@@ -54,10 +54,10 @@ namespace VanguardEngine
             while (selection < 1 || selection > max)
             {
                 input = Console.ReadLine();
-                if (input == "")
-                    selection = 0;
+                if (int.TryParse(input, out selection))
+                    return selection;
                 else
-                    selection = int.Parse(input);
+                    return 0;
             }
             return selection;
         }
@@ -188,6 +188,22 @@ namespace VanguardEngine
                 else
                     intlist_input.Add(hand[selection].tempID);
             }
+            oSignalEvent.Set();
+        }
+
+        public virtual int SelectRidePhaseAction()
+        {
+            SelectRidePhaseAction_Input();
+            return int_input;
+        }
+
+        protected virtual void SelectRidePhaseAction_Input()
+        {
+            Console.WriteLine("----------\nChoose option.\n" +
+                    "1. Ride from Ride Deck.\n" +
+                    "2. Ride from hand.\n" +
+                    "3. End Ride Phase.");
+            int_input = SelectPrompt(3);
             oSignalEvent.Set();
         }
 
@@ -757,6 +773,13 @@ namespace VanguardEngine
         public const int Stand = 6;
         public const int OverDress = 7;
         public const int UniqueQuery = 8;
+    }
+
+    public class RidePhaseAction
+    {
+        public const int RideFromHand = 2;
+        public const int RideFromRideDeck = 1;
+        public const int End = 3;
     }
 }
 

@@ -43,6 +43,7 @@ namespace VanguardEngine
         protected bool _alchemagicFreeSB = false;
         protected int _alchemagicFreeCBAvailable = 0;
         protected bool _alchemagicUsed = false;
+        protected bool _riddenThisTurn = false;
         protected Zone PlayerHand;
         protected Zone EnemyHand;
         protected Zone PlayerDeck;
@@ -976,8 +977,12 @@ namespace VanguardEngine
 
         public bool CanRideFromRideDeck()
         {
+            if (_riddenThisTurn)
+                return false;
             List<Card> rideDeck = PlayerRideDeck.GetCards();
             Card VG = _field.GetUnit(PlayerVanguard);
+            if (PlayerHand.GetCards().Count < 1)
+                return false;
             foreach (Card card in rideDeck)
             {
                 if (VG.grade + 1 == card.grade &&
@@ -989,6 +994,8 @@ namespace VanguardEngine
 
         public bool CanRideFromHand()
         {
+            if (_riddenThisTurn)
+                return false;
             List<Card> hand = PlayerHand.GetCards();
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
@@ -1361,19 +1368,13 @@ namespace VanguardEngine
                 return false;
         }
 
-        public void Ride(int location, int selection)
+        public void Ride(int selection)
         {
-            CardEventArgs args = new CardEventArgs();
-            Zone zone;
             Card card = _field.CardCatalog[selection];
             _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count + 1] = new List<Card>();
             _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count].Add(_field.GetUnit(PlayerVanguard));
             _lastPlacedOnVC[_lastPlacedOnVC.Keys.Count + 1] = new List<Card>();
             _cardRiddenBy[_cardRiddenBy.Keys.Count + 1] = new Tuple<int, string>(_field.GetUnit(PlayerVanguard).tempID, card.name);
-            if (location == 0)
-                zone = PlayerRideDeck;
-            else
-                zone = PlayerHand;
             if (card.name == _field.GetUnit(PlayerVanguard).name && _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
                 _field.SetPersonaRide(true, _playerID);
@@ -1385,23 +1386,7 @@ namespace VanguardEngine
             else
                 Console.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
             _lastPlacedOnVC[_lastPlacedOnVC.Count].Add(card);
-            args.card = card;
-            args.playerID = _playerID;
-            if (location == 0)
-            {
-                if (OnRideFromRideDeck != null)
-                {
-                    Console.WriteLine("ridedeck event fired");
-                    OnRideFromRideDeck(this, args);
-                }
-            }
-            else
-            {
-                if (OnRideFromHand != null)
-                {
-                    OnRideFromHand(this, args);
-                }
-            }
+            _riddenThisTurn = true;
         }
 
         public void Call(int location, int selection, bool overDress)
@@ -2671,6 +2656,7 @@ namespace VanguardEngine
             _bonusDriveCheckPower = 0;
             _unitsCalledThisTurn.Clear();
             _unitsCalledFromHandThisTurn.Clear();
+            _riddenThisTurn = false;
             for (int i = 0; i < _field.CirclePower.Length; i++)
                 _field.CirclePower[i] = 0;
             for (int i = 0; i < _field.CircleCritical.Length; i++)

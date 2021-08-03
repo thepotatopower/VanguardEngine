@@ -584,7 +584,8 @@ namespace VanguardEngine
 
         protected override void ActivateEvent()
         {
-            base.ActivateEvent();
+            if (previousZone.GetFL() != _FL)
+                base.ActivateEvent();
         }
 
         public List<Card> GetSoul()
@@ -697,7 +698,8 @@ namespace VanguardEngine
 
         protected override void ActivateEvent()
         {
-            //base.ActivateEvent();
+            if (previousZone.GetFL() != _FL)
+                base.ActivateEvent();
         }
     }
 
@@ -1042,7 +1044,6 @@ namespace VanguardEngine
     {
         protected List<Card> _cards = new List<Card>();
         protected Field _field;
-        public event EventHandler<CardEventArgs> OnZoneChanged;
         protected CardEventArgs args = new CardEventArgs();
         protected Zone previousZone;
         protected int location = -1;
@@ -1127,7 +1128,8 @@ namespace VanguardEngine
 
         protected virtual void ActivateEvent()
         {
-            _field.ActivateEvent(args);
+            if (previousZone != this)
+                _field.ActivateEvent(args);
         }
 
         public List<Card> GetCards()
