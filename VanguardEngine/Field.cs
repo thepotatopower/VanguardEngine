@@ -54,6 +54,7 @@ namespace VanguardEngine
         protected PlayerStates _player1States = new PlayerStates();
         protected PlayerStates _player2States = new PlayerStates();
         public event EventHandler<CardEventArgs> OnZoneChanged;
+        public event EventHandler<CardEventArgs> OnZoneSwapped;
 
         public Deck Player1Deck
         {
@@ -120,6 +121,13 @@ namespace VanguardEngine
                 return;
             RearguardCircle rc = (RearguardCircle)_circles[circle1];
             rc.Swap((RearguardCircle)_circles[circle2]);
+            if (OnZoneSwapped != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.previousLocation = new Tuple<int, int>(Location.RC, circle1);
+                args.currentLocation = new Tuple<int, int>(Location.RC, circle2);
+                OnZoneSwapped(this, args);
+            }
         }
 
         public int GetRow(int circle)
@@ -694,6 +702,11 @@ namespace VanguardEngine
         {
             location = Location.Soul;
             _FL = FL;
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            return base.AddToZone(card, bottom);
         }
 
         protected override void ActivateEvent()

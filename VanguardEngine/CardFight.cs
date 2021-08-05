@@ -113,6 +113,7 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
+            actingPlayer = player1;
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
@@ -285,7 +286,7 @@ namespace VanguardEngine
             }
             _playTimings.AddPlayTiming(Activation.OnRidePhase);
             ActivateAbilities(player1, player2);
-            while (true)
+            while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
                 selection = _inputManager.SelectRidePhaseAction();
                 if (selection == RidePhaseAction.RideFromRideDeck)
@@ -351,6 +352,7 @@ namespace VanguardEngine
             }
             while (true)
             {
+                canSelect.Clear();
                 selection = _inputManager.SelectMainPhaseAction();
                 if (selection == 1)
                     BrowseHand(player1);
@@ -377,7 +379,7 @@ namespace VanguardEngine
                     else
                         Console.WriteLine("No Rearguards can be called.");
                 }
-                else if (selection == 4)
+                else if (selection == MainPhaseAction.CallFromPrison)
                 {
                     CallFromPrison(player1, player2);
                 }
@@ -414,13 +416,25 @@ namespace VanguardEngine
                 }
                 else if (selection == 8)
                     break;
-                else if (selection == 9) //call specific RG (for use outside of console only)
+                else if (selection == MainPhaseAction.CallFromHand) //call specific RG (for use outside of console only)
                 {
-                    Call(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1], false);
+                    input = _inputManager.int_input2;
+                    canSelect.AddRange(player1.GetAvailableCircles(input));
+                    location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
+                    if (_abilities.CanOverDress(input, location))
+                    {
+                        Console.WriteLine("Perform overDress?");
+                        if (_inputManager.YesNo(player1, PromptType.OverDress))
+                        {
+                            Call(player1, player2, location, input, true);
+                            continue;
+                        }
+                    }
+                    Call(player1, player2, location, input, false);
                 }
-                else if (selection == 10) //move specific column (for use outside of console only)
+                else if (selection == MainPhaseAction.MoveRearguard) //move specific column (for use outside of console only)
                 {
-                    MoveRearguard(player1, player2, _inputManager.intlist_input[1]);
+                    player1.AlternateMoveRearguard(_inputManager.int_input2);
                 }
             }
         }

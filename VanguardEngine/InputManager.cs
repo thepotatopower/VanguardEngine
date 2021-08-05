@@ -781,5 +781,14 @@ namespace VanguardEngine
         public const int RideFromRideDeck = 1;
         public const int End = 3;
     }
+
+    public class MainPhaseAction
+    {
+        public const int CallFromPrison = 4;
+        public const int CallFromHand = 9;
+        public const int MoveRearguard = 10;
+        public const int ActivateACT = 11;
+        public const int ActivateOrder = 12;
+    }
 }
 

@@ -106,6 +106,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnDamageCheck;
         public event EventHandler<CardEventArgs> OnRetire;
         public event EventHandler<CardEventArgs> OnZoneChanged;
+        public event EventHandler<CardEventArgs> OnZoneSwapped;
 
         public void Initialize(int playerID, Field field)
         {
@@ -189,7 +190,7 @@ namespace VanguardEngine
             _field.OnZoneChanged += _fieldOnZoneChanged;
         }
 
-        public void _fieldOnZoneChanged(object sender, CardEventArgs e)
+        void _fieldOnZoneChanged(object sender, CardEventArgs e)
         {
             if (OnZoneChanged != null)
             {
@@ -197,6 +198,13 @@ namespace VanguardEngine
             }
         }
 
+        void _fieldOnZoneSwapped(object sender, CardEventArgs e)
+        {
+            if (OnZoneSwapped != null)
+            {
+                OnZoneSwapped(this, e);
+            }
+        }
         public int Turn
         {
             get => _field.Turn;
@@ -720,6 +728,17 @@ namespace VanguardEngine
                     callableCards.Add(card);
             }
             return callableCards;
+        }
+
+        public List<Card> GetMoveableRearguards()
+        {
+            List<Card> cards = new List<Card>();
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
+            {
+                if (i != PlayerBackCenter && !_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotMove))
+                    cards.Add(_field.GetUnit(i));
+            }
+            return cards;
         }
 
         public bool CheckColumn(int column) //0 is left, 1 is right
@@ -1478,6 +1497,15 @@ namespace VanguardEngine
                 args.i = location;
                 OnChangeColumn(this, args);
             }
+        }
+
+        public void AlternateMoveRearguard(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetCircle(card) == PlayerFrontLeft || GetCircle(card) == PlayerBackLeft)
+                _field.SwapUnits(PlayerFrontLeft, PlayerBackLeft);
+            else if (GetCircle(card) == PlayerFrontRight || GetCircle(card) == PlayerBackRight)
+                _field.SwapUnits(PlayerFrontRight, PlayerBackRight);
         }
 
         public void MoveRearguard(int location, int direction)
