@@ -10,7 +10,7 @@ namespace VanguardEngine
     {
         public Player _player1;
         public Player _player2;
-        protected Player actingPlayer;
+        public Player actingPlayer;
         public int _turn;
         protected int _phase = Phase.Stand;
         public bool _gameOver = false;
@@ -135,11 +135,8 @@ namespace VanguardEngine
                 _phase = Phase.Draw;
                 if (OnDrawPhase != null)
                     OnDrawPhase(this, new CardEventArgs());
-                if (_turn > 1)
-                {
-                    Console.WriteLine("----------\nSTAND AND DRAW");
-                    Draw(player1, player2, 1);
-                }
+                Console.WriteLine("----------\nSTAND AND DRAW");
+                Draw(player1, player2, 1);
                 Console.WriteLine("----------\nRIDE PHASE");
                 _phase = Phase.Ride;
                 RidePhaseMenu(player1, player2);
@@ -303,7 +300,7 @@ namespace VanguardEngine
                     else
                         Console.WriteLine("Invalid.");
                 }
-                else if (selection == RidePhaseAction.RideFromHand)
+                else if (selection == 2)
                 {
                     if (player1.CanRideFromHand())
                     {
@@ -313,6 +310,10 @@ namespace VanguardEngine
                     }
                     else
                         Console.WriteLine("Invalid.");
+                }
+                else if (selection == RidePhaseAction.RideFromHand)
+                {
+                    Ride(player1, player2, 0, _inputManager.int_input2);
                 }
                 else if (selection == RidePhaseAction.End)
                     break;

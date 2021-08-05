@@ -203,7 +203,7 @@ namespace VanguardEngine
                     "1. Ride from Ride Deck.\n" +
                     "2. Ride from hand.\n" +
                     "3. End Ride Phase.");
-            int_input = SelectPrompt(3);
+            int_input = SelectPrompt(4);
             oSignalEvent.Set();
         }
 
@@ -777,7 +777,7 @@ namespace VanguardEngine
 
     public class RidePhaseAction
     {
-        public const int RideFromHand = 2;
+        public const int RideFromHand = 4;
         public const int RideFromRideDeck = 1;
         public const int End = 3;
     }
