@@ -188,6 +188,7 @@ namespace VanguardEngine
             EnemyBackRight = Convert(FL.EnemyBackRight);
             CardStates = _field.CardStates;
             _field.OnZoneChanged += _fieldOnZoneChanged;
+            _field.OnZoneSwapped += _fieldOnZoneSwapped;
         }
 
         void _fieldOnZoneChanged(object sender, CardEventArgs e)

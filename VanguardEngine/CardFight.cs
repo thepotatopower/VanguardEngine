@@ -365,6 +365,7 @@ namespace VanguardEngine
                         input = _inputManager.SelectRearguardToCall();
                         canSelect.AddRange(player1.GetAvailableCircles(input));
                         location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
+                        Console.WriteLine("input: " + input + " location: " + location);
                         if (_abilities.CanOverDress(input, location))
                         {
                             Console.WriteLine("Perform overDress?");

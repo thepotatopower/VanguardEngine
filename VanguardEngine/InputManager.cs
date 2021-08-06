@@ -789,6 +789,7 @@ namespace VanguardEngine
         public const int MoveRearguard = 10;
         public const int ActivateACT = 11;
         public const int ActivateOrder = 12;
+        public const int End = 8;
     }
 }
 
