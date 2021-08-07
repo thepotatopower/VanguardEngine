@@ -552,8 +552,21 @@ namespace VanguardEngine
                         break;
                     else if (selection == BattlePhaseAction.Attack) //for use outside of console only
                     {
-                        if (_inputManager.int_input3 >= 0)
-                            Attack(player1, player2,  _inputManager.int_input2, _inputManager.int_input3);
+                        attacker = _inputManager.int_input2;
+                        player1.SetAttacker(attacker);
+                        if (player1.CanBeBoosted())
+                        {
+                            Console.WriteLine("----------\nBoost?");
+                            if (_inputManager.YesNo(player1, "Boost?"))
+                            {
+                                booster = player1.GetBooster(attacker);
+                            }
+                        }
+                        target = _inputManager.SelectUnitToAttack();
+                        if (target >= 0)
+                            Attack(player1, player2, booster, target);
+                        if (_gameOver)
+                            return;
                     }
                     else
                         break;
