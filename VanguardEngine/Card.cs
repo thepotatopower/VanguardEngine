@@ -26,8 +26,6 @@ namespace VanguardEngine
         public int no = -1;
         public int personaRide = -1;
         public string effect = "";
-        public bool faceup = false;
-        public bool upright = true;
         public bool overDress = false;
         public bool alchemagic = false;
         public int originalOwner = 0;

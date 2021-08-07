@@ -53,6 +53,7 @@ namespace VanguardEngine
         protected CardStates _cardStates = new CardStates();
         protected PlayerStates _player1States = new PlayerStates();
         protected PlayerStates _player2States = new PlayerStates();
+        protected Orientation _orientation = new Orientation();
         public event EventHandler<CardEventArgs> OnZoneChanged;
         public event EventHandler<CardEventArgs> OnZoneSwapped;
 
@@ -322,6 +323,11 @@ namespace VanguardEngine
             get => _player2States;
         }
 
+        public Orientation Orientation
+        {
+            get => _orientation;
+        }
+
         public int Turn
         {
             get => _turn;
@@ -393,10 +399,10 @@ namespace VanguardEngine
             cards.Clear();
             cards2.Clear();
             cards.Add(deck1[0].Clone());
-            cards[0].faceup = false;
+            _orientation.SetFaceUp(cards[0].tempID, false);
             _circles[FL.PlayerVanguard].Initialize(cards);
             cards2.Add(deck2[0].Clone());
-            cards2[0].faceup = false;
+            _orientation.SetFaceUp(cards2[0].tempID, false);
             _circles[FL.EnemyVanguard].Initialize(cards2);
             for (int i = 1; i < 4; i++)
             {
@@ -408,6 +414,7 @@ namespace VanguardEngine
                 _player2RideDeck.Initialize(cards);
                 cards.Clear();
             }
+            cards2.Clear();
             for (int i = 4; i < 50; i++)
             {
                 cards.Add(deck1[i].Clone());
@@ -579,8 +586,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.faceup = true;
-            card.upright = true;
+            _field.Orientation.SetFaceUp(card.tempID, true);
+            _field.Orientation.SetUpRight(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
 
@@ -1111,6 +1118,8 @@ namespace VanguardEngine
             args = new CardEventArgs();
             args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());
             args.currentLocation = new Tuple<int, int>(location, _FL);
+            args.faceup = _field.Orientation.IsFaceUp(card.tempID);
+            args.upright = _field.Orientation.IsUpRight(card.tempID);
             args.card = card;
             ActivateEvent();
             if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
@@ -1228,8 +1237,8 @@ namespace VanguardEngine
                 else
                     return _field.Player2RideDeck.Add(card);
             }
-            card.faceup = false;
-            card.upright = true;
+            _field.Orientation.SetFaceUp(card.tempID, false);
+            _field.Orientation.SetUpRight(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1243,8 +1252,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.faceup = false;
-            card.upright = true;
+            _field.Orientation.SetFaceUp(card.tempID, false);
+            _field.Orientation.SetUpRight(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1258,8 +1267,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.faceup = true;
-            card.upright = true;
+            _field.Orientation.SetFaceUp(card.tempID, true);
+            _field.Orientation.SetUpRight(card.tempID, true);
             base.AddToZone(card, bottom);
             return card;
         }
@@ -1274,8 +1283,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = false;
-            card.faceup = true;
+            _field.Orientation.SetUpRight(card.tempID, false);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1289,8 +1298,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = true;
-            card.faceup = true;
+            _field.Orientation.SetUpRight(card.tempID, true);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1304,8 +1313,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = true;
-            card.faceup = false;
+            _field.Orientation.SetUpRight(card.tempID, true);
+            _field.Orientation.SetFaceUp(card.tempID, false);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1319,8 +1328,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = false;
-            card.faceup = true;
+            _field.Orientation.SetUpRight(card.tempID, false);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1334,8 +1343,8 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = false;
-            card.faceup = true;
+            _field.Orientation.SetUpRight(card.tempID, false);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
     }
@@ -1349,9 +1358,89 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            card.upright = true;
-            card.faceup = true;
+            _field.Orientation.SetUpRight(card.tempID, true);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class Orientation
+    {
+        bool[] _faceup = new bool[200];
+        bool[] _upright = new bool[200];
+
+        public EventHandler<CardEventArgs> FaceUpChanged;
+        public EventHandler<CardEventArgs> UpRightChanged;
+
+        public Orientation()
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                _faceup[i] = false;
+                _upright[i] = true; 
+            }
+        }
+
+        public void SetFaceUp(int tempID, bool faceup)
+        {
+            if (tempID >= 0)
+            {
+                _faceup[tempID] = faceup;
+            }
+        }
+
+        public void SetUpRight(int tempID, bool upright)
+        {
+            if (tempID >= 0)
+            {
+                _faceup[tempID] = upright;
+            }
+        }
+
+        public void Rotate(int tempID, bool upright)
+        {
+            if (tempID >= 0)
+            {
+                bool temp = _upright[tempID];
+                _faceup[tempID] = upright;
+                if (temp != upright && UpRightChanged != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.i = tempID;
+                    args.upright = upright;
+                    UpRightChanged(this, args);
+                }
+            }
+        }
+
+        public void Flip(int tempID, bool faceup)
+        {
+            if (tempID >= 0)
+            {
+                bool temp = _faceup[tempID];
+                _faceup[tempID] = faceup;
+                if (temp != faceup && FaceUpChanged != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.i = tempID;
+                    args.faceup = faceup;
+                    FaceUpChanged(this, args);
+                }
+            }
+        }
+
+        public bool IsFaceUp(int tempID)
+        {
+            if (tempID >= 0)
+                return _faceup[tempID];
+            return false;
+        }
+
+        public bool IsUpRight(int tempID)
+        {
+            if (tempID >= 0)
+                return _upright[tempID];
+            return false;
         }
     }
 

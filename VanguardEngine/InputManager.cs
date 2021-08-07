@@ -15,6 +15,8 @@ namespace VanguardEngine
         public bool bool_input;
         public int int_input;
         public int int_input2;
+        public int int_input3;
+        public int int_input4;
         public List<int> intlist_input = new List<int>();
         public List<Ability> _abilities = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
@@ -790,6 +792,12 @@ namespace VanguardEngine
         public const int ActivateACT = 11;
         public const int ActivateOrder = 12;
         public const int End = 8;
+    }
+
+    public class BattlePhaseAction
+    {
+        public const int Attack = 5;
+        public const int End = 4;
     }
 }
 

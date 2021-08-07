@@ -107,6 +107,8 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnRetire;
         public event EventHandler<CardEventArgs> OnZoneChanged;
         public event EventHandler<CardEventArgs> OnZoneSwapped;
+        public event EventHandler<CardEventArgs> OnFaceUpChanged;
+        public event EventHandler<CardEventArgs> OnUpRightChanged;
 
         public void Initialize(int playerID, Field field)
         {
@@ -189,6 +191,8 @@ namespace VanguardEngine
             CardStates = _field.CardStates;
             _field.OnZoneChanged += _fieldOnZoneChanged;
             _field.OnZoneSwapped += _fieldOnZoneSwapped;
+            _field.Orientation.FaceUpChanged += _fieldOnFaceUpChanged;
+            _field.Orientation.UpRightChanged += _fieldOnUpRightChanged;
         }
 
         void _fieldOnZoneChanged(object sender, CardEventArgs e)
@@ -206,6 +210,23 @@ namespace VanguardEngine
                 OnZoneSwapped(this, e);
             }
         }
+
+        void _fieldOnFaceUpChanged(object sender, CardEventArgs e)
+        {
+            if (OnFaceUpChanged != null)
+            {
+                OnFaceUpChanged(this, e);
+            }
+        }
+
+        void _fieldOnUpRightChanged(object sender, CardEventArgs e)
+        {
+            if (OnUpRightChanged != null)
+            {
+                OnUpRightChanged(this, e);
+            }
+        }
+
         public int Turn
         {
             get => _field.Turn;
@@ -547,7 +568,7 @@ namespace VanguardEngine
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
                 if (_field.GetUnit(i) != null)
-                    _field.GetUnit(i).upright = true;
+                    _field.Orientation.SetUpRight(_field.GetUnit(i).tempID, true);
             }
         }
 
@@ -577,11 +598,11 @@ namespace VanguardEngine
             string pstand, estand;
             List<Card> hand = EnemyHand.GetCards();
             List<Card> GC = _field.GC.GetCards();
-            if (_field.GetUnit(EnemyVanguard).upright)
+            if (_field.Orientation.IsUpRight(_field.GetUnit(EnemyVanguard).tempID))
                 estand = "S";
             else
                 estand = "R";
-            if (_field.GetUnit(PlayerVanguard).upright)
+            if (_field.Orientation.IsUpRight(_field.GetUnit(PlayerVanguard).tempID))
                 pstand = "S";
             else
                 pstand = "R";
@@ -605,7 +626,7 @@ namespace VanguardEngine
             if (_field.GetUnit(location) != null)
             {
                 output = CalculatePowerOfUnit(location) + " G" + _field.GetUnit(location).grade + " ";
-                if (_field.GetUnit(location).upright)
+                if (_field.Orientation.IsUpRight(_field.GetUnit(location).tempID))
                     output += "S";
                 else
                     output += "R";
@@ -765,7 +786,7 @@ namespace VanguardEngine
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
                 card = _field.GetUnit(i);
-                if (card != null && card.upright && !_field.CardStates.HasState(card.tempID, CardState.CannotAttack))
+                if (card != null && _field.Orientation.IsUpRight(card.tempID) && !_field.CardStates.HasState(card.tempID, CardState.CannotAttack))
                 {
                     if (_field.GetRow(i) == 0 || _field.CardStates.HasState(card.tempID, CardState.CanAttackFromBackRow))
                         cards.Add(card);
@@ -987,7 +1008,7 @@ namespace VanguardEngine
             for (i = 0; i < damage.Count; i++)
             {
                 output = i + 1 + ". " + damage[i].name + " ";
-                if (damage[i].faceup == false)
+                if (!_field.Orientation.IsFaceUp(damage[i].tempID))
                     Console.WriteLine(output + "(facedown).");
                 else
                     Console.WriteLine(output + "(faceup).");
@@ -1065,18 +1086,18 @@ namespace VanguardEngine
 
         public bool CanAttack()
         {
-            if (_field.GetUnit(PlayerVanguard).upright || (_field.GetUnit(PlayerFrontLeft) != null && _field.GetUnit(PlayerFrontLeft).upright) || (_field.GetUnit(PlayerFrontRight) != null && _field.GetUnit(PlayerFrontRight).upright))
+            if (_field.Orientation.IsUpRight(_field.GetUnit(PlayerVanguard).tempID) || (_field.GetUnit(PlayerFrontLeft) != null && IsUpRight(_field.GetUnit(PlayerFrontLeft))) || (_field.GetUnit(PlayerFrontRight) != null && IsUpRight(_field.GetUnit(PlayerFrontRight))))
                 return true;
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
                 if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
                 {
-                    if (_field.GetUnit(i) != null && _field.GetUnit(i).upright)
+                    if (_field.GetUnit(i) != null && _field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
                         return true;
                 }
                 else if (_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CanAttackFromBackRow))
                 {
-                    if (_field.GetUnit(i) != null && _field.GetUnit(i).upright)
+                    if (_field.GetUnit(i) != null && _field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
                         return true;
                 }
             }
@@ -1105,9 +1126,9 @@ namespace VanguardEngine
 
         public bool CanBoost(Card card)
         {
-            if (!MyStates.HasState(PlayerState.CannotBoost))
+            if (MyStates.HasState(PlayerState.CannotBoost))
                 return false;
-            if (card.upright)
+            if (IsUpRight(card))
             {
                 if (card.skill == 0 || _field.CardStates.GetValues(card.tempID, CardState.BonusSkills).Contains(Skill.Boost))
                     return true;
@@ -1435,7 +1456,7 @@ namespace VanguardEngine
                 _field.RideUnit(circle, ToBeCalled);
             }
             if (!standing)
-                ToBeCalled.upright = false;
+                _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
             if (overDress)
                 Console.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else
@@ -1587,48 +1608,41 @@ namespace VanguardEngine
 
         }
 
-        public void Boost()
+        public int GetBooster(int attacker)
         {
-            if (_field.Attacker == PlayerFrontLeft)
+            if (GetCircle(_field.CardCatalog[attacker]) == PlayerFrontLeft)
             {
-                _field.GetUnit(PlayerBackLeft).upright = false;
-                _field.Booster = PlayerBackLeft;
-                Console.WriteLine("----------\n" + _field.GetUnit(PlayerBackLeft).name + " boosts " + _field.GetUnit(PlayerFrontLeft).name + "!");
+                return PlayerBackLeft;
             }
-            else if (_field.Attacker == PlayerVanguard)
+            else if (GetCircle(_field.CardCatalog[attacker]) == PlayerVanguard)
             {
-                _field.GetUnit(PlayerBackCenter).upright = false;
-                _field.Booster = PlayerBackCenter;
-                Console.WriteLine("----------\n" + _field.GetUnit(PlayerBackCenter).name + " boosts " + _field.GetUnit(PlayerVanguard).name + "!");
+                return PlayerBackCenter;
             }
-            else if (_field.Attacker == PlayerFrontRight)
+            else if (GetCircle(_field.CardCatalog[attacker]) == PlayerFrontRight)
             {
-                _field.GetUnit(PlayerBackRight).upright = false;
-                _field.Booster = PlayerBackRight;
-                Console.WriteLine("----------\n" + _field.GetUnit(PlayerBackRight).name + " boosts " + _field.GetUnit(PlayerFrontRight).name + "!");
+                return PlayerBackRight;
             }
-            if (OnBoost != null)
-            {
-                CardEventArgs args = new CardEventArgs();
-                args.playerID = _playerID;
-                args.card = _field.GetUnit(_field.Booster);
-                OnBoost(this, args);
-            }
+            return -1;
         }
 
-        public void SetAttacker(int selection)
+        public void SetAttacker(int tempID)
         {
-            _field.Attacker = GetCircle(_field.CardCatalog[selection]);
+            _field.Attacker = GetCircle(_field.CardCatalog[tempID]);
         }
 
-        public void InitiateAttack(int target)
+        public void InitiateAttack(int booster, int target)
         {
             Card Attacker = _field.GetUnit(_field.Attacker);
             Card Attacked = _field.CardCatalog[target];
             int circle = GetCircle(Attacked);
-            Attacker.upright = false;
+            _field.Orientation.Rotate(Attacker.tempID, false);
             _field.Attacker = GetCircle(Attacker);
             _field.Attacked.Add(Attacked);
+            if (booster >= 0)
+            {
+                _field.Booster = booster;
+                _field.Orientation.Rotate(_field.GetUnit(_field.Booster).tempID, false);
+            }
             if (_field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
             {
                 if (GetCircle(Attacked) == EnemyFrontLeft)
@@ -1666,6 +1680,8 @@ namespace VanguardEngine
                 CardEventArgs args = new CardEventArgs();
                 args.playerID = _playerID;
                 args.card = Attacker;
+                foreach (Card attacked in _field.Attacked)
+                    args.intList.Add(attacked.tempID);
                 args.i = Attacked.tempID;
                 OnAttack(this, args);
             }
@@ -2140,9 +2156,9 @@ namespace VanguardEngine
         {
             Card target = FindActiveUnit(selection);
             _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
-            if (!target.upright)
+            if (!IsUpRight(target))
                 _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(target);
-            target.upright = true;
+            _field.Orientation.SetUpRight(target.tempID, true);
         }
 
         public void Heal(int selection)
@@ -2434,7 +2450,7 @@ namespace VanguardEngine
             int faceup = 0;
             foreach (Card card in PlayerDamage.GetCards())
             {
-                if (card.faceup)
+                if (IsFaceUp(card))
                     faceup++;
             }
             if (faceup + _alchemagicFreeCBAvailable < count)
@@ -2466,7 +2482,7 @@ namespace VanguardEngine
                 {
                     if (card.tempID == tempID)
                     {
-                        card.faceup = false;
+                        _field.Orientation.SetFaceUp(card.tempID, false);
                         _CBUsed++;
                         break;
                     }
@@ -2498,7 +2514,7 @@ namespace VanguardEngine
         {
             foreach (int tempID in cardsToCharge)
             {
-                _field.CardCatalog[tempID].faceup = true;
+                _field.Orientation.SetFaceUp(tempID, true);
             }
         }
 
@@ -2531,9 +2547,9 @@ namespace VanguardEngine
             _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
             foreach (int tempID in cardsToStand)
             {
-                if (_field.CardCatalog[tempID].upright == false)
+                if (!_field.Orientation.IsUpRight(tempID))
                 {
-                    _field.CardCatalog[tempID].upright = true;
+                    _field.Orientation.SetUpRight(tempID, true);
                     _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(_field.CardCatalog[tempID]);
                 }
             }
@@ -2543,7 +2559,7 @@ namespace VanguardEngine
         {
             foreach (int tempID in cardsToRest)
             {
-                _field.CardCatalog[tempID].upright = false;
+                _field.Orientation.SetUpRight(tempID, false);
             }
         }
 
@@ -2555,7 +2571,7 @@ namespace VanguardEngine
             foreach (int tempID in cardsToReveal)
             {
                 card = _field.CardCatalog[tempID];
-                card.faceup = true;
+                _field.Orientation.SetFaceUp(card.tempID, true);
                 PlayerRevealed.Add(card);
                 if (PlayerHand.Contains(card))
                     dialogue = "hand";
@@ -2578,7 +2594,7 @@ namespace VanguardEngine
             //foreach (Card card in PlayerRevealed)
             //{
             //    if (card.location == Location.EnemyHand || card.location == Location.Deck)
-            //        card.faceup = false;
+            //        IsFaceUp(card) = false;
             //}
             PlayerRevealed.Clear();
         }
@@ -2870,6 +2886,16 @@ namespace VanguardEngine
                 circle == FL.EnemyFrontRight)
                 return true;
             return false;
+        }
+
+        public bool IsUpRight(Card card)
+        {
+            return _field.Orientation.IsUpRight(card.tempID);
+        }
+
+        public bool IsFaceUp(Card card)
+        {
+            return _field.Orientation.IsFaceUp(card.tempID);
         }
 
         public class Direction

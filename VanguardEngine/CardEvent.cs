@@ -11,6 +11,9 @@ namespace VanguardEngine
         public Card card { get; set; }
         public List<Card> cardList { get; set; }
         public int playerID { get; set; }
+        public List<int> intList { get; set; }
+        public bool faceup { get; set; }
+        public bool upright { get; set; }
         public int i { get; set; }
         public bool b { get; set; }
         public Tuple<int, int> previousLocation { get; set; }
@@ -20,6 +23,7 @@ namespace VanguardEngine
         public CardEventArgs()
         {
             cardList = new List<Card>();
+            intList = new List<int>();
         }
     }
 }

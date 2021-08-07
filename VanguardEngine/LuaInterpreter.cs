@@ -880,7 +880,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.upright)
+                            if (_player1.IsUpRight(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -891,7 +891,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (!card.upright)
+                            if (!_player1.IsUpRight(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -957,7 +957,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.faceup)
+                            if (_player1.IsFaceUp(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -968,7 +968,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (!card.faceup)
+                            if (!_player1.IsFaceUp(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -1343,7 +1343,7 @@ namespace VanguardEngine
             int faceupCards = 0;
             foreach (Card card in damage)
             {
-                if (card.faceup)
+                if (_player1.IsFaceUp(card))
                     faceupCards++;
             }
             if (_withAlchemagic && _card.orderType == OrderType.Normal && (_player1.CanAlchemagicDiff() || _player1.CanAlchemagicSame()) && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
@@ -1390,7 +1390,7 @@ namespace VanguardEngine
             int count = 0;
             foreach (Card card in units)
             {
-                if (!card.upright)
+                if (!_player1.IsUpRight(card))
                     count++;
             }
             if (count < _params[paramNum - 1].Counts[0])
@@ -1659,7 +1659,7 @@ namespace VanguardEngine
             List<Card> canCB = new List<Card>();
             foreach (Card card in _player1.GetDamageZone())
             {
-                if (card.faceup)
+                if (_player1.IsFaceUp(card))
                     canCB.Add(card);
             }
             _cardFight.CounterBlast(_player1, _player2, canCB, GetCount(paramNum), GetMin(paramNum));
@@ -1682,7 +1682,7 @@ namespace VanguardEngine
             List<Card> canCC = new List<Card>();
             foreach (Card card in damage)
             {
-                if (!card.faceup)
+                if (!_player1.IsFaceUp(card))
                     canCC.Add(card);
             }
             if (canCC.Count > 0)
@@ -1876,7 +1876,7 @@ namespace VanguardEngine
             List<Card> canStand = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
-                if (!card.upright)
+                if (!_player1.IsUpRight(card))
                     canStand.Add(card);
             }
             _cardFight.Stand(_player1, _player2, canStand, _params[paramNum - 1].Counts[0], true);
@@ -1888,7 +1888,7 @@ namespace VanguardEngine
             List<int> canStand = new List<int>();
             foreach (Card card in cardsToSelect)
             {
-                if (!card.upright)
+                if (!_player1.IsUpRight(card))
                     canStand.Add(card.tempID);
             }
             _cardFight.Stand(_player1, _player2, canStand);
@@ -1900,7 +1900,7 @@ namespace VanguardEngine
             List<Card> canRest = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
-                if (card.upright)
+                if (_player1.IsUpRight(card))
                     canRest.Add(card);
             }
             _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);

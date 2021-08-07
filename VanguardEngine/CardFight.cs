@@ -511,6 +511,9 @@ namespace VanguardEngine
         public void BattlePhaseMenu(Player player1, Player player2)
         {
             int selection;
+            int booster = -1;
+            int attacker;
+            int target;
             CardEventArgs args;
             if (OnBattlePhase != null)
             {
@@ -530,15 +533,27 @@ namespace VanguardEngine
                         BrowseField(player1);
                     else if (selection == 3)
                     {
-                        Attack(player1, player2);
+                        attacker = _inputManager.SelectAttackingUnit();
+                        player1.SetAttacker(attacker);
+                        if (player1.CanBeBoosted())
+                        {
+                            Console.WriteLine("----------\nBoost?");
+                            if (_inputManager.YesNo(player1, "Boost?"))
+                            {
+                                booster = player1.GetBooster(attacker);
+                            }
+                        }
+                        target = _inputManager.SelectUnitToAttack();
+                        Attack(player1, player2, booster, target);
                         if (_gameOver)
                             return;
                     }
-                    else if (selection == 4)
+                    else if (selection == BattlePhaseAction.End)
                         break;
-                    else if (selection == 5) //for use outside of console only
+                    else if (selection == BattlePhaseAction.Attack) //for use outside of console only
                     {
-                        //Attack(player1, player2, _inputManager.intlist_input[0], _inputManager.intlist_input[1]);
+                        if (_inputManager.int_input3 >= 0)
+                            Attack(player1, player2,  _inputManager.int_input2, _inputManager.int_input3);
                     }
                     else
                         break;
@@ -548,29 +563,15 @@ namespace VanguardEngine
             }
         }
 
-        public void Attack(Player player1, Player player2)
+        public void Attack(Player player1, Player player2, int booster, int target)
         {
             int selection;
             int selection2;
             int drive;
             int critical;
-            int attacker;
-            int target;
             List<int> selections;
             bool intercept = false;
-            selection = _inputManager.SelectAttackingUnit();
-            player1.SetAttacker(selection);
-            target = _inputManager.SelectUnitToAttack();
-            player1.InitiateAttack(target);
-
-            if (player1.CanBeBoosted())
-            {
-                Console.WriteLine("----------\nBoost?");
-                if (_inputManager.YesNo(player1, PromptType.Boost))
-                {
-                    player1.Boost();
-                }
-            }
+            player1.InitiateAttack(booster, target);
             _playTimings.AddPlayTiming(Activation.OnAttack);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
