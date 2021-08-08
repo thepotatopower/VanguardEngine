@@ -29,7 +29,6 @@ namespace VanguardEngine
         protected Card _lastOrderPlayed = null;
         protected Dictionary<int, List<Card>> _stoodByCardEffect = new Dictionary<int, List<Card>>();
         protected Dictionary<int, List<Card>> _retiredForPlayerCost = new Dictionary<int, List<Card>>();
-        //protected Dictionary<int, List<Tuple<int, int>>> _givenAbilities = new Dictionary<int, List<Tuple<int, int>>>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
@@ -1682,7 +1681,7 @@ namespace VanguardEngine
                 args.card = Attacker;
                 foreach (Card attacked in _field.Attacked)
                     args.intList.Add(attacked.tempID);
-                args.i = Attacked.tempID;
+                args.currentPower = CalculatePowerOfUnit(_field.Attacker);
                 OnAttack(this, args);
             }
         }

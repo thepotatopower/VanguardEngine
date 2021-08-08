@@ -9,6 +9,9 @@ namespace VanguardEngine
     public class CardEventArgs : EventArgs
     {
         public Card card { get; set; }
+        public int currentPower { get; set; }
+        public int currentCritical { get; set; }
+        public int currentSoul { get; set; }
         public List<Card> cardList { get; set; }
         public int playerID { get; set; }
         public List<int> intList { get; set; }

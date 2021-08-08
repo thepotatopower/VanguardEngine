@@ -1393,7 +1393,7 @@ namespace VanguardEngine
         {
             if (tempID >= 0)
             {
-                _faceup[tempID] = upright;
+                _upright[tempID] = upright;
             }
         }
 
@@ -1402,7 +1402,7 @@ namespace VanguardEngine
             if (tempID >= 0)
             {
                 bool temp = _upright[tempID];
-                _faceup[tempID] = upright;
+                _upright[tempID] = upright;
                 if (temp != upright && UpRightChanged != null)
                 {
                     CardEventArgs args = new CardEventArgs();
