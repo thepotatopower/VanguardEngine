@@ -681,11 +681,10 @@ namespace VanguardEngine
                 if (_query.Contains("retire") && _player1.CanCountAsTwoRetires(cardsToSelect[selection].tempID) && !_player1.IsEnemy(cardsToSelect[selection].tempID))
                     bonus++;
                 if (intlist_input.Count + bonus >= min && selection == cardsToSelect.Count)
-                    oSignalEvent.Set();
+                    return;
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);
             }
-            oSignalEvent.Set();
         }
 
         public int SelectOption(Player actingPlayer, string[] list)
@@ -798,6 +797,13 @@ namespace VanguardEngine
     {
         public const int Attack = 5;
         public const int End = 4;
+    }
+
+    public class GuardStepAction
+    {
+        public const int Guard = 4;
+        public const int End = 6;
+        public const int BlitzOrder = 7;
     }
 }
 

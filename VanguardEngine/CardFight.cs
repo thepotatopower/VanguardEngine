@@ -606,7 +606,7 @@ namespace VanguardEngine
                         BrowseField(player2);
                     else if (selection == 3)
                         player2.PrintShield();
-                    else if (selection == 4)
+                    else if (selection == GuardStepAction.Guard)
                     {
                         if (player2.GetAttackedCards().Count > 1)
                             selection2 = _inputManager.SelectCardToGuard();
@@ -633,7 +633,7 @@ namespace VanguardEngine
                         else
                             Console.WriteLine("Already activated order this turn.");
                     }
-                    else if (selection == 6) // end guard
+                    else if (selection == GuardStepAction.End) // end guard
                     {
                         break;
                     }

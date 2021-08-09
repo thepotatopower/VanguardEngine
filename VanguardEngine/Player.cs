@@ -10,6 +10,8 @@ namespace VanguardEngine
         protected int _damage = 0;
         protected int _startingTurn = -1;
         protected bool _guarding = false;
+        protected int[] _recordedAttackValues = new int[20];
+        protected Dictionary<int, int> _recordedShieldValues = new Dictionary<int, int>();
         protected Dictionary<int, List<Card>> _riddenOnThisTurn = new Dictionary<int, List<Card>>();
         protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
         protected Dictionary<int, List<Card>> _lastPlacedOnGC = new Dictionary<int, List<Card>>();
@@ -108,6 +110,8 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnZoneSwapped;
         public event EventHandler<CardEventArgs> OnFaceUpChanged;
         public event EventHandler<CardEventArgs> OnUpRightChanged;
+        public event EventHandler<CardEventArgs> OnAttackValueChanged;
+        public event EventHandler<CardEventArgs> OnShieldValueChanged;
 
         public void Initialize(int playerID, Field field)
         {
@@ -192,6 +196,42 @@ namespace VanguardEngine
             _field.OnZoneSwapped += _fieldOnZoneSwapped;
             _field.Orientation.FaceUpChanged += _fieldOnFaceUpChanged;
             _field.Orientation.UpRightChanged += _fieldOnUpRightChanged;
+            for (int i = 0; i < _recordedAttackValues.Length; i++)
+                _recordedAttackValues[i] = -1;
+        }
+
+        public void UpdateRecordedValues()
+        {
+            for (int i = 0; i <= PlayerVanguard; i++)
+            {
+                if (_field.GetUnit(i) != null)
+                {
+                    if (_recordedAttackValues[i] != CalculatePowerOfUnit(GetCircle(_field.GetUnit(i))))
+                    {
+                        _recordedAttackValues[i] = CalculatePowerOfUnit(GetCircle(_field.GetUnit(i)));
+                        CardEventArgs args = new CardEventArgs();
+                        args.circle = i;
+                        args.currentPower = _recordedAttackValues[i];
+                        if (OnAttackValueChanged != null)
+                            OnAttackValueChanged(this, args);
+                    }
+                }
+            }
+            foreach (Card attacked in _field.Attacked)
+            {
+                if ((_recordedShieldValues.ContainsKey(GetCircle(attacked)) && _recordedShieldValues[GetCircle(attacked)] != CalculateShield(attacked.tempID)) ||
+                    !_recordedShieldValues.ContainsKey(GetCircle(attacked)))
+                {
+                    _recordedShieldValues[GetCircle(attacked)] = CalculateShield(attacked.tempID);
+                    if (OnShieldValueChanged != null)
+                    {
+                        CardEventArgs args = new CardEventArgs();
+                        args.circle = GetCircle(attacked);
+                        args.currentShield = _recordedShieldValues[GetCircle(attacked)];
+                        OnShieldValueChanged(this, args);
+                    }
+                }
+            }
         }
 
         void _fieldOnZoneChanged(object sender, CardEventArgs e)
@@ -200,6 +240,7 @@ namespace VanguardEngine
             {
                 OnZoneChanged(this, e);
             }
+            UpdateRecordedValues();
         }
 
         void _fieldOnZoneSwapped(object sender, CardEventArgs e)
@@ -208,6 +249,7 @@ namespace VanguardEngine
             {
                 OnZoneSwapped(this, e);
             }
+            UpdateRecordedValues();
         }
 
         void _fieldOnFaceUpChanged(object sender, CardEventArgs e)
@@ -216,6 +258,7 @@ namespace VanguardEngine
             {
                 OnFaceUpChanged(this, e);
             }
+            UpdateRecordedValues();
         }
 
         void _fieldOnUpRightChanged(object sender, CardEventArgs e)
@@ -224,6 +267,7 @@ namespace VanguardEngine
             {
                 OnUpRightChanged(this, e);
             }
+            UpdateRecordedValues();
         }
 
         public int Turn
@@ -325,7 +369,6 @@ namespace VanguardEngine
         {
             return EnemyPrisoners.GetCards();
         }
-
     
         public List<Card> GetDrop()
         {
@@ -935,7 +978,7 @@ namespace VanguardEngine
             Card attacked = _field.CardCatalog[tempID];
             if (!_field.Attacked.Contains(attacked))
                 return 0;
-            int shield = 0;
+            int shield = CalculatePowerOfUnit(GetCircle(_field.CardCatalog[tempID]));
             if (_field.Sentinel.Contains(attacked) || _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
@@ -947,6 +990,7 @@ namespace VanguardEngine
             {
                 if (_field.GC.Contains(card))
                 {
+                    shield += card.shield;
                     foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusShield))
                         shield += value;
                 }
@@ -1085,19 +1129,20 @@ namespace VanguardEngine
 
         public bool CanAttack()
         {
-            if (_field.Orientation.IsUpRight(_field.GetUnit(PlayerVanguard).tempID) || (_field.GetUnit(PlayerFrontLeft) != null && IsUpRight(_field.GetUnit(PlayerFrontLeft))) || (_field.GetUnit(PlayerFrontRight) != null && IsUpRight(_field.GetUnit(PlayerFrontRight))))
-                return true;
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
-                if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
+                if (_field.GetUnit(i) != null)
                 {
-                    if (_field.GetUnit(i) != null && _field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
-                        return true;
-                }
-                else if (_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CanAttackFromBackRow))
-                {
-                    if (_field.GetUnit(i) != null && _field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
-                        return true;
+                    if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
+                    {
+                        if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
+                            return true;
+                    }
+                    else if (_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CanAttackFromBackRow))
+                    {
+                        if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
+                            return true;
+                    }
                 }
             }
             return false;
@@ -2895,6 +2940,11 @@ namespace VanguardEngine
         public bool IsFaceUp(Card card)
         {
             return _field.Orientation.IsFaceUp(card.tempID);
+        }
+
+        public int GetLocation(Card card)
+        {
+            return _field.CardLocations[card.tempID].GetLocation();
         }
 
         public class Direction
