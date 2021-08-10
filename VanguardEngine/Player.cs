@@ -112,6 +112,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnUpRightChanged;
         public event EventHandler<CardEventArgs> OnAttackValueChanged;
         public event EventHandler<CardEventArgs> OnShieldValueChanged;
+        public event EventHandler<CardEventArgs> OnAttackEnds;
 
         public void Initialize(int playerID, Field field)
         {
@@ -2727,6 +2728,8 @@ namespace VanguardEngine
             _field.Booster = -1;
             _lastRevealedTriggers.Clear();
             _field.UnitsHit.Clear();
+            if (OnAttackEnds != null)
+                OnAttackEnds(this, new CardEventArgs());
         }
 
         public void EndTurn()
