@@ -10,7 +10,7 @@ namespace VanguardEngine
         protected int _damage = 0;
         protected int _startingTurn = -1;
         protected bool _guarding = false;
-        protected int[] _recordedAttackValues = new int[20];
+        protected Dictionary<int, RecordedCardValue> _recordedCardValues = new Dictionary<int, RecordedCardValue>();
         protected Dictionary<int, int> _recordedShieldValues = new Dictionary<int, int>();
         protected Dictionary<int, List<Card>> _riddenOnThisTurn = new Dictionary<int, List<Card>>();
         protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
@@ -110,7 +110,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnZoneSwapped;
         public event EventHandler<CardEventArgs> OnFaceUpChanged;
         public event EventHandler<CardEventArgs> OnUpRightChanged;
-        public event EventHandler<CardEventArgs> OnAttackValueChanged;
+        public event EventHandler<CardEventArgs> OnCardValueChanged;
         public event EventHandler<CardEventArgs> OnShieldValueChanged;
         public event EventHandler<CardEventArgs> OnAttackEnds;
 
@@ -197,8 +197,6 @@ namespace VanguardEngine
             _field.OnZoneSwapped += _fieldOnZoneSwapped;
             _field.Orientation.FaceUpChanged += _fieldOnFaceUpChanged;
             _field.Orientation.UpRightChanged += _fieldOnUpRightChanged;
-            for (int i = 0; i < _recordedAttackValues.Length; i++)
-                _recordedAttackValues[i] = -1;
         }
 
         public void UpdateRecordedValues()
@@ -207,19 +205,24 @@ namespace VanguardEngine
             {
                 if (_field.GetUnit(i) != null)
                 {
-                    if (_recordedAttackValues[i] != CalculatePowerOfUnit(GetCircle(_field.GetUnit(i))))
+                    if (!_recordedCardValues.ContainsKey(i) || 
+                        CardValueChanged(_recordedCardValues[i], CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID)))
                     {
-                        _recordedAttackValues[i] = CalculatePowerOfUnit(GetCircle(_field.GetUnit(i)));
+                        if (!_recordedCardValues.ContainsKey(i))
+                            _recordedCardValues[i] = new RecordedCardValue(CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID));
                         CardEventArgs args = new CardEventArgs();
                         args.circle = i;
-                        args.currentPower = _recordedAttackValues[i];
-                        if (OnAttackValueChanged != null)
-                            OnAttackValueChanged(this, args);
+                        args.currentPower = _recordedCardValues[i].currentPower;
+                        args.currentCritical = _recordedCardValues[i].currentCritical;
+                        if (OnCardValueChanged != null)
+                            OnCardValueChanged(this, args);
                     }
                 }
             }
             foreach (Card attacked in _field.Attacked)
             {
+                if (_field.GetUnit(GetCircle(attacked)) == null)
+                    continue;
                 if ((_recordedShieldValues.ContainsKey(GetCircle(attacked)) && _recordedShieldValues[GetCircle(attacked)] != CalculateShield(attacked.tempID)) ||
                     !_recordedShieldValues.ContainsKey(GetCircle(attacked)))
                 {
@@ -611,7 +614,7 @@ namespace VanguardEngine
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
                 if (_field.GetUnit(i) != null)
-                    _field.Orientation.SetUpRight(_field.GetUnit(i).tempID, true);
+                    _field.Orientation.Rotate(_field.GetUnit(i).tempID, true);
             }
         }
 
@@ -2095,6 +2098,7 @@ namespace VanguardEngine
             else
                 _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusPower, power);
             Console.WriteLine("----------\n" + power + " power to " + target.name + "!");
+            UpdateRecordedValues();
         }
 
         public void AddTempPower(List<int> selections, int power)
@@ -2104,6 +2108,7 @@ namespace VanguardEngine
                 _field.CardStates.AddUntilEndOfTurnValue(tempID, CardState.BonusPower, power);
                 Console.WriteLine("----------\n" + power + " power to " + _field.CardCatalog[tempID].name + "!");
             }
+            UpdateRecordedValues();
         }
 
         public void AddBonusDriveCheckPower(int power)
@@ -2133,6 +2138,7 @@ namespace VanguardEngine
             Card target = FindActiveUnit(selection);
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusCritical, critical);
             Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+            UpdateRecordedValues();
         }
 
         public void AddBattleOnlyCritical(int selection, int critical)
@@ -2140,6 +2146,7 @@ namespace VanguardEngine
             Card target = FindActiveUnit(selection);
             _field.CardStates.AddUntilEndOfBattleValue(target.tempID, CardState.BonusCritical, critical);
             Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+            UpdateRecordedValues();
         }
 
         public void DoublePower(int selection)
@@ -2214,8 +2221,14 @@ namespace VanguardEngine
 
         public void AddTriggerToHand()
         {
-            if (PlayerTrigger.Index(0) != null)
+            if (PlayerTrigger.Count() > 0)
                 PlayerHand.Add(PlayerTrigger.Index(0));
+        }
+
+        public void RemoveTrigger()
+        {
+            if (PlayerTrigger.Count() > 0)
+                _field.RemoveCard(PlayerTrigger.Index(0));
         }
 
         public void AddToHand(List<int> selections)
@@ -2261,7 +2274,7 @@ namespace VanguardEngine
 
         public void TakeDamage()
         {
-            if (PlayerTrigger.Index(0) != null)
+            if (PlayerTrigger.Count() > 0)
             {
                 PlayerDamage.Add(PlayerTrigger.Index(0));
                 Console.WriteLine("----------\nDamage taken!");
@@ -2950,12 +2963,35 @@ namespace VanguardEngine
             return _field.CardLocations[card.tempID].GetLocation();
         }
 
-        public class Direction
+        public bool CardValueChanged(RecordedCardValue previousValues, int currentPower, int currentCritical)
         {
-            public const int Up = 1;
-            public const int Right = 2;
-            public const int Down = 3;
-            public const int Left = 4;
+            if (previousValues.currentPower != currentPower || previousValues.currentCritical != currentCritical)
+            {
+                previousValues.currentPower = currentPower;
+                previousValues.currentCritical = currentCritical;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public class Direction
+    {
+        public const int Up = 1;
+        public const int Right = 2;
+        public const int Down = 3;
+        public const int Left = 4;
+    }
+
+    public class RecordedCardValue
+    {
+        public int currentPower = 0;
+        public int currentCritical = 0;
+
+        public RecordedCardValue(int power, int critical)
+        {
+            currentPower = power;
+            currentCritical = critical;
         }
     }
 }

@@ -738,8 +738,7 @@ namespace VanguardEngine
             {
                 if (player1.CanHeal())
                 {
-                    max = player1.PrintDamageZone();
-                    selection = SelectPrompt(max);
+                    selection = _inputManager.SelectFromList(player1, player1.GetDamageZone(), 1, 1, "Choose damage to heal.")[0];
                     player1.Heal(selection);
                 }
             }
@@ -753,6 +752,7 @@ namespace VanguardEngine
             }
             else if (check == Trigger.Over) //OVER TRIGGER
             {
+                player1.RemoveTrigger();
                 Draw(player1, player2, 1);
                 Console.WriteLine("Choose unit to give 1000000000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
@@ -762,7 +762,6 @@ namespace VanguardEngine
                     _playTimings.AddPlayTiming(Activation.OnOverTrigger);
                     ActivateAbilities(player1, player2);
                 }
-                return;
             }
             if (drivecheck)
             {
@@ -856,6 +855,8 @@ namespace VanguardEngine
             foreach (Ability ability in abilities)
             {
                 ability.Activate();
+                player1.UpdateRecordedValues();
+                player2.UpdateRecordedValues();
             }
         }
 

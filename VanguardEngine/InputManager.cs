@@ -56,10 +56,7 @@ namespace VanguardEngine
             while (selection < 1 || selection > max)
             {
                 input = Console.ReadLine();
-                if (int.TryParse(input, out selection))
-                    return selection;
-                else
-                    return 0;
+                int.TryParse(input, out selection);
             }
             return selection;
         }

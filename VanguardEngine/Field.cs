@@ -96,7 +96,7 @@ namespace VanguardEngine
 
         public Card GetUnit(int circle)
         {
-            if (_circles[circle] == null)
+            if (circle < 0 || _circles[circle] == null)
                 return null;
             return _circles[circle].Index(0);
         }
@@ -529,7 +529,8 @@ namespace VanguardEngine
 
         public void RemoveToken(Card card)
         {
-            _removedTokens.Add(card.tempID);
+            if (!_removedTokens.Contains(card.tempID))
+                _removedTokens.Add(card.tempID);
         }
 
         public void RemoveFromPseudoZones(Card card)
@@ -559,6 +560,12 @@ namespace VanguardEngine
                     _player2Drop.Add(rc.OverloadedUnits[0]);
             }
             return retired;
+        }
+
+        public void RemoveCard(Card card)
+        {
+            Zone zone = new Zone(this);
+            zone.Add(card);
         }
     }
 
@@ -599,8 +606,7 @@ namespace VanguardEngine
 
         protected override void ActivateEvent()
         {
-            if (previousZone.GetFL() != _FL)
-                base.ActivateEvent();
+            base.ActivateEvent();
         }
 
         public List<Card> GetSoul()
@@ -704,7 +710,6 @@ namespace VanguardEngine
 
     public class Soul : Zone
     {
-
         public Soul(Field field, int FL) : base(field)
         {
             location = Location.Soul;
@@ -718,8 +723,7 @@ namespace VanguardEngine
 
         protected override void ActivateEvent()
         {
-            if (previousZone.GetFL() != _FL)
-                base.ActivateEvent();
+            _field.ActivateEvent(args);
         }
     }
 
@@ -1113,7 +1117,10 @@ namespace VanguardEngine
                 else
                     _cards.Insert(0, card);
                 while (associatedCards.Count > 0)
+                {
                     AddToZone(associatedCards[0], bottom);
+                    associatedCards.RemoveAt(0);
+                }
             }
             args = new CardEventArgs();
             args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());

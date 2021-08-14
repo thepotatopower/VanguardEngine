@@ -523,8 +523,6 @@ namespace VanguardEngine
             _payingCost = false;
             DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
             _activated = true;
-            _player1.UpdateRecordedValues();
-            _player2.UpdateRecordedValues();
             return (int)Then.Number;
         }
 

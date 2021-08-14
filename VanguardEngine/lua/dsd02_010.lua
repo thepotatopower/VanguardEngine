@@ -36,6 +36,9 @@ function CanFullyResolve(n)
 	return false
 end
 
+function Cost(n)
+end
+
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddTempPower(1, 100000000)
