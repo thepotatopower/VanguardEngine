@@ -59,6 +59,8 @@ namespace VanguardEngine
         protected Zone EnemyTrigger;
         protected Zone PlayerOrder;
         protected Zone EnemyOrder;
+        protected Zone PlayerOrderArea;
+        protected Zone EnemyOrderArea;
         protected Zone PlayerRideDeck;
         protected Zone EnemyRideDeck;
         protected PseudoZone PlayerRevealed;
@@ -139,6 +141,8 @@ namespace VanguardEngine
                 EnemyTrigger = _field.Player2Trigger;
                 PlayerOrder = _field.Player1Order;
                 EnemyOrder = _field.Player2Order;
+                PlayerOrderArea = _field.Player1OrderArea;
+                EnemyOrderArea = _field.Player2OrderArea;
                 PlayerRideDeck = _field.Player1RideDeck;
                 EnemyRideDeck = _field.Player2RideDeck;
                 PlayerRevealed = _field.Player1Revealed;
@@ -168,6 +172,8 @@ namespace VanguardEngine
                 EnemyTrigger = _field.Player1Trigger;
                 PlayerOrder = _field.Player2Order;
                 EnemyOrder = _field.Player1Order;
+                PlayerOrderArea = _field.Player2OrderArea;
+                EnemyOrderArea = _field.Player1OrderArea;
                 PlayerRideDeck = _field.Player2RideDeck;
                 EnemyRideDeck = _field.Player1RideDeck;
                 PlayerRevealed = _field.Player2Revealed;
@@ -1641,21 +1647,6 @@ namespace VanguardEngine
             }
         }
 
-        public void ActivateACT(int selection)
-        {
-
-        }
-
-        public void ActivateOrder(int selection)
-        {
-
-        }
-
-        public void EnemyActivateOrder(int selection)
-        {
-
-        }
-
         public int GetBooster(int attacker)
         {
             if (GetCircle(_field.CardCatalog[attacker]) == PlayerFrontLeft)
@@ -2294,7 +2285,10 @@ namespace VanguardEngine
                 _playedOrder = card;
                 _lastOrderPlayed = card;
                 _orderPlayed = true;
-                PlayerOrder.Add(card);
+                if (card.orderType == OrderType.Normal || card.orderType == OrderType.Blitz)
+                    PlayerOrderArea.Add(card);
+                else
+                    PlayerOrder.Add(card);
             }
         }
 
@@ -2305,7 +2299,7 @@ namespace VanguardEngine
 
         public void EndOrder()
         {
-            if (PlayerOrder.Contains(_playedOrder) && (_playedOrder.orderType == OrderType.Normal || _playedOrder.orderType == OrderType.Blitz))
+            if (PlayerOrderArea.Contains(_playedOrder))
             {
                 PlayerDrop.Add(_playedOrder);
             }

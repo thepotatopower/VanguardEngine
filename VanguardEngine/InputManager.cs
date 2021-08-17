@@ -18,6 +18,7 @@ namespace VanguardEngine
         public int int_input3;
         public int int_input4;
         public List<int> intlist_input = new List<int>();
+        public Ability _ability = null;
         public List<Ability> _abilities = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
         public string string_input;
@@ -70,21 +71,21 @@ namespace VanguardEngine
         //    InputThread.Abort();
         //}
 
-        public virtual bool YesNo(Player actingPlayer, int request)
-        {
-            bool swapped = false;
-            if (actingPlayer._playerID != _player1._playerID)
-            {
-                SwapPlayers();
-                swapped = true;
-            }
-            prompt = request;
-            string_input = "";
-            YesNo_Input();
-            if (swapped)
-                SwapPlayers();
-            return bool_input;
-        }
+        //public virtual bool YesNo(Player actingPlayer, int request)
+        //{
+        //    bool swapped = false;
+        //    if (actingPlayer._playerID != _player1._playerID)
+        //    {
+        //        SwapPlayers();
+        //        swapped = true;
+        //    }
+        //    prompt = request;
+        //    string_input = "";
+        //    YesNo_Input();
+        //    if (swapped)
+        //        SwapPlayers();
+        //    return bool_input;
+        //}
 
         public virtual bool YesNo(Player actingPlayer, string query)
         {

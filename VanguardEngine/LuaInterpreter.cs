@@ -256,6 +256,11 @@ namespace VanguardEngine
             _abilityID = abilityID;
         }
 
+        public Card GetCard()
+        {
+            return _card;
+        }
+
         public void SetTimingCount(int timingCount)
         {
             _timingCount = timingCount;
@@ -2763,6 +2768,7 @@ namespace VanguardEngine
         public const int UnitsCalledThisTurn = 48;
         public const int UnitsCalledFromHandThisTurn = 49;
         public const int Anywhere = 50;
+        public const int OrderArea = 51;
     }
 
     class Query

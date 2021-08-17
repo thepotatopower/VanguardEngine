@@ -35,6 +35,8 @@ namespace VanguardEngine
         protected TriggerZone _player2Trigger;
         protected Order _player1Order;
         protected Order _player2Order;
+        protected OrderArea _player1OrderArea;
+        protected OrderArea _player2OrderArea;
         protected RideDeck _player1RideDeck;
         protected RideDeck _player2RideDeck;
         protected PseudoZone _player1Revealed;
@@ -216,6 +218,16 @@ namespace VanguardEngine
             get => _player2Order;
         }
 
+        public Zone Player1OrderArea
+        {
+            get => _player1OrderArea;
+        }
+
+        public Zone Player2OrderArea
+        {
+            get => _player2OrderArea;
+        }
+
         public PseudoZone Player1Revealed
         {
             get => _player1Revealed;
@@ -356,6 +368,8 @@ namespace VanguardEngine
             _player2Trigger = new TriggerZone(this);
             _player1Order = new Order(this);
             _player2Order = new Order(this);
+            _player1OrderArea = new OrderArea(this);
+            _player2OrderArea = new OrderArea(this);
             _player1RideDeck = new RideDeck(this);
             _player2RideDeck = new RideDeck(this);
             _player1Revealed = new PseudoZone(this);
@@ -1361,6 +1375,21 @@ namespace VanguardEngine
         public Order(Field field) : base(field)
         {
             location = Location.Order;
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            _field.Orientation.SetUpRight(card.tempID, true);
+            _field.Orientation.SetFaceUp(card.tempID, true);
+            return base.AddToZone(card, bottom);
+        }
+    }
+
+    public class OrderArea : Zone
+    {
+        public OrderArea(Field field) : base(field)
+        {
+            location = Location.OrderArea;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
