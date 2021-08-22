@@ -413,9 +413,13 @@ namespace VanguardEngine
             cards.Clear();
             cards2.Clear();
             cards.Add(deck1[0].Clone());
+            cards[0].originalOwner = 1;
+            cards[0].fromRideDeck = true;
             _orientation.SetFaceUp(cards[0].tempID, false);
             _circles[FL.PlayerVanguard].Initialize(cards);
             cards2.Add(deck2[0].Clone());
+            cards2[0].originalOwner = 2;
+            cards[0].fromRideDeck = true;
             _orientation.SetFaceUp(cards2[0].tempID, false);
             _circles[FL.EnemyVanguard].Initialize(cards2);
             for (int i = 1; i < 4; i++)
@@ -615,6 +619,7 @@ namespace VanguardEngine
         public virtual Card AddRide(Card card)
         {
             _soul.Add(_cards[0]);
+            //Log.WriteLine("placed on FL: " + _FL);
             return base.AddToZone(card, true);
         }
 
@@ -1113,10 +1118,20 @@ namespace VanguardEngine
             return new List<Card>();
         }
 
-        protected virtual Card AddToZone(Card card, bool bottom)
+        protected virtual void HandleAssociatedCards(Card card, List<Card> associatedCards)
+        {
+
+        }
+
+        protected virtual void ResetCard(Card card)
         {
             _field.CardStates.ResetCardValues(card.tempID);
             card.overDress = false;
+        }
+
+        protected virtual Card AddToZone(Card card, bool bottom)
+        {
+            ResetCard(card);
             previousZone = _field.CardLocations[card.tempID];
             List<Card> associatedCards = new List<Card>();
             if (previousZone != null)
@@ -1130,6 +1145,7 @@ namespace VanguardEngine
                     _cards.Add(card);
                 else
                     _cards.Insert(0, card);
+                HandleAssociatedCards(card, associatedCards);
                 while (associatedCards.Count > 0)
                 {
                     AddToZone(associatedCards[0], bottom);
@@ -1297,9 +1313,23 @@ namespace VanguardEngine
 
     public class GuardianCircle : Zone
     {
+        Dictionary<Card, Soul> _souls = new Dictionary<Card, Soul>();
+        Card cardBeingRemoved = null;
+
         public GuardianCircle(Field field) : base(field)
         {
             location = Location.GC;
+        }
+
+        protected override void HandleAssociatedCards(Card card, List<Card> associatedCards)
+        {
+            if (!_souls.ContainsKey(card))
+                _souls[card] = new Soul(_field, _FL);
+            foreach (Card c in associatedCards)
+            {
+                _souls[card].Add(c);
+            }
+            associatedCards.Clear();
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -1307,6 +1337,26 @@ namespace VanguardEngine
             _field.Orientation.SetUpRight(card.tempID, false);
             _field.Orientation.SetFaceUp(card.tempID, true);
             return base.AddToZone(card, bottom);
+        }
+
+        protected override List<Card> AssociatedCards()
+        {
+            if (cardBeingRemoved != null && _souls.ContainsKey(cardBeingRemoved))
+            {
+                return _souls[cardBeingRemoved].GetCards();
+            }
+            return new List<Card>();
+        }
+
+        protected override void ResetCard(Card card)
+        {
+            
+        }
+
+        protected override List<Card> Remove(Card card)
+        {
+            cardBeingRemoved = card;
+            return base.Remove(card);
         }
     }
 

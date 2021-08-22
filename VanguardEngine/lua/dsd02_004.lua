@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnRide, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -30,13 +30,9 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.Draw(1)
-		obj.OnRideAbilityResolved()
 	end
 	return 0
 end

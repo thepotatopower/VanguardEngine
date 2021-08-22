@@ -1,7 +1,7 @@
 -- Acrobat Presenter
 
 function NumberOfAbilities()
-	return 2
+	return 1
 end
 
 function NumberOfParams()
@@ -10,19 +10,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, true
-	elseif n == 2 then
-		return a.Then, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() or obj.IsBooster() then
-			return true
-		end
-	elseif n == 2 then 
-		if obj.InFinalRush() then
+		if obj.IsRearguard() and obj.VanguardIs("Diabolos, \"Violence\" Bruce") and (obj.IsAttackingUnit() or obj.IsBooster()) then
 			return true
 		end
 	end
@@ -32,21 +26,16 @@ end
 function CanFullyResolve(n) 
 	if n == 1 then
 		return true
-	elseif n == 2 then
-		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)
 	if n == 1 then
 		obj.SoulCharge(1)
-		return 2
-	elseif n == 2 then
-		obj.SoulCharge(1)
+		if obj.InFinalRush() then
+			obj.SoulCharge(1)
+		end
 	end
 	return 0
 end

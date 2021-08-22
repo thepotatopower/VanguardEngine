@@ -20,6 +20,7 @@ namespace VanguardEngine
         public List<int> intlist_input = new List<int>();
         public Ability _ability = null;
         public List<Ability> _abilities = new List<Ability>();
+        public List<Ability> _abilities2 = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
         public string string_input;
         public int prompt;
@@ -105,10 +106,10 @@ namespace VanguardEngine
 
         protected virtual void YesNo_Input()
         {
-            Console.WriteLine("----------");
+            Log.WriteLine("----------");
             if (string_input != "")
-                Console.WriteLine(string_input);
-            Console.WriteLine("1. Yes\n2. No");
+                Log.WriteLine(string_input);
+            Log.WriteLine("1. Yes\n2. No");
             int input = SelectPrompt(2);
             if (input == 1)
                 bool_input = true;
@@ -125,7 +126,7 @@ namespace VanguardEngine
 
         protected virtual void RPS_Input()
         {
-            Console.WriteLine("----------\nPlayer 1: Rock, Paper, or Scissors?\n" +
+            Log.WriteLine("----------\nPlayer 1: Rock, Paper, or Scissors?\n" +
                     "1. Rock\n" +
                     "2. Paper\n" +
                     "3. Scissors");
@@ -142,12 +143,12 @@ namespace VanguardEngine
             {
                 while (true)
                 {
-                    Console.WriteLine("----------\nDiscard " + int_input + " card(s).");
+                    Log.WriteLine("----------\nDiscard " + int_input + " card(s).");
                     for (int j = 0; j < hand.Count; j++)
-                        Console.WriteLine(j + 1 + ". " + hand[j].name);
+                        Log.WriteLine(j + 1 + ". " + hand[j].name);
                     selection = SelectPrompt(hand.Count) - 1;
                     if (intlist_input.Contains(hand[selection].tempID))
-                        Console.WriteLine("----------\nAlready choose that card.");
+                        Log.WriteLine("----------\nAlready choose that card.");
                     else
                     {
                         intlist_input.Add(hand[selection].tempID);
@@ -171,15 +172,15 @@ namespace VanguardEngine
             intlist_input.Clear();
             while (selection != hand.Count)
             {
-                Console.WriteLine("Choose card to mulligan.");
+                Log.WriteLine("Choose card to mulligan.");
                 for (int j = 0; j < hand.Count; j++)
                 {
                     if (intlist_input.Contains(hand[j].tempID))
-                        Console.WriteLine(j + 1 + ". " + hand[j].name + "(selected)");
+                        Log.WriteLine(j + 1 + ". " + hand[j].name + "(selected)");
                     else
-                        Console.WriteLine(j + 1 + ". " + hand[j].name);
+                        Log.WriteLine(j + 1 + ". " + hand[j].name);
                 }
-                Console.WriteLine(hand.Count + 1 + ". End mulligan.");
+                Log.WriteLine(hand.Count + 1 + ". End mulligan.");
                 selection = SelectPrompt(hand.Count + 1) - 1;
                 if (selection == hand.Count)
                     break;
@@ -199,7 +200,7 @@ namespace VanguardEngine
 
         protected virtual void SelectRidePhaseAction_Input()
         {
-            Console.WriteLine("----------\nChoose option.\n" +
+            Log.WriteLine("----------\nChoose option.\n" +
                     "1. Ride from Ride Deck.\n" +
                     "2. Ride from hand.\n" +
                     "3. End Ride Phase.");
@@ -215,7 +216,7 @@ namespace VanguardEngine
 
         protected virtual void SelectMainPhaseAction_Input()
         {
-            Console.WriteLine("----------\nChoose option.\n" +
+            Log.WriteLine("----------\nChoose option.\n" +
                     "1. See Hand\n" +
                     "2. See Field\n" +
                     "3. Call Rearguard\n" +
@@ -238,9 +239,9 @@ namespace VanguardEngine
         {
             int selection = 0;
             List<Card> cards = _player1.GetCallableRearguards();
-            Console.WriteLine("Choose Rearguard to call.");
+            Log.WriteLine("Choose Rearguard to call.");
             for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". " + cards[i].name);
+                Log.WriteLine(i + 1 + ". " + cards[i].name);
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
             oSignalEvent.Set();
@@ -271,7 +272,7 @@ namespace VanguardEngine
             bool proceed = false;
             while (!proceed)
             {
-                Console.WriteLine("----------\nChoose location.\n" +
+                Log.WriteLine("----------\nChoose location.\n" +
                             "1. Front left.\n" +
                             "2. Back left.\n" +
                             "3. Back middle.\n" +
@@ -301,7 +302,7 @@ namespace VanguardEngine
                     proceed = true;
                 }
                 else
-                    Console.WriteLine("This circle cannot be selected.");
+                    Log.WriteLine("This circle cannot be selected.");
             }
             oSignalEvent.Set();
         }
@@ -321,7 +322,7 @@ namespace VanguardEngine
             int_input = -1;
             while (int_input < 0)
             {
-                Console.WriteLine("Select a circle.");
+                Log.WriteLine("Select a circle.");
                 for (int i = 0; i < intlist_input.Count; i++)
                 {
                     output = (i + 1) + ". ";
@@ -329,7 +330,7 @@ namespace VanguardEngine
                         output += "Enemy Front Right.";
                     else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyFrontLeft))
                         output += "Enemy Front Left.";
-                    Console.WriteLine(output);
+                    Log.WriteLine(output);
                 }
                 int_input = SelectPrompt(intlist_input.Count);
             }
@@ -347,14 +348,14 @@ namespace VanguardEngine
         {
             while (true)
             {
-                Console.WriteLine("----------\nChoose column to move Rearguard(s).\n" +
+                Log.WriteLine("----------\nChoose column to move Rearguard(s).\n" +
                     "1. Left\n" +
                     "2. Right\n");
                 int_input = SelectPrompt(2) - 1;
                 if (_player1.CheckColumn(int_input))
                     oSignalEvent.Set();
                 else
-                    Console.WriteLine("No Rearguards in that column.");
+                    Log.WriteLine("No Rearguards in that column.");
             }
         }
 
@@ -371,16 +372,16 @@ namespace VanguardEngine
             int selection = cardsToSelect.Count + 1;
             while (selection == cardsToSelect.Count + 1)
             {
-                Console.WriteLine("Select rearguard to move.");
+                Log.WriteLine("Select rearguard to move.");
                 for (int i = 0; i < cardsToSelect.Count; i++)
-                    Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                    Log.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
                 selection = SelectPrompt(cardsToSelect.Count + 1);
             }
             int_input = cardsToSelect[selection - 1].tempID;
             selection = 5;
             while (selection == 5)
             {
-                Console.WriteLine("Choose a direction.\n" +
+                Log.WriteLine("Choose a direction.\n" +
                     "1. Up.\n2. Right.\n3. Down.\n4. Left.");
                 selection = SelectPrompt(5);
             }
@@ -396,7 +397,7 @@ namespace VanguardEngine
 
         protected virtual void SelectBattlePhaseAction_Input()
         {
-            Console.WriteLine("----------\nChoose option.\n" +
+            Log.WriteLine("----------\nChoose option.\n" +
                         "1. See Hand\n" +
                         "2. See Field\n" +
                         "3. Attack\n" +
@@ -415,9 +416,9 @@ namespace VanguardEngine
         {
             int selection = 0;
             List<Card> cards = _player1.GetCardsToAttackWith();
-            Console.WriteLine("Choose unit to attack with.");
+            Log.WriteLine("Choose unit to attack with.");
             for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". " + cards[i].name);
+                Log.WriteLine(i + 1 + ". " + cards[i].name);
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
             oSignalEvent.Set();
@@ -433,9 +434,9 @@ namespace VanguardEngine
         {
             int selection = 0;
             List<Card> cards = _player1.GetPotentialAttackTargets();
-            Console.WriteLine("Choose unit to attack.");
+            Log.WriteLine("Choose unit to attack.");
             for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". " + cards[i].name);
+                Log.WriteLine(i + 1 + ". " + cards[i].name);
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
             oSignalEvent.Set();
@@ -449,7 +450,7 @@ namespace VanguardEngine
 
         protected virtual void SelectGuardPhaseAction_Input()
         {
-            Console.WriteLine("----------\nGuard?\n" +
+            Log.WriteLine("----------\nGuard?\n" +
                         "1. See Hand.\n" +
                         "2. See Field.\n" +
                         "3. See Current Shield.\n" +
@@ -471,11 +472,11 @@ namespace VanguardEngine
             int selection = 0;
             string output;
             List<Card> cards = _player1.GetGuardableCards();
-            Console.WriteLine("Choose card to put on Guardian Circle.");
+            Log.WriteLine("Choose card to put on Guardian Circle.");
             for (int i = 0; i < cards.Count; i++)
             {
                 output = i + 1 + ". " + cards[i].name;
-                Console.WriteLine(output);
+                Log.WriteLine(output);
             }
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
@@ -493,11 +494,11 @@ namespace VanguardEngine
             int selection = 0;
             string output;
             List<Card> cards = _player1.GetAttackedCards();
-            Console.WriteLine("Choose card to guard.");
+            Log.WriteLine("Choose card to guard.");
             for (int i = 0; i < cards.Count; i++)
             {
                 output = i + 1 + ". " + cards[i].name;
-                Console.WriteLine(output);
+                Log.WriteLine(output);
             }
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
@@ -517,7 +518,7 @@ namespace VanguardEngine
             int selection = 0;
             List<Card> cards = _player1.GetActiveUnits();
             for (int i = 0; i < cards.Count; i++)
-                Console.WriteLine(i + 1 + ". " + cards[i].name);
+                Log.WriteLine(i + 1 + ". " + cards[i].name);
             selection = SelectPrompt(cards.Count) - 1;
             int_input = cards[selection].tempID;
             oSignalEvent.Set();
@@ -543,17 +544,17 @@ namespace VanguardEngine
         protected virtual void SelectAbility_Input()
         {
             string output = "";
-            Console.WriteLine("----------\nSelect effect to activate.");
+            Log.WriteLine("----------\nSelect effect to activate.");
             for (int i = 0; i < _abilities.Count; i++)
             {
                 output = (i + 1) + ". " + _abilities[i].Name;
                 if (!_abilities[i].CanFullyResolve())
                     output += " (May not fully resolve.)";
-                Console.WriteLine(output);
+                Log.WriteLine(output);
             }
             if (!CheckForMandatoryEffects(_abilities))
             {
-                Console.WriteLine(_abilities.Count + 1 + ". Don't activate effect.");
+                Log.WriteLine(_abilities.Count + 1 + ". Don't activate effect.");
                 int_input = SelectPrompt(_abilities.Count + 1) - 1;
             }
             else
@@ -581,7 +582,7 @@ namespace VanguardEngine
                 SwapPlayers();
                 swapped = true;
             }
-            Console.WriteLine("Choose order for card(s).");
+            Log.WriteLine("Choose order for card(s).");
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
             intlist_input.Clear();
@@ -603,11 +604,11 @@ namespace VanguardEngine
                     output = i + 1 + ". " + cardsToSelect[i].name;
                     if (newOrder.Contains(cardsToSelect[i]))
                         output += "(" + (newOrder.IndexOf(cardsToSelect[i]) + 1) + ")";
-                    Console.WriteLine(output);
+                    Log.WriteLine(output);
                 }
                 if (newOrder.Count == cardsToSelect.Count)
                 {
-                    Console.WriteLine(cardsToSelect.Count + 1 + ". Finish selecting.");
+                    Log.WriteLine(cardsToSelect.Count + 1 + ". Finish selecting.");
                     selection = SelectPrompt(cardsToSelect.Count + 1);
                 }
                 else
@@ -664,14 +665,14 @@ namespace VanguardEngine
             intlist_input.Clear();
             for (int j = 0; j < count; j++)
             {
-                Console.WriteLine(_query);
+                Log.WriteLine(_query);
                 for (int i = 0; i < cardsToSelect.Count; i++)
                 {
-                    Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                    Log.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
                 }
                 if (intlist_input.Count >= min)
                 {
-                    Console.WriteLine(cardsToSelect.Count + 1 + ". End selection.");
+                    Log.WriteLine(cardsToSelect.Count + 1 + ". End selection.");
                     selection = SelectPrompt(cardsToSelect.Count + 1) - 1;
                 }
                 else
@@ -703,10 +704,10 @@ namespace VanguardEngine
         protected void SelectOption_Input()
         {
             int selection;
-            Console.WriteLine("Choose an option.");
+            Log.WriteLine("Choose an option.");
             for (int i = 0; i < _list.Length; i++)
             {
-                Console.WriteLine(i + 1 + ". " + _list[i]);
+                Log.WriteLine(i + 1 + ". " + _list[i]);
             }
             selection = SelectPrompt(_list.Length);
             int_input = selection;
@@ -729,7 +730,7 @@ namespace VanguardEngine
 
         protected void SelectColumn_Input()
         {
-            Console.WriteLine("Choose column.\n" +
+            Log.WriteLine("Choose column.\n" +
                 "1. Left.\n" +
                 "2. Center.\n" +
                 "3. Right.");
@@ -752,10 +753,10 @@ namespace VanguardEngine
 
         protected void DisplayCards_Input()
         {
-            Console.WriteLine("----------");
+            Log.WriteLine("----------");
             for (int i = 0; i < cardsToSelect.Count; i++)
             {
-                Console.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
+                Log.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
             }
             oSignalEvent.Set();
         }
@@ -786,8 +787,7 @@ namespace VanguardEngine
         public const int CallFromPrison = 4;
         public const int CallFromHand = 9;
         public const int MoveRearguard = 10;
-        public const int ActivateACT = 11;
-        public const int ActivateOrder = 12;
+        public const int ActivateAbility = 11;
         public const int End = 8;
     }
 

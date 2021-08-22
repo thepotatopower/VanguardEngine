@@ -14,10 +14,9 @@ function GetParam(n)
 	end
 end
 
-
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.IsMandatory
 	end
 end
 
@@ -35,9 +34,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

@@ -18,15 +18,15 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.CanSuperiorCall(1, FL.PlayerBackCenter) then
+		if obj.LastPlacedOnVC() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -46,9 +46,6 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.SuperiorCall(1, FL.PlayerBackCenter)
@@ -56,8 +53,6 @@ function Activate(n)
 	elseif n == 2 then
 		if obj.InFinalRush() then
 			obj.SetAbilityPower(2, 5000)
-		else 
-			obj.SetAbilityPower(2, 0)
 		end
 	end
 	return 0

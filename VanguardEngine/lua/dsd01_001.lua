@@ -5,38 +5,34 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerHand, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.Drop, q.Grade, 0, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.UnitType, u.overDress
-	elseif n == 4 then
+	elseif n == 3 then
 		return q.Location, l.PlayerVC
-	elseif n == 5 then
-		return q.Location, l.Damage, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.Discard, 1
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttack, t.Auto, p.HasPrompt, p.CB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if not obj.Activated(n) and obj.IsVanguard() and obj.CanDiscard(1) then
+		if obj.IsVanguard() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.CanCB(5) then 
+		if obj.IsVanguard() and obj.IsAttackingUnit() then 
 			return true
 		end
 	end
@@ -45,7 +41,7 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(2) then
+		if obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -54,20 +50,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.Discard(1)
-	elseif n == 2 then
-		obj.CounterBlast(5)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(2)
+		obj.SuperiorCall(1)
 	elseif n == 2 then
+		obj.AddTempPower(2, 10000)
 		obj.AddTempPower(3, 10000)
-		obj.AddTempPower(4, 10000)
 	end
 	return 0
 end

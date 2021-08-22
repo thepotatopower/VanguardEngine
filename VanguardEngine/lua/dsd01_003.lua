@@ -19,9 +19,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnRide, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.IsMandatory
 	end
 end
 
@@ -47,13 +47,9 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.SuperiorCall(1)
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
 		obj.AddBattleOnlyPower(2, 2000)
 	end

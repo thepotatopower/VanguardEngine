@@ -10,19 +10,19 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerVC, q.Count, 1
+		return q.Location, l.PlayerVC, q.Other, o.Resting, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() and obj.CanStand(1) then
+		if obj.LastRevealedTrigger() and obj.Exists(1) then
 			return true
 		end
 	end
@@ -34,9 +34,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

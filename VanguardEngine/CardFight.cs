@@ -37,6 +37,13 @@ namespace VanguardEngine
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath)
         {
+            if (File.Exists("enginelog.txt"))
+            {
+                using (StreamWriter writer = new StreamWriter("enginelog.txt", false))
+                {
+                    writer.Write(string.Empty);
+                }
+            }
             List<Card> deck1;
             List<Card> deck2;
             Field field = new Field();
@@ -99,17 +106,19 @@ namespace VanguardEngine
                 player1 = _player2;
                 player2 = _player1;
             }
+            player1._startingTurn = 1;
+            player2._startingTurn = 2;
             Draw(player1, player2, 5);
             Draw(player2, player1, 5);
             if (player1 == _player1)
-                Console.WriteLine("----------\nPLAYER 1 GOES FIRST.");
+                Log.WriteLine("----------\nPLAYER 1 GOES FIRST.");
             else
             {
-                Console.WriteLine("----------\nPLAYER 2 GOES FIRST.");
+                Log.WriteLine("----------\nPLAYER 2 GOES FIRST.");
                 _inputManager.SwapPlayers();
             }
             Mulligan(player1, player2);
-            Console.WriteLine("----------\nSTAND UP! VANGUARD!");
+            Log.WriteLine("----------\nSTAND UP! VANGUARD!");
             player1.StandUpVanguard();
             player2.StandUpVanguard();
             _turn = 1;
@@ -137,30 +146,30 @@ namespace VanguardEngine
                 _phase = Phase.Draw;
                 if (OnDrawPhase != null)
                     OnDrawPhase(this, new CardEventArgs());
-                Console.WriteLine("----------\nSTAND AND DRAW");
+                Log.WriteLine("----------\nSTAND AND DRAW");
                 Draw(player1, player2, 1);
-                Console.WriteLine("----------\nRIDE PHASE");
+                Log.WriteLine("----------\nRIDE PHASE");
                 _phase = Phase.Ride;
                 RidePhaseMenu(player1, player2);
-                Console.WriteLine("----------\nMAIN PHASE");
+                Log.WriteLine("----------\nMAIN PHASE");
                 _phase = Phase.Main;
                 MainPhaseMenu(player1, player2);
                 if (_turn > 1)
                 {
-                    Console.WriteLine("----------\nBATTLE PHASE");
+                    Log.WriteLine("----------\nBATTLE PHASE");
                     _phase = Phase.Battle;
                     BattlePhaseMenu(player1, player2);
                 }
                 if (_gameOver)
                 {
                     if (player1 == _player1)
-                        Console.WriteLine("----------\nPLAYER 1 WINS.");
+                        Log.WriteLine("----------\nPLAYER 1 WINS.");
                     else
-                        Console.WriteLine("PLAYER 2 WINS.");
+                        Log.WriteLine("PLAYER 2 WINS.");
                     input = Console.ReadLine();
                     return;
                 }
-                Console.WriteLine("----------\nEND PHASE");
+                Log.WriteLine("----------\nEND PHASE");
                 _phase = Phase.End;
                 if (OnEndPhase != null)
                 {
@@ -177,14 +186,14 @@ namespace VanguardEngine
                 _turn++;
                 if (player1 == _player1)
                 {
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     player1 = _player2;
                     player2 = _player1;
                     _inputManager.SwapPlayers();
                 }
                 else
                 {
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                     player1 = _player1;
                     player2 = _player2;
                     _inputManager.SwapPlayers();
@@ -218,18 +227,18 @@ namespace VanguardEngine
             {
                 selection = _inputManager.SelectCardsToMulligan();
                 player1.MulliganCards(selection);
-                Console.WriteLine("----------\nNew hand: ");
+                Log.WriteLine("----------\nNew hand: ");
                 player1.PrintHand();
                 if (player1 == _player1)
                 {
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     player1 = _player2;
                     player2 = _player1;
                     _inputManager.SwapPlayers();
                 }
                 else
                 {
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                     player1 = _player1;
                     player2 = _player2;
                     _inputManager.SwapPlayers();
@@ -244,7 +253,7 @@ namespace VanguardEngine
             while (true)
             {
                 max = player1.PrintHand();
-                Console.WriteLine(max + ". Go back.");
+                Log.WriteLine(max + ". Go back.");
                 selection = SelectPrompt(max);
                 if (selection == max)
                     break;
@@ -300,7 +309,7 @@ namespace VanguardEngine
                         ActivateAbilities(player1, player2);
                     }
                     else
-                        Console.WriteLine("Invalid.");
+                        Log.WriteLine("Invalid.");
                 }
                 else if (selection == 2)
                 {
@@ -311,7 +320,7 @@ namespace VanguardEngine
                         ActivateAbilities(player1, player2);
                     }
                     else
-                        Console.WriteLine("Invalid.");
+                        Log.WriteLine("Invalid.");
                 }
                 else if (selection == RidePhaseAction.RideFromHand)
                 {
@@ -353,6 +362,10 @@ namespace VanguardEngine
             while (true)
             {
                 canSelect.Clear();
+                _inputManager._abilities.Clear();
+                _inputManager._abilities.AddRange(GetACTAbilities(player1));
+                if (!player1.OrderPlayed())
+                    _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
                 selection = _inputManager.SelectMainPhaseAction();
                 if (selection == 1)
                     BrowseHand(player1);
@@ -365,10 +378,10 @@ namespace VanguardEngine
                         input = _inputManager.SelectRearguardToCall();
                         canSelect.AddRange(player1.GetAvailableCircles(input));
                         location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
-                        Console.WriteLine("input: " + input + " location: " + location);
+                        Log.WriteLine("input: " + input + " location: " + location);
                         if (_abilities.CanOverDress(input, location))
                         {
-                            //Console.WriteLine("Perform overDress?");
+                            //Log.WriteLine("Perform overDress?");
                             if (_inputManager.YesNo(player1, "Perform overDress?"))
                             {
                                 Call(player1, player2, location, input, true);
@@ -378,7 +391,7 @@ namespace VanguardEngine
                         Call(player1, player2, location, input, false);
                     }
                     else
-                        Console.WriteLine("No Rearguards can be called.");
+                        Log.WriteLine("No Rearguards can be called.");
                 }
                 else if (selection == MainPhaseAction.CallFromPrison)
                 {
@@ -400,7 +413,7 @@ namespace VanguardEngine
                         }
                     }
                     else
-                        Console.WriteLine("No Rearguards can be moved.");
+                        Log.WriteLine("No Rearguards can be moved.");
                 }
                 else if (selection == 6) //ACT
                 {
@@ -413,7 +426,7 @@ namespace VanguardEngine
                         ChooseOrderToActivate(player1, false);
                     }
                     else
-                        Console.WriteLine("Already activated order this turn.");
+                        Log.WriteLine("Already activated order this turn.");
                 }
                 else if (selection == 8)
                     break;
@@ -424,7 +437,7 @@ namespace VanguardEngine
                     location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
                     if (_abilities.CanOverDress(input, location))
                     {
-                        //Console.WriteLine("Perform overDress?");
+                        //Log.WriteLine("Perform overDress?");
                         if (_inputManager.YesNo(player1, "Perform overDress?"))
                         {
                             Call(player1, player2, location, input, true);
@@ -437,13 +450,24 @@ namespace VanguardEngine
                 {
                     player1.AlternateMoveRearguard(_inputManager.int_input2);
                 }
-                else if (selection == MainPhaseAction.ActivateACT)
+                else if (selection == MainPhaseAction.ActivateAbility)
                 {
-                    ActivateACT(player1, _inputManager._ability);
-                }
-                else if (selection == MainPhaseAction.ActivateOrder)
-                {
-                    ActivateOrder(player1, _inputManager._ability);
+                    foreach (Ability ability in GetACTAbilities(player1))
+                    {
+                        if (ability.GetCard().tempID == _inputManager.int_input2)
+                        {
+                            ActivateACT(player1, ability);
+                            break;
+                        }
+                    }
+                    foreach (Ability ability in GetAvailableOrders(player1, false))
+                    {
+                        if (ability.GetCard().tempID == _inputManager.int_input2)
+                        {
+                            ActivateOrder(player1, ability);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -493,6 +517,8 @@ namespace VanguardEngine
             _playTimings.AddPlayTiming(Activation.PlacedOnRC);
             if (sc == 1)
                 _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand);
+            player1.ClearOverloadedCards();
+            player2.ClearOverloadedCards();
         }
 
         public void MoveRearguard(Player player1, Player player2, int selection)
@@ -523,6 +549,7 @@ namespace VanguardEngine
             {
                 if (player1.CanAttack())
                 {
+                    booster = -1;
                     selection = _inputManager.SelectBattlePhaseAction();
                     if (selection == 1)
                         BrowseHand(player1);
@@ -534,7 +561,7 @@ namespace VanguardEngine
                         player1.SetAttacker(attacker);
                         if (player1.CanBeBoosted())
                         {
-                            Console.WriteLine("----------\nBoost?");
+                            Log.WriteLine("----------\nBoost?");
                             if (_inputManager.YesNo(player1, "Boost?"))
                             {
                                 booster = player1.GetBooster(attacker);
@@ -553,7 +580,7 @@ namespace VanguardEngine
                         player1.SetAttacker(attacker);
                         if (player1.CanBeBoosted())
                         {
-                            Console.WriteLine("----------\nBoost?");
+                            Log.WriteLine("----------\nBoost?");
                             if (_inputManager.YesNo(player1, "Boost?"))
                             {
                                 booster = player1.GetBooster(attacker);
@@ -585,9 +612,9 @@ namespace VanguardEngine
             _playTimings.AddPlayTiming(Activation.OnAttack);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
-                Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
             else
-                Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             _inputManager.SwapPlayers();
             while (true)
             {
@@ -628,7 +655,7 @@ namespace VanguardEngine
                             ChooseOrderToActivate(player1, true);
                         }
                         else
-                            Console.WriteLine("Already activated order this turn.");
+                            Log.WriteLine("Already activated order this turn.");
                     }
                     else if (selection == GuardStepAction.End) // end guard
                     {
@@ -645,17 +672,17 @@ namespace VanguardEngine
             if (player1.StillAttacking() && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck()))
             {
                 if (player1 == _player1)
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                 else
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                 _inputManager.SwapPlayers();
                 drive = player1.Drive();
                 for (int i = 0; i < drive; i++)
                     TriggerCheck(player1, player2, true);
                 if (player1 == _player1)
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                 else
-                    Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                    Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                 _inputManager.SwapPlayers();
             }
             if (player1.StillAttacking() && player2.AttackHits())
@@ -685,9 +712,9 @@ namespace VanguardEngine
             _playTimings.AddPlayTiming(Activation.OnBattleEnds);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
-                Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
+                Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             else
-                Console.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
+                Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
             _inputManager.SwapPlayers();
             player1.EndAttack();
             player2.EndAttack();
@@ -701,9 +728,9 @@ namespace VanguardEngine
             int power = 0;
             List<Card> cards;
             if (drivecheck)
-                Console.WriteLine("----------\nPerforming Drive Check.");
+                Log.WriteLine("----------\nPerforming Drive Check.");
             else
-                Console.WriteLine("----------\nPerforming Damage Check.");
+                Log.WriteLine("----------\nPerforming Damage Check.");
             check = player1.TriggerCheck(drivecheck);
             if (drivecheck)
                 power = player1.GetBonusDriveCheckPower();
@@ -711,19 +738,19 @@ namespace VanguardEngine
                 power = 0;
             if (check != Trigger.NotTrigger && check != Trigger.Over && check != Trigger.Front) 
             {
-                Console.WriteLine("----------\nChoose unit to give +10000 power to.");
+                Log.WriteLine("----------\nChoose unit to give +10000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000 + power);
                 player1.AddTempPower(selection, 10000 + power, false);
             }
             if (check == Trigger.Critical) 
             {
-                Console.WriteLine("----------\nChoose unit to give Critical to.");
+                Log.WriteLine("----------\nChoose unit to give Critical to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddCritical, 1);
                 player1.AddCritical(selection, 1);
             }
             else if (check == Trigger.Stand) //STAND TRIGGER (no stand triggers rn, will fix later if needed)
             {
-                Console.WriteLine("----------\nChoose unit to Stand.");
+                Log.WriteLine("----------\nChoose unit to Stand.");
                 selection = _inputManager.SelectActiveUnit(PromptType.Stand, 0);
                 player1.Stand(selection);
             }
@@ -749,16 +776,18 @@ namespace VanguardEngine
             }
             else if (check == Trigger.Over) //OVER TRIGGER
             {
-                player1.RemoveTrigger();
-                Draw(player1, player2, 1);
-                Console.WriteLine("Choose unit to give 1000000000 power to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
-                player1.AddTempPower(selection, 100000000 + power, false);
                 if (drivecheck)
                 {
                     _playTimings.AddPlayTiming(Activation.OnOverTrigger);
-                    ActivateAbilities(player1, player2);
+                    AddAbilitiesToQueue(player1, player2);
                 }
+                player1.RemoveTrigger();
+                Draw(player1, player2, 1);
+                Log.WriteLine("Choose unit to give 1000000000 power to.");
+                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
+                player1.AddTempPower(selection, 100000000 + power, false);
+                if (drivecheck)
+                    ActivateAbilities(player1, player2);
             }
             if (drivecheck)
             {
@@ -895,7 +924,7 @@ namespace VanguardEngine
             {
                 player1.EnterAlchemagic();
                 amSelection = _inputManager.SelectAbility(_alchemagicQueue);
-                Console.WriteLine("----------\n" + ability.Name + "'s effect activates!");
+                Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
                 PlayOrder(player1, ability.GetID(), false);
                 PlayOrder(player1, _alchemagicQueue[amSelection].GetID(), true);
                 CardEventArgs args;
@@ -921,7 +950,7 @@ namespace VanguardEngine
             }
             else
             {
-                Console.WriteLine("----------\n" + ability.Name + "'s effect activates!");
+                Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
                 PlayOrder(player1, ability.GetID(), false);
                 ability.PayCost();
                 ability.Activate();
@@ -950,7 +979,7 @@ namespace VanguardEngine
 
         public void ActivateACT(Player player1, Ability ability)
         {
-            Console.WriteLine("----------\n" + ability.Name + "'s effect activates!");
+            Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
             _currentAbility = ability;
             if (OnAbilityActivated != null)
             {
@@ -1022,7 +1051,7 @@ namespace VanguardEngine
                         else
                             player2Selected = true;
                         _currentAbility = abilities[selection].Item1;
-                        Console.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
+                        Log.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
                         if (OnAbilityActivated != null)
                         {
                             CardEventArgs args = new CardEventArgs();
@@ -1043,7 +1072,7 @@ namespace VanguardEngine
                                 ThenAbility.Activate();
                             else
                             {
-                                //Console.WriteLine("Activate ability?");
+                                //Log.WriteLine("Activate ability?");
                                 if (_inputManager.YesNo(choosingPlayer, "Activate ability?"))
                                     ThenAbility.Activate();
                             }
@@ -1256,7 +1285,7 @@ namespace VanguardEngine
         public void FinalRush(Player player1, Player player2)
         {
             player1.FinalRush();
-            Console.WriteLine("----------\nEntered Final Rush!");
+            Log.WriteLine("----------\nEntered Final Rush!");
         }
 
         public void PlayOrder(Player player1, int tempID, bool alchemagic)
@@ -1521,6 +1550,18 @@ namespace VanguardEngine
             foreach (int key in _activatedAbilities.Keys)
                 _activatedAbilities[key].Clear();
             _activatedAbilities.Clear();
+        }
+    }
+
+    public static class Log
+    {
+        public static void WriteLine(string output)
+        {
+            Console.WriteLine(output);
+            using (StreamWriter writer = new StreamWriter("enginelog.txt", true))
+            {
+                writer.WriteLine(output);
+            }
         }
     }
 }

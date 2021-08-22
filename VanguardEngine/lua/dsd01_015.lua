@@ -5,53 +5,43 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.Drop, q.Name, "Vairina", q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, p.CB, 1
 	end
 end
 
 function CheckCondition(n)
-	if n == 1 then
-		if obj.CanCB(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	end
 	return false
 end
 
-function Cost(n)
+function CanFullyResolve(n)
 	if n == 1 then
-		obj.CounterBlast(1)
+		if obj.Exists(2) then
+			return true
+		end
 	end
+	return false
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddTempPower(2, 5000)
-		if (obj.CanAddToHand(3)) then
-			obj.ChooseAddToHand(3)
-		end
+		obj.ChooseAddTempPower(1, 5000)
+		obj.ChooseAddToHand(2)
 	end
 	return 0
 end

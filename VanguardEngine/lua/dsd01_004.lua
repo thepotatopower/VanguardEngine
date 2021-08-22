@@ -30,13 +30,9 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.Draw(1)
-		obj.OnRideAbilityResolved()
 	end
 	return 0
 end

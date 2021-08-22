@@ -8,7 +8,7 @@ namespace VanguardEngine
     {
         protected Field _field;
         protected int _damage = 0;
-        protected int _startingTurn = -1;
+        public int _startingTurn = -1;
         protected bool _guarding = false;
         protected Dictionary<int, RecordedCardValue> _recordedCardValues = new Dictionary<int, RecordedCardValue>();
         protected Dictionary<int, int> _recordedShieldValues = new Dictionary<int, int>();
@@ -126,7 +126,6 @@ namespace VanguardEngine
                 _enemyID = 1;
             if (_playerID == 1)
             {
-                _startingTurn = 1;
                 PlayerHand = _field.Player1Hand;
                 EnemyHand = _field.Player2Hand;
                 PlayerDeck = _field.Player1Deck;
@@ -157,7 +156,6 @@ namespace VanguardEngine
             }
             else
             {
-                _startingTurn = 2;
                 PlayerHand = _field.Player2Hand;
                 EnemyHand = _field.Player1Hand;
                 PlayerDeck = _field.Player2Deck;
@@ -416,9 +414,10 @@ namespace VanguardEngine
             return false;
         }
 
-        public Card GetUnitAt(int circle)
+        public Card GetUnitAt(int circle, bool convert)
         {
-            circle = Convert(circle);
+            if (convert)
+                circle = Convert(circle);
             return _field.GetUnit(circle);
         }
 
@@ -557,7 +556,7 @@ namespace VanguardEngine
             {
                 OnDraw(this, args);
             }
-            Console.WriteLine("----------\nDrew " + count + " card(s).");
+            Log.WriteLine("----------\nDrew " + count + " card(s).");
         }
 
         public void Mill(int count)
@@ -634,13 +633,13 @@ namespace VanguardEngine
         public int PrintHand()
         {
             List<Card> hand = PlayerHand.GetCards();
-            Console.WriteLine("----------");
-            //Console.WriteLine("Choose a card to examine.");
+            Log.WriteLine("----------");
+            //Log.WriteLine("Choose a card to examine.");
             for (int i = 0; i < hand.Count; i++)
             {
-                Console.WriteLine(i + 1 + ". " + hand[i].name);
+                Log.WriteLine(i + 1 + ". " + hand[i].name);
             }
-            //Console.WriteLine(hand.Count + 1 + ". Go back.");
+            //Log.WriteLine(hand.Count + 1 + ". Go back.");
             return hand.Count + 1;
         }
 
@@ -668,7 +667,7 @@ namespace VanguardEngine
                 "14. Display Drop.\n" +
                 "15. Display Soul.\n" +
                 "16. Go back.";
-            Console.WriteLine(output);
+            Log.WriteLine(output);
             return 16;
         }
 
@@ -698,27 +697,27 @@ namespace VanguardEngine
         {
             if (card == null)
             {
-                Console.WriteLine("No card.");
+                Log.WriteLine("No card.");
                 return;
             }
             string output = card.name + "\n" +
                 "Grade: " + card.grade + " Power: " + card.power + " Shield: " + card.shield + " " + card.id + "\n" +
                 card.effect;
-            Console.WriteLine("----------" + output);
+            Log.WriteLine("----------" + output);
         }
 
         public void DisplayDrop()
         {
             if (PlayerDrop.Count() == 0)
             {
-                Console.WriteLine("----------\nNo cards in Drop.");
+                Log.WriteLine("----------\nNo cards in Drop.");
                 return;
             }
             List<Card> drop = PlayerDrop.GetCards();
-            Console.WriteLine("----------");
+            Log.WriteLine("----------");
             for (int i = 0; i < drop.Count; i++)
             {
-                Console.WriteLine(i + 1 + ". " + drop[i].name);
+                Log.WriteLine(i + 1 + ". " + drop[i].name);
             }
         }
 
@@ -727,13 +726,13 @@ namespace VanguardEngine
             List<Card> soul = _field.GetSoul(PlayerVanguard);
             if (soul.Count == 0)
             {
-                Console.WriteLine("----------No cards in Soul.");
+                Log.WriteLine("----------No cards in Soul.");
                 return;
             }
-            Console.WriteLine("----------");
+            Log.WriteLine("----------");
             for (int i = 0; i < soul.Count; i++)
             {
-                Console.WriteLine(i + 1 + ". " + soul[i].name);
+                Log.WriteLine(i + 1 + ". " + soul[i].name);
             }
         }
 
@@ -992,10 +991,10 @@ namespace VanguardEngine
             if (_field.Sentinel.Contains(attacked) || _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
-                return 0;
+                return shield;
             guardians = _field.Guardians[tempID];
             if (guardians == null)
-                return 0;
+                return shield;
             foreach (Card card in guardians)
             {
                 if (_field.GC.Contains(card))
@@ -1014,21 +1013,21 @@ namespace VanguardEngine
             {
                 if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || _field.CardStates.GetValues(card.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade))
                 {
-                    Console.WriteLine("[" + card.name + "] Hit immunity active.");
+                    Log.WriteLine("[" + card.name + "] Hit immunity active.");
                     return;
                 }
-                Console.WriteLine("[" + card.name + "] Shield: " + (CalculateShield(card.tempID) + CalculatePowerOfUnit(GetCircle(card))));
+                Log.WriteLine("[" + card.name + "] Shield: " + CalculateShield(card.tempID));
             }
         }
 
         public void PrintAttack()
         {
-            Console.WriteLine("Attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
+            Log.WriteLine("Attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
         }
 
         public void PrintEnemyAttack()
         {
-            Console.WriteLine("Enemy attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
+            Log.WriteLine("Enemy attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
         }
 
         public int CalculatePowerOfUnit(int location)
@@ -1055,16 +1054,16 @@ namespace VanguardEngine
         public int PrintDamageZone()
         {
             int i = 0;
-            Console.WriteLine("Choose damage to heal.");
+            Log.WriteLine("Choose damage to heal.");
             string output;
             List<Card> damage = PlayerDamage.GetCards();
             for (i = 0; i < damage.Count; i++)
             {
                 output = i + 1 + ". " + damage[i].name + " ";
                 if (!_field.Orientation.IsFaceUp(damage[i].tempID))
-                    Console.WriteLine(output + "(facedown).");
+                    Log.WriteLine(output + "(facedown).");
                 else
-                    Console.WriteLine(output + "(faceup).");
+                    Log.WriteLine(output + "(faceup).");
             }
             return i + 1;
         }
@@ -1124,16 +1123,6 @@ namespace VanguardEngine
                     return true;
                 }
             }
-            return false;
-        }
-
-        public bool CanACT()
-        {
-            return false;
-        }
-
-        public bool CanActivateOrder()
-        {
             return false;
         }
 
@@ -1425,10 +1414,10 @@ namespace VanguardEngine
             {
                 if (!GetAllUnitsOnField().Contains(card))
                     return false;
-                if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID) + CalculatePowerOfUnit(GetCircle(card)))
+                if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID))
                 {
                     _field.UnitsHit.Add(card);
-                    Console.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
+                    Log.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
                     if (OnAttackHits != null)
                     {
                         args.b = true;
@@ -1437,7 +1426,7 @@ namespace VanguardEngine
                 }
                 else
                 {
-                    Console.WriteLine("----------\n" + attacker.name + "'s attack against " + card.name + " was successfully guarded!");
+                    Log.WriteLine("----------\n" + attacker.name + "'s attack against " + card.name + " was successfully guarded!");
                     if (OnAttackHits != null)
                     {
                         args.b = false;
@@ -1477,9 +1466,9 @@ namespace VanguardEngine
             }
             _field.RideUnit(PlayerVanguard, card);
             if (_field.GetPersonaRide(_playerID))
-                Console.WriteLine("---------\nPersona Ride!! " + _field.GetUnit(PlayerVanguard).name + "!");
+                Log.WriteLine("---------\nPersona Ride!! " + _field.GetUnit(PlayerVanguard).name + "!");
             else
-                Console.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
+                Log.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
             _lastPlacedOnVC[_lastPlacedOnVC.Count].Add(card);
             _riddenThisTurn = true;
         }
@@ -1512,9 +1501,9 @@ namespace VanguardEngine
             if (!standing)
                 _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
             if (overDress)
-                Console.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
+                Log.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else
-                Console.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
+                Log.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
             if (shuffle)
                 PlayerDeck.Shuffle();
             if (!_lastPlacedOnRC.ContainsKey(_lastPlacedOnRC_Count))
@@ -1555,7 +1544,7 @@ namespace VanguardEngine
                     return;
                 temp = _field.GetUnit(PlayerFrontLeft);
                 _field.SwapUnits(PlayerFrontLeft, PlayerBackLeft);
-                Console.WriteLine("----------\nLeft column Rearguard(s) changed position.");
+                Log.WriteLine("----------\nLeft column Rearguard(s) changed position.");
             }
             else
             {
@@ -1564,7 +1553,7 @@ namespace VanguardEngine
                 if (_field.GetUnit(PlayerBackRight) != null && _field.CardStates.HasState(_field.GetUnit(PlayerBackRight).tempID, CardState.CannotMoveToFrontRow))
                     return;
                 _field.SwapUnits(PlayerFrontRight, PlayerBackRight);
-                Console.WriteLine("----------\nRight column Rearguard(s) changed position.");
+                Log.WriteLine("----------\nRight column Rearguard(s) changed position.");
             }
             if (OnChangeColumn != null)
             {
@@ -1711,9 +1700,9 @@ namespace VanguardEngine
                         _field.Attacked.Add(_field.GetUnit(EnemyFrontRight));
                 }
             }
-            Console.WriteLine("----------");
+            Log.WriteLine("----------");
             foreach (Card card in _field.Attacked)
-                Console.WriteLine(Attacker.name + " attacks " + card.name + "!");
+                Log.WriteLine(Attacker.name + " attacks " + card.name + "!");
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
@@ -1772,7 +1761,7 @@ namespace VanguardEngine
                         _lastPlacedOnGC[_lastPlacedOnGC_Count] = new List<Card>();
                     _lastPlacedOnGC[_lastPlacedOnGC_Count].Add(card);
                 }
-                Console.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
+                Log.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
                 if (OnGuard != null)
                 {
                     CardEventArgs args = new CardEventArgs();
@@ -2042,19 +2031,19 @@ namespace VanguardEngine
             _lastRevealedTriggers.Add(trigger);
             _lastRevealedTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
-                Console.WriteLine("----------\nCritical Trigger!");
+                Log.WriteLine("----------\nCritical Trigger!");
             else if (trigger.trigger == Trigger.Draw)
-                Console.WriteLine("----------\nDraw Trigger!");
+                Log.WriteLine("----------\nDraw Trigger!");
             else if (trigger.trigger == Trigger.Front)
-                Console.WriteLine("----------\nFront Trigger!");
+                Log.WriteLine("----------\nFront Trigger!");
             else if (trigger.trigger == Trigger.Stand)
-                Console.WriteLine("----------\nStand Trigger!");
+                Log.WriteLine("----------\nStand Trigger!");
             else if (trigger.trigger == Trigger.Heal)
-                Console.WriteLine("----------\nHeal Trigger!");
+                Log.WriteLine("----------\nHeal Trigger!");
             else if (trigger.trigger == Trigger.Over)
-                Console.WriteLine("----------\nOver Trigger!");
+                Log.WriteLine("----------\nOver Trigger!");
             else
-                Console.WriteLine("----------\nNo Trigger.");
+                Log.WriteLine("----------\nNo Trigger.");
             CardEventArgs args = new CardEventArgs();
             args.playerID = _playerID;
             args.i = trigger.trigger;
@@ -2088,7 +2077,7 @@ namespace VanguardEngine
                 _field.CardStates.AddUntilEndOfBattleValue(target.tempID, CardState.BonusPower, power);
             else
                 _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusPower, power);
-            Console.WriteLine("----------\n" + power + " power to " + target.name + "!");
+            Log.WriteLine("----------\n" + power + " power to " + target.name + "!");
             UpdateRecordedValues();
         }
 
@@ -2097,7 +2086,7 @@ namespace VanguardEngine
             foreach (int tempID in selections)
             {
                 _field.CardStates.AddUntilEndOfTurnValue(tempID, CardState.BonusPower, power);
-                Console.WriteLine("----------\n" + power + " power to " + _field.CardCatalog[tempID].name + "!");
+                Log.WriteLine("----------\n" + power + " power to " + _field.CardCatalog[tempID].name + "!");
             }
             UpdateRecordedValues();
         }
@@ -2128,7 +2117,7 @@ namespace VanguardEngine
         {
             Card target = FindActiveUnit(selection);
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusCritical, critical);
-            Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+            Log.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
             UpdateRecordedValues();
         }
 
@@ -2136,7 +2125,7 @@ namespace VanguardEngine
         {
             Card target = FindActiveUnit(selection);
             _field.CardStates.AddUntilEndOfBattleValue(target.tempID, CardState.BonusCritical, critical);
-            Console.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
+            Log.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
             UpdateRecordedValues();
         }
 
@@ -2161,14 +2150,14 @@ namespace VanguardEngine
         {
             Card target = FindActiveUnit(selection);
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusDrive, drive);
-            Console.WriteLine("----------\n+" + drive + " drive to " + target.name + "!");
+            Log.WriteLine("----------\n+" + drive + " drive to " + target.name + "!");
         }
 
         public void AddTempShield(int selection, int shield)
         {
             Card target = _field.CardCatalog[selection];
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusShield, shield);
-            Console.WriteLine("----------\n" + shield + " shield to " + target.name + "!");
+            Log.WriteLine("----------\n" + shield + " shield to " + target.name + "!");
         }
 
         public void SetAbilityPower(int selection, int power)
@@ -2201,13 +2190,13 @@ namespace VanguardEngine
             _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
             if (!IsUpRight(target))
                 _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(target);
-            _field.Orientation.SetUpRight(target.tempID, true);
+            _field.Orientation.Rotate(target.tempID, true);
         }
 
         public void Heal(int selection)
         {
             PlayerDrop.Add(_field.CardCatalog[selection]);
-            Console.WriteLine("----------\nDamage healed!");
+            Log.WriteLine("----------\nDamage healed!");
         }
 
         public void AddTriggerToHand()
@@ -2230,7 +2219,7 @@ namespace VanguardEngine
                 cardToAdd = _field.CardCatalog[tempID];
                 PlayerHand.Add(cardToAdd);
             }
-            Console.WriteLine(selections.Count + " card(s) added to hand.");
+            Log.WriteLine(selections.Count + " card(s) added to hand.");
         }
 
         public void AddToSoul(List<int> selections)
@@ -2268,7 +2257,7 @@ namespace VanguardEngine
             if (PlayerTrigger.Count() > 0)
             {
                 PlayerDamage.Add(PlayerTrigger.Index(0));
-                Console.WriteLine("----------\nDamage taken!");
+                Log.WriteLine("----------\nDamage taken!");
             }
         }
 
@@ -2534,7 +2523,7 @@ namespace VanguardEngine
                 {
                     if (card.tempID == tempID)
                     {
-                        _field.Orientation.SetFaceUp(card.tempID, false);
+                        _field.Orientation.Flip(card.tempID, false);
                         _CBUsed++;
                         break;
                     }
@@ -2566,13 +2555,13 @@ namespace VanguardEngine
         {
             foreach (int tempID in cardsToCharge)
             {
-                _field.Orientation.SetFaceUp(tempID, true);
+                _field.Orientation.Flip(tempID, true);
             }
         }
 
         public void SoulCharge(int count)
         {
-            Console.WriteLine("Soul Charging " + count + " card(s)!");
+            Log.WriteLine("Soul Charging " + count + " card(s)!");
             _soulChargedThisTurn = true;
             for (int i = 0; i < count && PlayerDeck.GetCards().Count > 0; i++)
             {
@@ -2601,7 +2590,7 @@ namespace VanguardEngine
             {
                 if (!_field.Orientation.IsUpRight(tempID))
                 {
-                    _field.Orientation.SetUpRight(tempID, true);
+                    _field.Orientation.Rotate(tempID, true);
                     _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(_field.CardCatalog[tempID]);
                 }
             }
@@ -2629,7 +2618,7 @@ namespace VanguardEngine
                     dialogue = "hand";
                 else if (PlayerDeck.Contains(card))
                     dialogue = "deck";
-                Console.WriteLine("----------\n" + card.name + " revealed from " + dialogue + "!");
+                Log.WriteLine("----------\n" + card.name + " revealed from " + dialogue + "!");
             }
         }
 
