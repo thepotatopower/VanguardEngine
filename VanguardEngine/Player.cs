@@ -891,7 +891,13 @@ namespace VanguardEngine
                         cards.Add(card);
                 }
             }
-            for (int i = 1; i < FL.PlayerVanguard; i++)
+            return cards;
+        }
+
+        public List<Card> GetInterceptableCards()
+        {
+            List<Card> cards = new List<Card>();
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
             {
                 if (CanIntercept(_field.GetUnit(i)))
                     cards.Add(_field.GetUnit(i));
@@ -1459,14 +1465,18 @@ namespace VanguardEngine
             _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count].Add(_field.GetUnit(PlayerVanguard));
             _lastPlacedOnVC[_lastPlacedOnVC.Keys.Count + 1] = new List<Card>();
             _cardRiddenBy[_cardRiddenBy.Keys.Count + 1] = new Tuple<int, string>(_field.GetUnit(PlayerVanguard).tempID, card.name);
+            bool personaRide = false;
             if (card.name == _field.GetUnit(PlayerVanguard).name && _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
+                personaRide = true;
+            }
+            _field.RideUnit(PlayerVanguard, card);
+            if (personaRide)
+            {
+                Log.WriteLine("---------\nPersona Ride!! " + _field.GetUnit(PlayerVanguard).name + "!");
                 _field.SetPersonaRide(true, _playerID);
                 Draw(1);
             }
-            _field.RideUnit(PlayerVanguard, card);
-            if (_field.GetPersonaRide(_playerID))
-                Log.WriteLine("---------\nPersona Ride!! " + _field.GetUnit(PlayerVanguard).name + "!");
             else
                 Log.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
             _lastPlacedOnVC[_lastPlacedOnVC.Count].Add(card);
@@ -1762,13 +1772,13 @@ namespace VanguardEngine
                     _lastPlacedOnGC[_lastPlacedOnGC_Count].Add(card);
                 }
                 Log.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
-                if (OnGuard != null)
-                {
-                    CardEventArgs args = new CardEventArgs();
-                    args.playerID = _playerID;
-                    args.card = card;
-                    OnGuard(this, args);
-                }
+                //if (OnGuard != null)
+                //{
+                //    CardEventArgs args = new CardEventArgs();
+                //    args.playerID = _playerID;
+                //    args.card = card;
+                //    OnGuard(this, args);
+                //}
             }
             return intercept;
         }

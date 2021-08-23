@@ -455,9 +455,10 @@ namespace VanguardEngine
                         "2. See Field.\n" +
                         "3. See Current Shield.\n" +
                         "4. Guard.\n" +
-                        "5. Use Blitz Order.\n" +
-                        "6. End Guard.\n");
-            int_input = SelectPrompt(6);
+                        "5. Intercept.\n" +
+                        "6. Use Blitz Order.\n" +
+                        "7. End Guard.\n");
+            int_input = SelectPrompt(7);
             oSignalEvent.Set();
         }
 
@@ -800,8 +801,9 @@ namespace VanguardEngine
     public class GuardStepAction
     {
         public const int Guard = 4;
-        public const int End = 6;
-        public const int BlitzOrder = 7;
+        public const int End = 7;
+        public const int BlitzOrder = 8;
+        public const int Intercept = 9;
     }
 }
 

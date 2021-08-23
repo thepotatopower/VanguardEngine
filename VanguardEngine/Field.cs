@@ -897,6 +897,8 @@ namespace VanguardEngine
         {
             foreach (int key in _continuous.Keys)
                 _continuous[key].Clear();
+            foreach (Tuple<int, int> key in _continuousValues.Keys)
+                _continuousValues[key].Clear();
         }
 
         public void AddUntilEndOfTurnState(int tempID, int state)

@@ -184,6 +184,8 @@ namespace VanguardEngine
                 _abilities.EndTurn();
                 _activatedOrder = false;
                 _turn++;
+                player1.UpdateRecordedValues();
+                player2.UpdateRecordedValues();
                 if (player1 == _player1)
                 {
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
@@ -607,7 +609,7 @@ namespace VanguardEngine
             int drive;
             int critical;
             List<int> selections;
-            bool intercept = false;
+            bool attackHits = false;
             player1.InitiateAttack(booster, target);
             _playTimings.AddPlayTiming(Activation.OnAttack);
             ActivateAbilities(player1, player2);
@@ -642,13 +644,28 @@ namespace VanguardEngine
                             selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "Choose card(s) to guard with.");
                         if (selections.Count == 0)
                             continue;
-                        intercept = player2.Guard(selections, selection2);
-                        if (!intercept)
-                            _playTimings.AddPlayTiming(Activation.PlacedOnGC);
+                        player2.Guard(selections, selection2);
+                        _playTimings.AddPlayTiming(Activation.PlacedOnGC);
                         _playTimings.AddPlayTiming(Activation.PutOnGC);
                         ActivateAbilities(player2, player1);
                     }
                     else if (selection == 5)
+                    {
+                        if (player2.GetInterceptableCards().Count > 0)
+                        {
+                            selections = _inputManager.SelectFromList(player2, player2.GetInterceptableCards(), 1, 1, "Select card to intercept with.");
+                            if (player2.GetAttackedCards().Count > 1)
+                                selection2 = _inputManager.SelectCardToGuard();
+                            else
+                                selection2 = -1;
+                            player2.Guard(selections, selection2);
+                            _playTimings.AddPlayTiming(Activation.PutOnGC);
+                            ActivateAbilities(player2, player1);
+                        }
+                        else
+                            Log.WriteLine("No interceptable cards available.");
+                    }
+                    else if (selection == 6)
                     {
                         if (!player2.OrderPlayed())
                         {
@@ -661,12 +678,18 @@ namespace VanguardEngine
                     {
                         break;
                     }
-                    //else if (selection == 7) //guard with specific card (for use outside of console only)
-                    //{
-                    //    player2.Guard(_inputManager.intlist_input[0], -1);
-                    //    AddAbilitiesToQueue(player2, player1, Activation.PlacedOnGC);
-                    //    ActivateAbilities(player2, player1, Activation.PlacedOnGC);
-                    //}
+                    else if (selection == GuardStepAction.Intercept)
+                    {
+                        selections = new List<int>();
+                        selections.Add(_inputManager.int_input2);
+                        if (player2.GetAttackedCards().Count > 1)
+                            selection2 = _inputManager.SelectCardToGuard();
+                        else
+                            selection2 = -1;
+                        player2.Guard(selections, selection2);
+                        _playTimings.AddPlayTiming(Activation.PutOnGC);
+                        ActivateAbilities(player2, player1);
+                    }
                 }
              }
             if (player1.StillAttacking() && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck()))
@@ -686,6 +709,9 @@ namespace VanguardEngine
                 _inputManager.SwapPlayers();
             }
             if (player1.StillAttacking() && player2.AttackHits())
+                attackHits = true;
+            player2.RetireGC();
+            if (attackHits)
             {
                 if (player2.VanguardHit(C.Player))
                 {
@@ -708,7 +734,6 @@ namespace VanguardEngine
                 ActivateAbilities(player1, player2);
                 _inputManager.SwapPlayers();
             }
-            player2.RetireGC();
             _playTimings.AddPlayTiming(Activation.OnBattleEnds);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
@@ -741,12 +766,16 @@ namespace VanguardEngine
                 Log.WriteLine("----------\nChoose unit to give +10000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000 + power);
                 player1.AddTempPower(selection, 10000 + power, false);
+                player1.UpdateRecordedValues();
+                player2.UpdateRecordedValues();
             }
             if (check == Trigger.Critical) 
             {
                 Log.WriteLine("----------\nChoose unit to give Critical to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddCritical, 1);
                 player1.AddCritical(selection, 1);
+                player1.UpdateRecordedValues();
+                player2.UpdateRecordedValues();
             }
             else if (check == Trigger.Stand) //STAND TRIGGER (no stand triggers rn, will fix later if needed)
             {
@@ -786,6 +815,8 @@ namespace VanguardEngine
                 Log.WriteLine("Choose unit to give 1000000000 power to.");
                 selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
                 player1.AddTempPower(selection, 100000000 + power, false);
+                player1.UpdateRecordedValues();
+                player2.UpdateRecordedValues();
                 if (drivecheck)
                     ActivateAbilities(player1, player2);
             }
@@ -989,6 +1020,7 @@ namespace VanguardEngine
             }
             ability.PayCost();
             ability.Activate();
+            player1.UpdateRecordedValues();
         }
 
         public void CallFromPrison(Player player1, Player player2)
@@ -1033,6 +1065,8 @@ namespace VanguardEngine
                             OnAbilityActivated(this, args);
                         }
                         ability.Item1.Activate();
+                        player1.UpdateRecordedValues();
+                        player2.UpdateRecordedValues();
                         abilities.Remove(ability);
                     }
                     if (abilities.Count == 0)
@@ -1060,6 +1094,8 @@ namespace VanguardEngine
                         }
                         abilities[selection].Item1.PayCost();
                         ThenNum = abilities[selection].Item1.Activate();
+                        player1.UpdateRecordedValues();
+                        player2.UpdateRecordedValues();
                         _playTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
                         ThenID = abilities[selection].Item1.GetID();
                         abilities.Clear();
