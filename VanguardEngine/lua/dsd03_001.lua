@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 4
 end
 
 function GetParam(n)
@@ -14,19 +14,17 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.RevealedTriggers, q.Grade, 3, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.PlayerHand, q.Count, 1
-	elseif n == 4 then
 		return q.Location, l.PlayerRC, q.Count, 1
-	elseif n == 5 then
+	elseif n == 4 then
 		return q.Location, l.Selected
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 2 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.OncePerTurn, p.Discard, 1
 	end
 end
 
@@ -36,7 +34,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.NotActivatedYet() and obj.Exists(2) and obj.Exists(4) and obj.CanDiscard(3) then
+		if obj.IsVanguard() and obj.Exists(2) then
 			return true
 		end
 	end
@@ -47,28 +45,22 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		return true
+		if obj.Exists(3) then
+			return true
+		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.Discard(3)
-	end
 end
 
 function Activate(n)
 	if n == 1 then
 		if obj.IsPlayerTurn() then
 			obj.SetAbilityPower(1, 2000)
-		else
-			obj.SetAbilityPower(1, 0)
 		end
 	elseif n == 2 then
-		obj.Select(4)
-		obj.Stand(5)
-		obj.AddTempPower(5, 10000)
+		obj.Select(3)
+		obj.Stand(4)
+		obj.AddTempPower(4, 10000)
 		obj.EndSelect()
 	end
 	return 0

@@ -115,6 +115,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnCardValueChanged;
         public event EventHandler<CardEventArgs> OnShieldValueChanged;
         public event EventHandler<CardEventArgs> OnAttackEnds;
+        public event EventHandler<CardEventArgs> OnReveal;
 
         public void Initialize(int playerID, Field field)
         {
@@ -1493,12 +1494,9 @@ namespace VanguardEngine
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
         {
             bool fromHand = false;
-            bool shuffle = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
             if (PlayerPrisoners.Contains(_field.CardCatalog[tempID]))
                 _lastCalledFromPrison.Add(ToBeCalled);
-            if (PlayerDeck.Contains(ToBeCalled))
-                shuffle = true;
             _lastCalledFromPrison.Add(ToBeCalled);
             if (!overDress)
             {
@@ -1514,8 +1512,6 @@ namespace VanguardEngine
                 Log.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else
                 Log.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
-            if (shuffle)
-                PlayerDeck.Shuffle();
             if (!_lastPlacedOnRC.ContainsKey(_lastPlacedOnRC_Count))
                 _lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
             _lastPlacedOnRC[_lastPlacedOnRC_Count].Add(ToBeCalled);
@@ -2629,6 +2625,13 @@ namespace VanguardEngine
                 else if (PlayerDeck.Contains(card))
                     dialogue = "deck";
                 Log.WriteLine("----------\n" + card.name + " revealed from " + dialogue + "!");
+                if (OnReveal != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = card;
+                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[card.tempID].GetLocation(), -1);
+                    OnReveal(this, args);
+                }
             }
         }
 
@@ -2637,6 +2640,13 @@ namespace VanguardEngine
             for (int i = 0; i < count && PlayerDeck.GetCards().Count > i; i++)
             {
                 PlayerRevealed.Add(PlayerDeck.Index(i));
+                if (OnReveal != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = PlayerDeck.Index(i);
+                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[PlayerDeck.Index(i).tempID].GetLocation(), -1);
+                    OnReveal(this, args);
+                }
             }
         }
 

@@ -224,11 +224,7 @@ namespace VanguardEngine
         bool _hasPrompt = false;
         bool _hardOncePerTurn = false;
         bool _oncePerTurn = false;
-        int _SB = 0;
-        int _CB = 0;
-        int _retire = 0;
-        int _discard = 0;
-        int _addToSoul = 0;
+        Dictionary<int, int> _costs = new Dictionary<int, int>();
         string _description = "";
         bool _forEnemy = false;
         bool _isSuperiorCall = false;
@@ -368,22 +364,22 @@ namespace VanguardEngine
                     _forEnemy = true;
                 else if ((int)activationRequirement.Tuple[i].Number == Property.CB)
                 {
-                    _CB += (int)activationRequirement.Tuple[i + 1].Number;
+                    _costs[Property.CB] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.SB)
                 {
-                    _SB += (int)activationRequirement.Tuple[i + 1].Number;
+                    _costs[Property.SB] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.Retire)
                 {
-                    _retire += (int)activationRequirement.Tuple[i + 1].Number;
+                    _costs[Property.Retire] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.Discard)
                 {
-                    _discard += (int)activationRequirement.Tuple[i + 1].Number;
+                    _costs[Property.Discard] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.HardOncePerTurn)
@@ -396,7 +392,12 @@ namespace VanguardEngine
                 }
                 else if ((int)activationRequirement.Tuple[i].Number == Property.AddToSoul)
                 {
-                    _addToSoul = (int)activationRequirement.Tuple[i + 1].Number;
+                    _costs[Property.AddToSoul] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Reveal)
+                {
+                    _costs[Property.Reveal] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
             }
@@ -583,32 +584,41 @@ namespace VanguardEngine
         {
             _payingCost = true;
             //_script.Call(_abilityCost, _abilityNumber);
-            if (_CB > 0)
-                CounterBlast(_CB, _CB);
-            if (_SB > 0)
-                SoulBlast(_SB, _SB);
-            if (_discard > 0)
-                Discard(_discard, _discard);
-            if (_addToSoul > 0)
-                ChooseAddToSoul(_addToSoul);
+            if (_costs.ContainsKey(Property.CB))
+                CounterBlast(_costs[Property.CB]);
+            if (_costs.ContainsKey(Property.SB))
+                SoulBlast(_costs[Property.SB]);
+            if (_costs.ContainsKey(Property.Discard))
+                Discard(_costs[Property.Discard], _costs[Property.Discard]);
+            if (_costs.ContainsKey(Property.Reveal))
+                ChooseReveal(_costs[Property.Reveal]);
+            if (_costs.ContainsKey(Property.AddToSoul))
+                ChooseAddToSoul(_costs[Property.AddToSoul]);
         }
 
         public bool CanPayCost()
         {
-            if (_CB > 0 && !CanCB(_CB))
-                return false;
-            if (_SB > 0 && !CanSB(_SB))
-                return false;
-            if (_discard > 0 && !CanDiscard(_discard))
-                return false;
-            if (_addToSoul > 0 && !CanAddToSoul(_addToSoul))
-                return false;
+            foreach (int key in _costs.Keys)
+            {
+                if (key == Property.CB && !CanCB(_costs[key]))
+                    return false;
+                else if (key == Property.SB && !CanSB(_costs[key]))
+                    return false;
+                else if (key == Property.Discard && !CanDiscard(_costs[key]))
+                    return false;
+                else if (key == Property.AddToSoul && !CanAddToSoul(_costs[key]))
+                    return false;
+                else if (key == Property.Reveal && !CanReveal(_costs[key]))
+                    return false;
+            }
             return true;
         }
         
         public bool CheckCondition()
         {
             if (!CanPayCost())
+                return false;
+            if (_oncePerTurn && _activated)
                 return false;
             DynValue check = _script.Call(_checkCondition, _abilityNumber);
             if (check.Boolean)
@@ -619,6 +629,8 @@ namespace VanguardEngine
         public bool CheckConditionAsGiven(Card card)
         {
             if (!CanPayCost())
+                return false;
+            if (_oncePerTurn && _activated)
                 return false;
             Card originalCard = _card;
             bool swapped = false;
@@ -662,17 +674,26 @@ namespace VanguardEngine
 
         public int GetCB()
         {
-            return _CB;
+            if (_costs.ContainsKey(Property.CB))
+                return _costs[Property.CB];
+            else
+                return 0;
         }
 
         public int GetSB()
         {
-            return _SB;
+            if (_costs.ContainsKey(Property.SB))
+                return _costs[Property.SB];
+            else
+                return 0;
         }
 
         public int GetRetire()
         {
-            return _retire;
+            if (_costs.ContainsKey(Property.Retire))
+                return _costs[Property.Retire];
+            else
+                return 0;
         }
 
         public bool NotActivatedYet()
@@ -1786,7 +1807,10 @@ namespace VanguardEngine
         public void ChooseAddToSoul(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            _cardFight.AddToSoul(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
+            if (GetMin(paramNum) < 0)
+                AddToSoul(paramNum);
+            else
+                _cardFight.AddToSoul(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
         }
 
         public void AddToSoul(int paramNum)
@@ -2903,5 +2927,6 @@ namespace VanguardEngine
         public const int HardOncePerTurn = 8;
         public const int OncePerTurn = 9;
         public const int AddToSoul = 10;
+        public const int Reveal = 11;
     }
 }

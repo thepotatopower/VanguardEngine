@@ -20,15 +20,15 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnRide, t.Auto, p.HasPrompt, p.Reveal, 1
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.WasRodeUponBy("Apex Ruler, Bastion") and obj.CanReveal(1) then
+		if obj.WasRodeUponBy("Apex Ruler, Bastion") then
 			return true
 		end
 	elseif n == 2 then
@@ -48,23 +48,13 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.ChooseReveal(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.Draw(1)
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
 		if obj.IsPlayerTurn() and obj.Exists(2) then
 			obj.SetAbilityPower(3, 5000)
 			obj.AddSkill(3, 0)
-		else
-			obj.SetAbilityPower(3, 0)
-			obj.RemoveSkill(3, 0)
 		end
 	end
 	return 0
