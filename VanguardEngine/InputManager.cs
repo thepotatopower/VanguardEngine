@@ -525,20 +525,36 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectAbility(List<Ability> abilities)
+        public virtual int SelectAbility(Player actingPlayer, List<Ability> abilities)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             _abilities.Clear();
             _abilities.AddRange(abilities);
             SelectAbility_Input();
+            if (swapped)
+                SwapPlayers();
             return int_input;
         }
 
-        public virtual int SelectAbility(List<Tuple<Ability, int>> abilities)
+        public virtual int SelectAbility(Player actingPlayer, List<Tuple<Ability, int>> abilities)
         {
+            bool swapped = false;
+            if (actingPlayer._playerID != _player1._playerID)
+            {
+                SwapPlayers();
+                swapped = true;
+            }
             _abilities.Clear();
             foreach (Tuple<Ability, int> ability in abilities)
                 _abilities.Add(ability.Item1);
             SelectAbility_Input();
+            if (swapped)
+                SwapPlayers();
             return int_input;
         }
 
@@ -702,7 +718,7 @@ namespace VanguardEngine
             return int_input;
         }
 
-        protected void SelectOption_Input()
+        protected virtual void SelectOption_Input()
         {
             int selection;
             Log.WriteLine("Choose an option.");

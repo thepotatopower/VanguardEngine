@@ -12,7 +12,7 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3
 	elseif n == 2 then
-		return q.Location, l.RevealedTriggers, q.Grade, 3, q.Count, 1
+		return q.Location, l.RevealedDriveChecks, q.Grade, 3, q.Count, 1
 	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Count, 1
 	elseif n == 4 then

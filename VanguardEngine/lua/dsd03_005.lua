@@ -22,7 +22,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() then
+		if obj.IsRearguard() and obj.IsAttackingUnit() then
 			return true
 		end
 	end

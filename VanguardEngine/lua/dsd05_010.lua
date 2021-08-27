@@ -16,27 +16,24 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.OverTrigger, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() then
+		if obj.LastRevealedTrigger() then
 			return true
 		end
 	end
 	return false
 end
 
-function CanFullyResolve(n)
+function CanFullyResolve(n) 
 	if n == 1 then
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

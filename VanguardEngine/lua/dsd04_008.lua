@@ -5,28 +5,26 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 2
-	elseif n == 2 then
 		return q.Location, l.Revealed, q.Other, o.Unit, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.Revealed
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.SB, 2
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.NotActivatedYet() and obj.IsRearguard() and obj.CanSB(1) then
+		if obj.IsRearguard() then
 			return true
 		end
 	end
@@ -40,19 +38,13 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.RevealFromDeck(1)
-		if obj.Exists(2) then
-			obj.SuperiorCall(2)
+		if obj.Exists(1) then
+			obj.SuperiorCall(1)
 		else
-			obj.AutoAddToHand(3)
+			obj.AddToHand(2)
 		end
 	end
 	return 0

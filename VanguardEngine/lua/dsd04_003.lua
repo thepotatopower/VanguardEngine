@@ -14,15 +14,15 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.Revealed
 	elseif n == 3 then
-		return q.Location, l.BackRow, q.Other, o.This
+		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnRide, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -32,7 +32,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() and obj.Exists(3) then
+		if obj.IsBackRowRearguard() then
 			return true
 		end
 	end
@@ -48,9 +48,6 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.RevealFromDeck(1)
@@ -59,9 +56,10 @@ function Activate(n)
 		else
 			obj.AddToSoul(2)
 		end
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.AddBattleOnlyPower(3, 5000)
+		if obj.IsAttackingUnit() then
+			obj.SetAbilityPower(3, 5000)
+		end
 	end
 	return 0
 end

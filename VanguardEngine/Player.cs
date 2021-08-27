@@ -24,7 +24,8 @@ namespace VanguardEngine
         protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
         protected List<Card> _lastCalledFromPrison = new List<Card>();
         protected Dictionary<int, List<Card>> _lastPlacedOnVC = new Dictionary<int, List<Card>>();
-        protected List<Card> _lastRevealedTriggers = new List<Card>();
+        protected List<Card> _lastRevealedDriveChecks = new List<Card>();
+        protected List<Card> _lastRevealedDamageChecks = new List<Card>();
         protected Card _lastRevealedTrigger = null;
         protected Dictionary<int, List<Card>> _lastDiscarded = new Dictionary<int, List<Card>>();
         protected List<Card> _isIntercepting = new List<Card>();
@@ -116,6 +117,8 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnShieldValueChanged;
         public event EventHandler<CardEventArgs> OnAttackEnds;
         public event EventHandler<CardEventArgs> OnReveal;
+        public event EventHandler<CardEventArgs> OnSetPrison;
+        public event EventHandler<CardEventArgs> OnImprison;
 
         public void Initialize(int playerID, Field field)
         {
@@ -534,7 +537,20 @@ namespace VanguardEngine
 
         public List<Card> GetRevealedTriggers()
         {
-            return _lastRevealedTriggers;
+            List<Card> triggers = new List<Card>();
+            triggers.AddRange(_lastRevealedDriveChecks);
+            triggers.AddRange(_lastRevealedDamageChecks);
+            return triggers;
+        }
+
+        public List<Card> GetRevealedDamageChecks()
+        {
+            return _lastRevealedDamageChecks;
+        }
+
+        public List<Card> GetRevealedDriveChecks()
+        {
+            return _lastRevealedDriveChecks;
         }
 
         public Card GetRevealedTrigger()
@@ -2034,7 +2050,10 @@ namespace VanguardEngine
         public int TriggerCheck(bool drivecheck)
         {
             Card trigger = PlayerTrigger.Add(PlayerDeck.Index(0));
-            _lastRevealedTriggers.Add(trigger);
+            if (drivecheck)
+                _lastRevealedDriveChecks.Add(trigger);
+            else
+                _lastRevealedDamageChecks.Add(trigger);
             _lastRevealedTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
                 Log.WriteLine("----------\nCritical Trigger!");
@@ -2399,6 +2418,12 @@ namespace VanguardEngine
         {
             PlayerPrison = _playedOrder;
             _playedOrder = null;
+            if (OnSetPrison != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.playerID = _playerID;
+                OnSetPrison(this, args);
+            }
         }
 
         public void Imprison(List<int> cardsToImprison)
@@ -2409,8 +2434,14 @@ namespace VanguardEngine
             foreach (int tempID in cardsToImprison)
             {
                 card = _field.CardCatalog[tempID];
-                PlayerPrisoners.Add(card);
                 PlayerOrder.Add(card);
+                PlayerPrisoners.Add(card);
+                if (OnImprison != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.playerID = _playerID;
+                    OnImprison(this, args);
+                }
             }
         }
 
@@ -2586,6 +2617,9 @@ namespace VanguardEngine
             {
                 if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
                     PlayerHand.Add(_field.CardCatalog[tempID]);
+                List<int> list = new List<int>();
+                list.Add(tempID);
+                Reveal(list);
             }
         }
 
@@ -2637,6 +2671,7 @@ namespace VanguardEngine
 
         public void RevealFromDeck(int count)
         {
+            EndReveal();
             for (int i = 0; i < count && PlayerDeck.GetCards().Count > i; i++)
             {
                 PlayerRevealed.Add(PlayerDeck.Index(i));
@@ -2692,6 +2727,11 @@ namespace VanguardEngine
             _field.CardStates.AddContinuousValue(tempID, CardState.BonusSkills, skill);
         }
 
+        public void AddSkillUntilEndOfTurn(int tempID, int skill)
+        {
+            _field.CardStates.AddUntilEndOfTurnValue(tempID, CardState.BonusSkills, skill);
+        }
+
         public void AllowBackRowAttack(int tempID)
         {
             _field.CardStates.AddUntilEndOfTurnState(tempID, CardState.CanAttackFromBackRow);
@@ -2742,7 +2782,8 @@ namespace VanguardEngine
             _field.Attacked.Clear();
             _field.Guardians.Clear();
             _field.Booster = -1;
-            _lastRevealedTriggers.Clear();
+            _lastRevealedDriveChecks.Clear();
+            _lastRevealedDamageChecks.Clear();
             _field.UnitsHit.Clear();
             if (OnAttackEnds != null)
                 OnAttackEnds(this, new CardEventArgs());
@@ -2787,7 +2828,7 @@ namespace VanguardEngine
             _lastPutOnGC.Clear();
             _riddenOnThisTurn.Clear();
             _cardRiddenBy.Clear();
-            _lastRevealedTriggers.Clear();
+            //_lastRevealedTriggers.Clear();
             _lastDiscarded.Clear();
             _lastCalledFromPrison.Clear();
             _lastPlacedOnVC.Clear();

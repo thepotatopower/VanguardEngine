@@ -400,6 +400,11 @@ namespace VanguardEngine
                     _costs[Property.Reveal] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Rest)
+                {
+                    _costs[Property.Rest] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
             }
             if (_abilityType == VanguardEngine.AbilityType.ACT || _abilityType == VanguardEngine.AbilityType.Order)
             {
@@ -412,6 +417,8 @@ namespace VanguardEngine
                 _hasPrompt = false;
             }
             if (!_forEnemy && !player)
+                return false;
+            if (_forEnemy && player)
                 return false;
             _checkCondition = script.Globals.Get("CheckCondition");
             _canFullyResolve = script.Globals.Get("CanFullyResolve");
@@ -594,6 +601,8 @@ namespace VanguardEngine
                 ChooseReveal(_costs[Property.Reveal]);
             if (_costs.ContainsKey(Property.AddToSoul))
                 ChooseAddToSoul(_costs[Property.AddToSoul]);
+            if (_costs.ContainsKey(Property.Rest))
+                ChooseRest(_costs[Property.Rest]);
         }
 
         public bool CanPayCost()
@@ -609,6 +618,8 @@ namespace VanguardEngine
                 else if (key == Property.AddToSoul && !CanAddToSoul(_costs[key]))
                     return false;
                 else if (key == Property.Reveal && !CanReveal(_costs[key]))
+                    return false;
+                else if (key == Property.Rest && !CanRest(_costs[key]))
                     return false;
             }
             return true;
@@ -810,6 +821,10 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetRevealed());
                 else if (location == Location.RevealedTriggers)
                     currentPool.AddRange(_player1.GetRevealedTriggers());
+                else if (location == Location.RevealedDamageChecks)
+                    currentPool.AddRange(_player1.GetRevealedDamageChecks());
+                else if (location == Location.RevealedDriveChecks)
+                    currentPool.AddRange(_player1.GetRevealedDriveChecks());
                 else if (location == Location.RevealedTrigger)
                 {
                     if (_player1.GetRevealedTrigger() != null)
@@ -1509,6 +1524,21 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanRest(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            if (cards.Count >= GetMin(paramNum))
+            {
+                foreach (Card card in cards)
+                {
+                    if (!_player1.IsUpRight(card))
+                        return false;
+                }
+                return true;
+            }
+            return false;
+        }
+
         public bool IsAttackingUnit()
         {
             if (_player1.AttackingUnit() != null && _card.tempID == _player1.AttackingUnit().tempID)
@@ -1541,6 +1571,16 @@ namespace VanguardEngine
         {
             if (_player1.IsRearguard(_card.tempID))
                 return true;
+            return false;
+        }
+
+        public bool IsBackRowRearguard()
+        {
+            foreach (Card card in _player1.GetBackRow())
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
             return false;
         }
 
@@ -1677,7 +1717,7 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, false);
         }
 
         public void SuperiorCall(int paramNum, int circle)
@@ -1704,7 +1744,7 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, circles, false, true);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, circles, false, true, false);
         }
 
         public void SuperiorCallAsRest(int paramNum)
@@ -1716,7 +1756,7 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, false);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, false, false);
         }
 
         public void SuperiorOverDress(int paramNum, int paramNum2)
@@ -1725,7 +1765,7 @@ namespace VanguardEngine
             int circle = _player1.GetCircle(ValidCards(paramNum2)[0]);
             List<int> circles = new List<int>();
             circles[0] = circle;
-            _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles, true, true);
+            _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles, true, true, false);
         }
 
         public void CounterBlast(int count)
@@ -2016,13 +2056,18 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true);
+            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, true);
         }
 
         public void ChooseReveal(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             _cardFight.ChooseReveal(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
+        }
+
+        public void Reveal(int paramNum)
+        {
+            _player1.Reveal(ConvertToTempIDs(ValidCards(paramNum)));
         }
 
         public void RevealFromDeck(int count)
@@ -2281,6 +2326,15 @@ namespace VanguardEngine
             }
         }
 
+        public void AddSkillUntilEndOfTurn(int paramNum, int skill)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            foreach (Card card in cards)
+            {
+                _player1.AddSkillUntilEndOfTurn(card.tempID, skill);
+            }
+        }
+
         public void RemoveSkill(int paramNum, int skill)
         {
 
@@ -2499,7 +2553,7 @@ namespace VanguardEngine
             List<Card> toBeCalled = new List<Card>();
             toBeCalled.Add(_player1.GetCard(token));
             toBeCalled[0].originalOwner = _player1._playerID;
-            _cardFight.SuperiorCall(_player1, _player2, toBeCalled, 1, 1, null, false, true);
+            _cardFight.SuperiorCall(_player1, _player2, toBeCalled, 1, 1, null, false, true, false);
         }
 
         public int NumOriginalDress()
@@ -2624,6 +2678,18 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
                 _player1.CardStates.AddContinuousState(card.tempID, state);
+        }
+
+        public List<int> ConvertToTempIDs(List<Card> cards)
+        {
+            List<int> tempIDs = new List<int>();
+            if (cards == null)
+                return tempIDs;
+            foreach (Card card in cards)
+            {
+                tempIDs.Add(card.tempID);
+            }
+            return tempIDs;
         }
     }
 
@@ -2861,6 +2927,8 @@ namespace VanguardEngine
         public const int UnitsCalledFromHandThisTurn = 49;
         public const int Anywhere = 50;
         public const int OrderArea = 51;
+        public const int RevealedDamageChecks = 52;
+        public const int RevealedDriveChecks = 53;
     }
 
     class Query
@@ -2928,5 +2996,6 @@ namespace VanguardEngine
         public const int OncePerTurn = 9;
         public const int AddToSoul = 10;
         public const int Reveal = 11;
+        public const int Rest = 12;
     }
 }

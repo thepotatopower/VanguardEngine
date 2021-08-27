@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnRide, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -23,7 +23,7 @@ function CheckCondition(n)
 	return false
 end
 
-function CanFullyResolve(n)
+function CanFullyResolve(n) 
 	if n == 1 then
 		return true
 	end

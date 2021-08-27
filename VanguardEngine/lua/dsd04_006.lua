@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -38,15 +38,10 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		if obj.Exists(1) then
 			obj.SetAbilityPower(2, 5000)
-		else
-			obj.SetAbilityPower(2, 0)
 		end
 	end
 	return 0

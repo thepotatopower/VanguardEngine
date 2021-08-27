@@ -5,26 +5,24 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 2
+	return 1
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.EnemyRC, a.Other, o.CanChoose, q.Count, 1
+		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.SB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() and obj.CanSB(1) then
+		if obj.LastPlacedOnRC() then
 			return true
 		end
 	end
@@ -33,22 +31,16 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(2) and obj.HasPrison() then
+		if obj.Exists(1) and obj.HasPrison() then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.ChooseImprison(2)
+		obj.ChooseImprison(1)
 	end
 	return 0
 end

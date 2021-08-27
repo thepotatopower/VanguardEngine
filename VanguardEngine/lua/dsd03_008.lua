@@ -1,4 +1,4 @@
--- Knight of Broadaxe, Rafluke
+-- Platinum Wolf
 
 function NumberOfAbilities()
 	return 1
@@ -38,7 +38,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.AddTempPower(1, 10000)
+		obj.AddTempPower(1, 5000)
 	end
 	return 0
 end

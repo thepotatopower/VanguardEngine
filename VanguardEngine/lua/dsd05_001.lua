@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 6
+	return 5
 end
 
 function GetParam(n)
@@ -16,19 +16,17 @@ function GetParam(n)
 	elseif n == 3 then
 		return q.Location, l.PlayerVC, q.Other, o.This
 	elseif n == 4 then
-		return q.Location, l.Damage, q.Count, 1
+		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 2
 	elseif n == 5 then
-		return q.Location, l.EnemyRC, q.Count, 2
-	elseif n == 6 then
-		return q.Location, l.EnemyRC, q.Count, 1
+		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
 	end
 end
 
@@ -38,7 +36,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(4) then
+		if obj.IsVanguard() then
 			return true
 		end
 	end
@@ -49,33 +47,23 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		if obj.HasPrison() and obj.Exists(6) then
+		if obj.HasPrison() and obj.Exists(5) then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(4)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		if obj.IsPlayerTurn() and obj.Exists(1) then
 			obj.SetAbilityPower(3, 10000)
-		else
-			obj.SetAbilityPower(3, 0)
 		end
 		if obj.IsPlayerTurn() and obj.Exists(2) then
 			obj.SetAbilityDrive(3, 1)
-		else
-			obj.SetAbilityDrive(3, 0)
 		end
 	elseif n == 2 then
-		obj.ChooseImprison(5)
+		obj.ChooseImprison(4)
 	end
 	return 0
 end
