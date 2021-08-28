@@ -247,7 +247,7 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectCallLocation(Player actingPlayer, string query, List<int> selectedCircles, List<int> canSelect)
+        public virtual int SelectCallLocation(Player actingPlayer, string query, Card card, List<int> selectedCircles, List<int> canSelect)
         {
             bool swapped = false;
             if (actingPlayer._playerID != _player1._playerID)
@@ -259,6 +259,7 @@ namespace VanguardEngine
             _ints.Clear();
             _ints.AddRange(selectedCircles);
             _ints2.Clear();
+            card_input = card;
             if (canSelect != null)
                 _ints2.AddRange(canSelect);
             SelectCallLocation_Input();

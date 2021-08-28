@@ -531,7 +531,7 @@ namespace VanguardEngine
                 _cardCatalog[newID] = token;
                 _cardLocations[newID] = null;
                 return newID;
-            }    
+            }
             for (int i = 0; i < _cardCatalog.Length; i++)
             {
                 if (_cardCatalog[i] == null)
@@ -621,6 +621,13 @@ namespace VanguardEngine
             _soul.Add(_cards[0]);
             //Log.WriteLine("placed on FL: " + _FL);
             return base.AddToZone(card, true);
+        }
+
+        protected override List<Card> Remove(Card card)
+        {
+            if (_field.Attacked.Contains(card))
+                _field.Attacked.Remove(card);
+            return base.Remove(card);
         }
 
         protected override void ActivateEvent()
@@ -1155,7 +1162,10 @@ namespace VanguardEngine
                 }
             }
             args = new CardEventArgs();
-            args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());
+            if (previousZone == null)
+                args.previousLocation = new Tuple<int, int>(-1, -1);
+            else
+                args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());
             args.currentLocation = new Tuple<int, int>(location, _FL);
             args.faceup = _field.Orientation.IsFaceUp(card.tempID);
             args.upright = _field.Orientation.IsUpRight(card.tempID);

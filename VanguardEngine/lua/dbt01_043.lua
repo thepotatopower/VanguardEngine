@@ -5,28 +5,20 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 1
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Soul, q.Count, 1
-	end
+	return 0
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, p.SB, 1
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(1) then
-			return true
-		end
+		return true
 	elseif n == 2 then
 		if obj.IsWorld() then
 			return true

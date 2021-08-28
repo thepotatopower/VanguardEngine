@@ -5,28 +5,24 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 1
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.BackRow, q.Other, o.This
-	elseif n == 2 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Other, o.NotThis, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttack, t.Auto, p.HasPrompt, p.CB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsAttackingUnit() and obj.CanCB(2) and obj.Exists(1) then
+		if obj.IsBackRowRearguard() and obj.IsAttackingUnit() then
 			return true
 		end
 	end
@@ -35,22 +31,16 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(3) then
+		if obj.Exists(1) then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.CounterBlast(2)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddTempPower(3, obj.PowerOfThisUnit())
+		obj.ChooseAddTempPower(1, obj.PowerOfThisUnit())
 	end
 	return 0
 end

@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 3
 end
 
 function GetParam(n)
@@ -15,10 +15,6 @@ function GetParam(n)
 		return q.Location, l.PlayerRC, q.Grade, 3, q.Grade, 2, q.Grade, 1, q.Grade, 0, q.Other, o.OverDress
 	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 4 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 5 then
-		return q.Location, l.Hand, q.Count, 1
 	end
 end
 
@@ -28,7 +24,7 @@ function ActivationRequirement(n)
 	elseif n == 2 then
 		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
 	elseif n == 3 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttackHits, t.Auto, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.Discard, 1
 	end
 end
 
@@ -38,7 +34,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 3 then
-		if not obj.Activated() and obj.IsAttackingUnit() and obj.InOverDress() and obj.CanCB(4) and obj.CanDiscard(5) then
+		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.InOverDress() then
 			return true
 		end
 	end
@@ -52,13 +48,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 3 then
-		obj.CounterBlast(4)
-		obj.Discard(5)
-	end
 end
 
 function Activate(n)

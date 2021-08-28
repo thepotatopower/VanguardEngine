@@ -462,6 +462,11 @@ namespace VanguardEngine
             get => _activation;
         }
 
+        public string Description
+        {
+            get => _description;
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -504,6 +509,8 @@ namespace VanguardEngine
             {
                 if (_params[i].Counts.Count >= 1)
                     return _params[i].Counts[0];
+                else
+                    return ValidCards(paramNum).Count;
             }
             if (_params[i].Mins.Count >= 1)
                 return GetMin(paramNum);
@@ -521,6 +528,28 @@ namespace VanguardEngine
                     return GetCount(paramNum);
             }
             return -1;
+        }
+
+        public bool HasCount(int paramNum)
+        {
+            int i = paramNum - 1;
+            if (_params.Count >= i)
+            {
+                if (_params[i].Counts.Count >= 1)
+                    return true;
+            }
+            return false;
+        }
+
+        public bool HasMin(int paramNum)
+        {
+            int i = paramNum - 1;
+            if (_params.Count >= i)
+            {
+                if (_params[i].Mins.Count >= 1)
+                    return true;
+            }
+            return false;
         }
 
         public bool GetOrLess(int paramNum)
@@ -603,6 +632,8 @@ namespace VanguardEngine
                 ChooseAddToSoul(_costs[Property.AddToSoul]);
             if (_costs.ContainsKey(Property.Rest))
                 ChooseRest(_costs[Property.Rest]);
+            if (_costs.ContainsKey(Property.Retire))
+                ChooseRetire(_costs[Property.Retire]);
         }
 
         public bool CanPayCost()
@@ -620,6 +651,8 @@ namespace VanguardEngine
                 else if (key == Property.Reveal && !CanReveal(_costs[key]))
                     return false;
                 else if (key == Property.Rest && !CanRest(_costs[key]))
+                    return false;
+                else if (key == Property.Retire && !CanRetire(_costs[key]))
                     return false;
             }
             return true;
@@ -1682,6 +1715,11 @@ namespace VanguardEngine
             return _player1.StoodByCardEffect(_card.tempID, _timingCount);
         }
 
+        public bool StoodByCardEffectThisTurn()
+        {
+            return _player1.StoodByCardEffectThisTurn(_card.tempID);
+        }
+
         public int AttackingUnitLocation()
         {
             return _player1.AttackingUnitLocation();
@@ -1847,7 +1885,7 @@ namespace VanguardEngine
         public void ChooseAddToSoul(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            if (GetMin(paramNum) < 0)
+            if (!HasCount(paramNum) && !HasMin(paramNum))
                 AddToSoul(paramNum);
             else
                 _cardFight.AddToSoul(_player1, _player2, cardsToSelect, _params[paramNum - 1].Counts[0], _params[paramNum - 1].Counts[0]);
@@ -1932,10 +1970,13 @@ namespace VanguardEngine
             List<Card> canRetire = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
-                if (!_player1.CardStates.HasState(card.tempID, CardState.Resist))
+                if (!(card.originalOwner != _player1._playerID && _player1.CardStates.HasState(card.tempID, CardState.Resist)))
                     canRetire.Add(card);
             }
-            _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum - 1].Counts[0], false); 
+            if (!HasCount(paramNum) && !HasMin(paramNum))
+                _cardFight.Retire(_player1, _player2, ConvertToTempIDs(canRetire));
+            else
+                _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum - 1].Counts[0], false); 
         }
 
         public void Bind(int paramNum)

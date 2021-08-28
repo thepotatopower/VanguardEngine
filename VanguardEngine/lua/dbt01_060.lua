@@ -5,24 +5,22 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnRide, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnEnemyRetired, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnEnemyRetired, t.Auto, p.HasPrompt, p.CB, 1, p.Retire, 2
 	end
 end
 
@@ -32,7 +30,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.PlayerMainPhase() and obj.CanB(1) then
+		if obj.IsRearguard() and obj.PlayerMainPhase() then
 			return true
 		end
 	end
@@ -43,26 +41,18 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		if obj.CanRetire(2) then
+		if obj.CanRetire(1) then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(1)
-		obj.Retire(3)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.SoulCharge(1)
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
-		obj.ChooseRetire(2)
+		obj.ChooseRetire(1)
 	end
 	return 0
 end

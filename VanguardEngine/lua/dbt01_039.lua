@@ -18,9 +18,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrderPlayed, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnOrderPlayed, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -46,17 +46,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddTempPower(1, 5000)
 	elseif n == 2 then
 		if obj.IsPlayerTurn() and obj.IsAbyssalDarkNight() then
 			obj.SetAbilityPower(2, 5000)
-		else
-			obj.SetAbilityPower(2, 0)
 		end
 	end
 	return 0

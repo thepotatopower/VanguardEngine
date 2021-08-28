@@ -5,26 +5,24 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 4
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Drop, q.Count, 1
+		return q.Location, l.Drop, q.Count, 1, q.Min, 0
 	elseif n == 2 then
-		return q.Location, l.EnemyRC, q.Count, 2, q.Other, o.OrLess
+		return q.Location, l.EnemyRC, q.Count, 3
 	elseif n == 3 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 4 then
 		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnRide, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttack, t.Auto, p.HasPrompt, p.CB, 1
 	end
 end
 
@@ -34,7 +32,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsAttackingUnit() and obj.Exists(2) and obj.CanCB(3) then
+		if obj.IsAttackingUnit() and not obj.Exists(2) then
 			return true
 		end
 	end
@@ -50,19 +48,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(3)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddToSoul(1)
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
 		obj.SoulCharge(1)
-		obj.AddBattleOnlyPower(4, 5000)
+		obj.AddBattleOnlyPower(3, 5000)
 	end
 	return 0
 end

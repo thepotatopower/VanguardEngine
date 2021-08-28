@@ -16,9 +16,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -44,17 +44,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.SoulCharge(1)
 	elseif n == 2 then
 		if obj.IsPlayerTurn() and obj.SoulCount() >= 10 then
 			obj.SetAbilityPower(1, 10000)
-		else
-			obj.SetAbilityPower(1, 0)
 		end
 	end
 	return 0

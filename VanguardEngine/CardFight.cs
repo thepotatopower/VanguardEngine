@@ -125,14 +125,14 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             actingPlayer = player1;
-            //TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
+            TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -383,7 +383,7 @@ namespace VanguardEngine
                     {
                         input = _inputManager.SelectRearguardToCall();
                         canSelect.AddRange(player1.GetAvailableCircles(input));
-                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
+                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
                         Log.WriteLine("input: " + input + " location: " + location);
                         if (_abilities.CanOverDress(input, location))
                         {
@@ -440,7 +440,7 @@ namespace VanguardEngine
                 {
                     input = _inputManager.int_input2;
                     canSelect.AddRange(player1.GetAvailableCircles(input));
-                    location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", new List<int>(), canSelect);
+                    location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
                     if (_abilities.CanOverDress(input, location))
                     {
                         //Log.WriteLine("Perform overDress?");
@@ -458,13 +458,23 @@ namespace VanguardEngine
                 }
                 else if (selection == MainPhaseAction.ActivateAbility)
                 {
+                    List<Ability> ACTs = new List<Ability>();
                     foreach (Ability ability in GetACTAbilities(player1))
                     {
                         if (ability.GetCard().tempID == _inputManager.int_input2)
                         {
-                            ActivateACT(player1, ability);
-                            break;
+                            ACTs.Add(ability);
                         }
+                    }
+                    if (ACTs.Count > 1)
+                    {
+                        List<string> options = new List<string>();
+                        foreach (Ability ability in ACTs)
+                        {
+                            options.Add(ability.Description);
+                        }
+                        int ACTselection = _inputManager.SelectOption(player1, options.ToArray());
+                        ActivateACT(player1, ACTs[ACTselection - 1]);
                     }
                     foreach (Ability ability in GetAvailableOrders(player1, false))
                     {
@@ -514,7 +524,7 @@ namespace VanguardEngine
                 if (canSelect.Count == 1)
                     selectedCircle = canSelect[0];
                 else
-                    selectedCircle = _inputManager.SelectCallLocation(player1, "Choose RC.", selectedCircles, canSelect);
+                    selectedCircle = _inputManager.SelectCallLocation(player1, "Choose RC.", player1.GetCard(tempID), selectedCircles, canSelect);
                 selectedCircles.Add(selectedCircle);
                 sc = player1.SuperiorCall(selectedCircle, tempID, overDress, standing);
                 if (free && OnFree != null)
@@ -628,15 +638,13 @@ namespace VanguardEngine
             else
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             _inputManager.SwapPlayers();
-            while (true)
+            while (player2.GetAttackedCards().Count > 0)
             {
                 _inputManager._abilities.Clear();
                 if (!player2.OrderPlayed())
                     _inputManager._abilities.AddRange(GetAvailableOrders(player2, true));
-                if (!player1.StillAttacking())
-                    break;
                 player2.PrintEnemyAttack();
-                if (true)
+                if (player2.GetAttackedCards().Count > 0)
                 {
                     selection = _inputManager.SelectGuardPhaseAction();
                     if (selection == 1)
@@ -716,7 +724,7 @@ namespace VanguardEngine
                     }
                 }
              }
-            if (player1.StillAttacking() && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck()))
+            if (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck())
             {
                 if (player1 == _player1)
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
@@ -732,7 +740,7 @@ namespace VanguardEngine
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                 _inputManager.SwapPlayers();
             }
-            if (player1.StillAttacking() && player2.AttackHits())
+            if (player2.GetAttackedCards().Count > 0 && player2.AttackHits())
                 attackHits = true;
             player2.RetireGC();
             if (attackHits)
@@ -1011,6 +1019,11 @@ namespace VanguardEngine
                 ability.Activate();
                 player1.EndOrder();
             }
+            _playTimings.AddPlayTiming(Activation.OnOrderPlayed);
+            if (_player1 == player1)
+                ActivateAbilities(_player1, _player2);
+            else
+                ActivateAbilities(_player2, _player1);
         }
 
         public List<Ability> GetACTAbilities(Player player)
@@ -1045,6 +1058,10 @@ namespace VanguardEngine
             ability.PayCost();
             ability.Activate();
             player1.UpdateRecordedValues();
+            if (player1 == _player1)
+                ActivateAbilities(_player1, _player2);
+            else
+                ActivateAbilities(_player2, _player1);
         }
 
         public void CallFromPrison(Player player1, Player player2)

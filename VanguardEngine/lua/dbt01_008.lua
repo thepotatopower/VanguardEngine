@@ -5,32 +5,28 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 7
+	return 5
 end
 
 function GetParam(n)
 	if n == 1 then 
-		return q.Location, l.RevealedTriggers, q.UnitType, u.Trigger, q.Count, 1
+		return q.Location, l.RevealedTrigger, q.UnitType, u.Trigger, q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 4 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 5 then
 		return q.Location, l.PlayerHand, q.Trigger, tt.Critical, q.Trigger, tt.Front, q.Count, 1
-	elseif n == 6 then
+	elseif n == 4 then
 		return q.Location, l.Revealed
-	elseif n == 7 then
+	elseif n == 5 then
 		return q.Location, l.PlayerVC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.CB, 1, p.SB, 1
 	end
 end
 

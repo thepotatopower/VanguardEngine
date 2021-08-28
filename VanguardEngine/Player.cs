@@ -31,6 +31,7 @@ namespace VanguardEngine
         protected List<Card> _isIntercepting = new List<Card>();
         protected Card _lastOrderPlayed = null;
         protected Dictionary<int, List<Card>> _stoodByCardEffect = new Dictionary<int, List<Card>>();
+        protected List<int> _stoodByCardEffectThisTurn = new List<int>();
         protected Dictionary<int, List<Card>> _retiredForPlayerCost = new Dictionary<int, List<Card>>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
@@ -1923,8 +1924,6 @@ namespace VanguardEngine
 
         public void Retire(List<int> tempIDs)
         {
-            List<Card> drop;
-            Card toBeRetired;
             _playerRetired = false;
             _enemyRetired = false;
             foreach (int tempID in tempIDs)
@@ -2214,7 +2213,11 @@ namespace VanguardEngine
             Card target = FindActiveUnit(selection);
             _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
             if (!IsUpRight(target))
+            {
                 _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(target);
+                if (!_stoodByCardEffectThisTurn.Contains(selection))
+                    _stoodByCardEffectThisTurn.Add(selection);
+            }
             _field.Orientation.Rotate(target.tempID, true);
         }
 
@@ -2253,7 +2256,10 @@ namespace VanguardEngine
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
-                _field.GetSoulZone(PlayerVanguard).Add(cardToAdd);
+                if (cardToAdd.originalOwner == _playerID)
+                    _field.GetSoulZone(PlayerVanguard).Add(cardToAdd);
+                else
+                    _field.GetSoulZone(EnemyVanguard).Add(cardToAdd);
             }
         }
 
@@ -2632,6 +2638,7 @@ namespace VanguardEngine
                 {
                     _field.Orientation.Rotate(tempID, true);
                     _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(_field.CardCatalog[tempID]);
+                    _stoodByCardEffectThisTurn.Add(tempID);
                 }
             }
         }
@@ -2640,7 +2647,7 @@ namespace VanguardEngine
         {
             foreach (int tempID in cardsToRest)
             {
-                _field.Orientation.SetUpRight(tempID, false);
+                _field.Orientation.Rotate(tempID, false);
             }
         }
 
@@ -2798,6 +2805,7 @@ namespace VanguardEngine
             _alchemagicUsed = false;
             _field.SetPersonaRide(false, _playerID);
             _stoodByCardEffect.Clear();
+            _stoodByCardEffectThisTurn.Clear();
             _orderPlayed = false;
             _soulChargedThisTurn = false;
             _playerRetiredThisTurn = false;
@@ -2936,6 +2944,13 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             if (_stoodByCardEffect.ContainsKey(count) && _stoodByCardEffect[count].Contains(card))
+                return true;
+            return false;
+        }
+
+        public bool StoodByCardEffectThisTurn(int tempID)
+        {
+            if (_stoodByCardEffectThisTurn.Contains(tempID))
                 return true;
             return false;
         }
