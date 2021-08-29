@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttack, t.Auto, p.HasPrompt, p.OncePerTurn, p.AddToSoul, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and not obj.Activated() and obj.IsAttackingUnit() and obj.InFinalRush() and obj.Exists(1) then
+		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.InFinalRush() then
 			return true
 		end
 	end
@@ -36,12 +36,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.ChooseAddToSoul(1)
-	end
 end
 
 function Activate(n)

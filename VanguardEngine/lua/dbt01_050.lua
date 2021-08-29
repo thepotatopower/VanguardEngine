@@ -18,9 +18,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnVC, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -46,17 +46,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddToHand(1)
 	elseif n == 2 then
 		if obj.OrderPlayed() then
 			obj.SetAbilityPower(2, 5000)
-		else
-			obj.SetAbilityPower(2, 0)
 		end
 	end
 	return 0

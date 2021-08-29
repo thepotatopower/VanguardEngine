@@ -5,71 +5,50 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 7
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Drop, q.Grade, 0, q.Count, 1
+		return q.Location, l.Drop, q.Grade, 0, q.Other, o.GradeOrLess, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.Drop, q.Grade, 0, q.Grade, 1, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.Drop, q.Grade, 0, q.Grade, 1, q.Grade, 2, q.Count, 1
-	elseif n == 4 then 
-		return q.Location, l.Drop, q.Grade, 0, q.Grade, 1, q.Grade, 2, q.Grade, 3, q.Count, 1
-	elseif n == 5 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 6 then
 		return q.Location, l.Drop, q.Count, 1
-	elseif n == 7 then
+	elseif n == 3 then
 		return q.Location, l.Selected
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.SB, 1
+		return a.OnOrder, t.Order, p.HasPrompt, p.SB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(5) then 
-			return true
-		end
+		return true
 	end
 	return false
 end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(6) then
+		if obj.Exists(2) then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(5)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		local g = obj.VanguardGrade()
-		if g == 0 then
+		obj.Inject(1, q.Grade, obj.VanguardGrade())
+		if obj.Exists(1) then
 			obj.Select(1)
-		elseif g == 1 then
-			obj.Select(2)
-		elseif g == 2 then
-			obj.Select(3)
-		elseif g == 3 then
-			obj.Select(4)
+			obj.SuperiorCall(3)
+			obj.AddTempPower(3, 5000)
+			obj.EndSelect()
 		end
-		obj.SuperiorCall(7)
-		obj.AddTempPower(7, 5000)
 	end
 	return 0
 end

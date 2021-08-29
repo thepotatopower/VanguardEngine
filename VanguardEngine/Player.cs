@@ -1341,6 +1341,14 @@ namespace VanguardEngine
             return _lastPlacedOnRC[count];
         }
 
+        public List<Card> GetLastPlacedOnRC()
+        {
+            List<Card> list = new List<Card>();
+            foreach (int key in _lastPlacedOnRC.Keys)
+                list.AddRange(_lastPlacedOnRC[key]);
+            return list;
+        }
+
         public List<Card> GetLastPlacedOnVC(int count)
         {
             if (!_lastPlacedOnVC.ContainsKey(count))
@@ -1394,10 +1402,11 @@ namespace VanguardEngine
 
         public int Critical()
         {
-            Card attacker = _field.GetUnit(_field.Attacker);
-            int critical = attacker.critical;
-            foreach (int value in _field.CardStates.GetValues(attacker.tempID, CardState.BonusCritical))
+            Card card = _field.GetUnit(_field.Attacker);
+            int critical = card.critical;
+            foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusCritical))
                 critical += value;
+            critical += _field.CircleCritical[GetCircle(card)];
             return critical;
         }
 
@@ -1515,16 +1524,21 @@ namespace VanguardEngine
             if (PlayerPrisoners.Contains(_field.CardCatalog[tempID]))
                 _lastCalledFromPrison.Add(ToBeCalled);
             _lastCalledFromPrison.Add(ToBeCalled);
-            if (!overDress)
-            {
-                _field.SetUnit(circle, ToBeCalled);
-            }
+            if (ToBeCalled.orderType >= 0)
+                PlayerDrop.Add(ToBeCalled);
             else
             {
-                _field.RideUnit(circle, ToBeCalled);
+                if (!overDress)
+                {
+                    _field.SetUnit(circle, ToBeCalled);
+                }
+                else
+                {
+                    _field.RideUnit(circle, ToBeCalled);
+                }
+                if (!standing)
+                    _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
             }
-            if (!standing)
-                _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
             if (overDress)
                 Log.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else

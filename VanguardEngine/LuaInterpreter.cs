@@ -880,7 +880,7 @@ namespace VanguardEngine
                 else if (location == Location.Trigger)
                     currentPool.Add(_player1.GetTrigger(true));
                 else if (location == Location.LastCalled)
-                    currentPool.AddRange(_player1.GetLastPlacedOnRC(_timingCount));
+                    currentPool.AddRange(_player1.GetLastPlacedOnRC());
                 else if (location == Location.PlayerOrder)
                     currentPool.AddRange(_player1.GetPlayerOrder());
                 else if (location == Location.PlayerUnits)
@@ -1133,7 +1133,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.orderType == OrderType.Set || card.orderType == OrderType.Prison || card.orderType == OrderType.World)
+                            if (card.orderType >= OrderType.Set)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -1746,7 +1746,7 @@ namespace VanguardEngine
             _player1.Mill(count);
         }
 
-        public void SuperiorCall(int paramNum)
+        public bool SuperiorCall(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             int count = GetCount(paramNum);
@@ -1755,7 +1755,7 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, false);
+            return _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, false);
         }
 
         public void SuperiorCall(int paramNum, int circle)

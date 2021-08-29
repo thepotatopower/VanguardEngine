@@ -5,34 +5,30 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 4
 end
 
 function GetParam(n)
-	if n == 1 then 
-		return q.Location, l.Soul, q.Count, 2
-	elseif n == 2 then
+	if n == 1 then
 		return q.Location, l.Looking, q.Count, 1, q.Min, 0
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.Looking, q.Count, 2, q.Min, 0
-	elseif n == 4 then
+	elseif n == 3 then
 		return q.Location, l.Looking
-	elseif n == 5 then
+	elseif n == 4 then
 		return q.Location, l.LastCalled
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.SB, 2
+		return a.OnOrder, t.Order, p.HasPrompt, p.SB, 2
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(1) then 
-			return true
-		end
+		return true
 	end
 	return false
 end
@@ -44,22 +40,16 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.LookAtTopOfDeck(4)
 		if obj.IsAlchemagic() then
-			obj.SuperiorCall(3)
-		else
 			obj.SuperiorCall(2)
+		else
+			obj.SuperiorCall(1)
 		end
-		obj.AddToDrop(4)
-		obj.AddTempPower(5, 5000)
+		obj.AddToDrop(3)
+		obj.AddTempPower(4, 5000)
 	end
 	return 0
 end

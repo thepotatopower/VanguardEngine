@@ -131,8 +131,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -499,13 +499,14 @@ namespace VanguardEngine
             player2.ClearOverloadedCards();
         }
 
-        public void SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing, bool free)
+        public bool SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing, bool free)
         {
             List<int> selections;
             int selectedCircle = 0;
             List<int> selectedCircles = new List<int>();
             List<int> canSelect = new List<int>();
             int sc = 0;
+            bool successful = false;
             selections = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose card to Call.");
             foreach (int tempID in selections)
             {
@@ -527,6 +528,7 @@ namespace VanguardEngine
                     selectedCircle = _inputManager.SelectCallLocation(player1, "Choose RC.", player1.GetCard(tempID), selectedCircles, canSelect);
                 selectedCircles.Add(selectedCircle);
                 sc = player1.SuperiorCall(selectedCircle, tempID, overDress, standing);
+                successful = true;
                 if (free && OnFree != null)
                 {
                     CardEventArgs args = new CardEventArgs();
@@ -541,6 +543,7 @@ namespace VanguardEngine
                 _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand);
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
+            return successful;
         }
 
         public void MoveRearguard(Player player1, Player player2, int selection)
@@ -862,6 +865,7 @@ namespace VanguardEngine
             {
                 player1.TakeDamage();
             }
+            ActivateContAbilities(player1, player2);
         }
 
         public void PerfectGuard(Player player1, Player player2)
@@ -914,15 +918,15 @@ namespace VanguardEngine
             Ability givenAbility;
             player1.RefreshContinuous();
             player2.RefreshContinuous();
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetOrderZone(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetActiveUnits(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetGC(), 0));
-            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetOrderZone(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetDrop(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetDeck(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player1.GetHand(), 0));
+            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetOrderZone(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetActiveUnits(), 0));
             //abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetGC(), 0));
-            abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetOrderZone(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetDrop(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetDeck(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetHand(), 0));

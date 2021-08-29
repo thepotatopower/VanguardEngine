@@ -26,7 +26,7 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.CB, 1, p.SB, 1
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.SB, 1
 	end
 end
 
@@ -36,7 +36,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.PersonaRode() and obj.CanCB(3) and obj.CanSB(4) and obj.Exists(5) then
+		if obj.IsVanguard() and not obj.Activated() and obj.PersonaRode() then
 			return true
 		end
 	end
@@ -47,26 +47,23 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		return true
+		if obj.Exists(3) then
+			return true
+		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(3)
-		obj.SoulBlast(4)
-	end
 end
 
 function Activate(n)
 	if n == 1 then
 		obj.ChooseAddTempPower(2, 10000)
 	elseif n == 2 then
-		obj.ChooseReveal(5)
-		obj.SendToTop(6)
-		obj.AddDrive(7, 1)
-		obj.EndReveal()
+		if obj.Exists(3) then
+			obj.ChooseReveal(3)
+			obj.SendToTop(4)
+			obj.AddDrive(5, 1)
+			obj.EndReveal()
+		end
 	end
 	return 0
 end

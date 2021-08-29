@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 4
+	return 3
 end
 
 function GetParam(n)
@@ -14,27 +14,25 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	elseif n == 3 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 4 then
-		return q.Location, l.FrontRowEnemyRC, q.Count, 1
+		return q.Location, l.FrontRowEnemyRC, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 2 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.SB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() then
+		if obj.IsRearguard() or obj.IsGuardian() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.LastPlacedOnRC() and obj.CanSB(3) then
+		if obj.LastPlacedOnRC() then
 			return true
 		end
 	end
@@ -45,17 +43,11 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		if obj.HasPrison() and obj.Exists(1) then
+		if obj.HasPrison() and obj.Exists(3) then
 			return true
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.SoulBlast(3)
-	end
 end
 
 function Activate(n)
@@ -63,12 +55,9 @@ function Activate(n)
 		if obj.Exists(1) then
 			obj.SetAbilityPower(2, 5000)
 			obj.SetAbilityShield(2, 10000)
-		else
-			obj.SetAbilityPower(2, 0)
-			obj.SetAbilityShield(2, 0)
 		end
 	elseif n == 2 then
-		obj.ChooseImprison(4)
+		obj.ChooseImprison(3)
 	end
 	return 0
 end

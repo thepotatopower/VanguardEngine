@@ -16,13 +16,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.OnTriggerZone() then
+		if obj.LastRevealedTrigger() then
 			return true
 		end
 	end
