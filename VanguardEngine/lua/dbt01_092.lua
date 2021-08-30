@@ -5,28 +5,24 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 2
+	return 1
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.PlayerVC, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, p.SB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(1) then
-			return true
-		end
+		return true
 	end
 	return false
 end
@@ -38,13 +34,9 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	obj.SoulBlast(1)
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddTempPower(2, 10000)
+		obj.ChooseAddTempPower(1, 10000)
 	end
 	return 0
 end

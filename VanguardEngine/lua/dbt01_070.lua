@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -43,8 +43,6 @@ function Activate(n)
 	if n == 1 then
 		if obj.SoulChargedThisTurn() then
 			obj.SetAbilityPower(1, 2000)
-		else
-			obj.SetAbilityPower(1, 0)
 		end
 	end
 	return 0

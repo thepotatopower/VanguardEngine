@@ -5,24 +5,22 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
 		return q.Location, l.PlayerRC, q.Other, o.This, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.Soul, q.Count, 10
-	elseif n == 3 then
 		return q.Location, l.Damage, q.Other, o.FaceDown, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnAttackHits, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.AddToSoul, 1
 	end
 end
 
@@ -32,7 +30,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.Exists(2) then
+		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.SoulCount() >= 10 then
 			return true
 		end
 	end
@@ -43,17 +41,11 @@ function CanFullyResolve(n)
 	if n == 1 then
 		return true
 	elseif n == 2 then
-		if obj.Exists(3) then
+		if obj.Exists(2) then
 			return true
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.AddToSoul(1)
-	end
 end
 
 function Activate(n)

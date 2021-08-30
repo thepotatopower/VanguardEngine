@@ -10,13 +10,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnGC, t.Auto, p.HasPrompt, p.Discard, 1
+		return a.PutOnGC, t.Auto, p.HasPrompt, p.Discard, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnGC() then
+		if obj.LastPutOnGC() then
 			return true
 		end
 	end

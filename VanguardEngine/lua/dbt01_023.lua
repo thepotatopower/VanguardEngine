@@ -16,9 +16,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.Retire, 1
 	end
 end
 
@@ -42,12 +42,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.Retire(1)
-	end
 end
 
 function Activate(n)

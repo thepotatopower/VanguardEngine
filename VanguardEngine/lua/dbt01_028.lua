@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.CB, 2
 	end
 end
 
@@ -38,12 +38,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.CounterBlast(1)
-	end
 end
 
 function Activate(n)

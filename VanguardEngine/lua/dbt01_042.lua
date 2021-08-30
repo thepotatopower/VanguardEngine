@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnGC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PutOnGC, t.Auto, p.HasPrompt
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnGC() then
+		if obj.LastPutOnGC() then
 			return true
 		end
 	end
@@ -38,17 +38,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		if obj.Exists(2) then
-			obj.Discard(1)
-		end
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.PerfectGuard()
+		if obj.Exists(2) then
+			obj.Discard(1)
+		end
 	end
 	return 0
 end

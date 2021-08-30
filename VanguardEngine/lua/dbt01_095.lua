@@ -10,7 +10,7 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.GC, q.Other, o.This, q.Count, 1
+		return q.Location, l.GC, q.Other, o.This
 	elseif n == 2 then
 		return q.Location, l.GC, q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3
 	end
@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) then
+		if obj.IsGuardian() then
 			return true
 		end
 	end
@@ -38,9 +38,6 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	local count = 0
 	if n == 1 then
@@ -51,8 +48,6 @@ function Activate(n)
 			end
 			count = count / 2
 			obj.SetAbilityShield(1, count * 5000)
-		else
-			obj.SetAbilityShield(1, 0)
 		end
 	end
 	return 0

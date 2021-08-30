@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.AddToSoul, 1
 	end
 end
 
@@ -36,12 +36,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.AddToSoul(1)
-	end
 end
 
 function Activate(n)

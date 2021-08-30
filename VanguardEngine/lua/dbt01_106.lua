@@ -22,15 +22,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, p.SpecificSB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanSB(1) then
-			return true
-		end
+		return true
 	end
 	return false
 end
@@ -42,12 +40,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
 end
 
 function Activate(n)

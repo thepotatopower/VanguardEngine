@@ -16,13 +16,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsBooster() and obj.VanguardIsAttackingUnit() then
+		if obj.IsRearguard() and obj.IsBooster() and obj.VanguardIsAttackingUnit() then
 			return true
 		end
 	end
@@ -34,9 +34,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

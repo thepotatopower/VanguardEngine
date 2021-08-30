@@ -5,55 +5,45 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 4
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Damage, q.Count, 5, q.Min, 1
-	elseif n == 3 then 
+		return q.Location, l.Damage, q.Min, 1
+	elseif n == 2 then 
 		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
-	elseif n == 4 then
+	elseif n == 3 then
 		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 0
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt, p.SpecificCB, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.CanCB(1) then
-			return true
-		end
+		return true
 	end
 	return false
 end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.CanRetire(3) then
+		if obj.CanRetire(2) then
 			return true
 		end
 	end
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.CounterBlast(2)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.Inject(4, q.Count, obj.CBUsed())
-		obj.ChooseRetire(4)
+		obj.Inject(3, q.Count, obj.CBUsed())
+		obj.ChooseRetire(3)
 	end
 	return 0
 end

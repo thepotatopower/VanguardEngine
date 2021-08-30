@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false, p.Retire, 2
+		return a.OnOrder, t.Order, p.HasPrompt, p.Retire, 1
 	end
 end
 
@@ -36,12 +36,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.ChooseRetire(1)
-	end
 end
 
 function Activate(n)

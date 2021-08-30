@@ -1012,7 +1012,7 @@ namespace VanguardEngine
             if (!_field.Attacked.Contains(attacked))
                 return 0;
             int shield = CalculatePowerOfUnit(GetCircle(_field.CardCatalog[tempID]));
-            if (_field.Sentinel.Contains(attacked) || _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade))
+            if (_field.Sentinel.Contains(attacked) || (_field.GetUnit(_field.Attacker) != null && _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade)))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
                 return shield;
@@ -1524,6 +1524,8 @@ namespace VanguardEngine
             if (PlayerPrisoners.Contains(_field.CardCatalog[tempID]))
                 _lastCalledFromPrison.Add(ToBeCalled);
             _lastCalledFromPrison.Add(ToBeCalled);
+            if (_field.CardLocations[tempID] == PlayerHand)
+                fromHand = true;
             if (ToBeCalled.orderType >= 0)
                 PlayerDrop.Add(ToBeCalled);
             else

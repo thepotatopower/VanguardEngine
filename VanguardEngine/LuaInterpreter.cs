@@ -405,6 +405,16 @@ namespace VanguardEngine
                     _costs[Property.Rest] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.SpecificCB)
+                {
+                    _costs[Property.SpecificCB] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.SpecificSB)
+                {
+                    _costs[Property.SpecificSB] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
             }
             if (_abilityType == VanguardEngine.AbilityType.ACT || _abilityType == VanguardEngine.AbilityType.Order)
             {
@@ -416,6 +426,8 @@ namespace VanguardEngine
                 _isMandatory = true;
                 _hasPrompt = false;
             }
+            if (_costs.Count > 0)
+                _hasPrompt = true;
             if (!_forEnemy && !player)
                 return false;
             if (_forEnemy && player)
@@ -622,6 +634,10 @@ namespace VanguardEngine
             //_script.Call(_abilityCost, _abilityNumber);
             if (_costs.ContainsKey(Property.CB))
                 CounterBlast(_costs[Property.CB]);
+            if (_costs.ContainsKey(Property.SpecificCB))
+                SpecificCounterBlast(_costs[Property.SpecificCB]);
+            if (_costs.ContainsKey(Property.SpecificSB))
+                SpecificSoulBlast(_costs[Property.SpecificSB]);
             if (_costs.ContainsKey(Property.SB))
                 SoulBlast(_costs[Property.SB]);
             if (_costs.ContainsKey(Property.Discard))
@@ -641,6 +657,8 @@ namespace VanguardEngine
             foreach (int key in _costs.Keys)
             {
                 if (key == Property.CB && !CanCB(_costs[key]))
+                    return false;
+                else if (key == Property.SpecificCB && !CanSpecificCB(_costs[key]))
                     return false;
                 else if (key == Property.SB && !CanSB(_costs[key]))
                     return false;
@@ -735,7 +753,7 @@ namespace VanguardEngine
         public int GetRetire()
         {
             if (_costs.ContainsKey(Property.Retire))
-                return _costs[Property.Retire];
+                return GetMin(_costs[Property.Retire]);
             else
                 return 0;
         }
@@ -1205,8 +1223,9 @@ namespace VanguardEngine
                 for (int i = 0; i < currentPool.Count; i++)
                 {
                     if ((param.Grades.Contains(currentPool[i].grade) || 
-                        (param.Others.Contains(Other.GradeOrLess) && currentPool[i].grade <= param.Grades.Max()) && 
-                        !newPool.Contains(currentPool[i])))
+                        (param.Others.Contains(Other.GradeOrLess) && currentPool[i].grade <= param.Grades.Max()) ||
+                        (param.Others.Contains(Other.GradeOrHigher) && currentPool[i].grade >= param.Grades.Min())) && 
+                        !newPool.Contains(currentPool[i]))
                         newPool.Add(currentPool[i]);
                 }
                 currentPool.Clear();
@@ -1469,6 +1488,38 @@ namespace VanguardEngine
             if (_withAlchemagic && _card.orderType == OrderType.Normal && (_player1.CanAlchemagicDiff() || _player1.CanAlchemagicSame()) && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
                 faceupCards += _player1.AlchemagicFreeCBAvailable();
             if (faceupCards >= count)
+                return true;
+            return false;
+        }
+
+        public bool CanSpecificCB(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            int faceupCards = 0;
+            foreach (Card card in cards)
+            {
+                if (_player1.IsFaceUp(card) && _player1.GetDamageZone().Contains(card))
+                    faceupCards++;
+            }
+            if (_withAlchemagic && _card.orderType == OrderType.Normal && (_player1.CanAlchemagicDiff() || _player1.CanAlchemagicSame()) && _cardFight.AlchemagicableCardsAvailable(_player1, _card.tempID))
+                faceupCards += _player1.AlchemagicFreeCBAvailable();
+            if (faceupCards >= GetMin(paramNum))
+                return true;
+            return false;
+        }
+
+        public bool CanSpecificSB(int paramNum)
+        {
+            if (_player1.IsAlchemagic() && _player1.AlchemagicFreeSBAvailable())
+                return true;
+            List<Card> cards = ValidCards(paramNum);
+            int soulCount = 0;
+            foreach (Card card in cards)
+            {
+                if (_player1.GetSoul().Contains(card))
+                    soulCount++;
+            }
+            if (soulCount >= GetMin(paramNum))
                 return true;
             return false;
         }
@@ -1822,6 +1873,18 @@ namespace VanguardEngine
             _cardFight.CounterBlast(_player1, _player2, canCB, count, min);
         }
 
+        public void SpecificCounterBlast(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            List<Card> canCB = new List<Card>();
+            foreach (Card card in cards)
+            {
+                if (_player1.GetDamageZone().Contains(card) && _player1.IsFaceUp(card))
+                    canCB.Add(card);
+            }
+            _cardFight.CounterBlast(_player1, _player2, canCB, GetCount(paramNum), GetMin(paramNum));
+        }
+
         public int CBUsed()
         {
             return _player1.CBUsed();
@@ -1836,6 +1899,17 @@ namespace VanguardEngine
         {
             List<Card> canSB = _player1.GetSoul();
             _cardFight.SoulBlast(_player1, _player2, canSB, count);
+        }
+
+        public void SpecificSoulBlast(int paramNum)
+        {
+            List<Card> canSB = new List<Card>();
+            foreach (Card card in ValidCards(paramNum))
+            {
+                if (_player1.GetSoul().Contains(card))
+                    canSB.Add(card);
+            }
+            _cardFight.SoulBlast(_player1, _player2, canSB, GetMin(paramNum));
         }
 
         public void CounterCharge(int count)
@@ -2076,6 +2150,8 @@ namespace VanguardEngine
                 if (_player1.IsUpRight(card))
                     canRest.Add(card);
             }
+            if (!HasCount(paramNum) && !HasMin(paramNum))
+                _player1.Rest(ConvertToTempIDs(canRest));
             _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
         }
 
@@ -3009,6 +3085,7 @@ namespace VanguardEngine
         public const int SetOrder = 18;
         public const int InFront = 19;
         public const int GradeOrLess = 20;
+        public const int GradeOrHigher = 24;
         public const int Boosting = 21;
         public const int Locked = 22;
         public const int SameColumn = 23;
@@ -3038,5 +3115,7 @@ namespace VanguardEngine
         public const int AddToSoul = 10;
         public const int Reveal = 11;
         public const int Rest = 12;
+        public const int SpecificCB = 13;
+        public const int SpecificSB = 14;
     }
 }

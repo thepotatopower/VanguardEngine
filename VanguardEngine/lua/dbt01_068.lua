@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnBlitzOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnBlitzOrder, t.Order, p.HasPrompt
 	end
 end
 
@@ -36,9 +36,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

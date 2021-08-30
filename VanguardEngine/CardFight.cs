@@ -131,8 +131,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -693,7 +693,7 @@ namespace VanguardEngine
                     {
                         if (!player2.OrderPlayed())
                         {
-                            ChooseOrderToActivate(player1, true);
+                            ChooseOrderToActivate(player2, true);
                         }
                         else
                             Log.WriteLine("Already activated order this turn.");
@@ -1462,7 +1462,7 @@ namespace VanguardEngine
                 swapped = true;
             }
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
-            _player1.RearrangeOnTop(newOrder);
+            player1.RearrangeOnTop(newOrder);
             if (swapped)
                 _inputManager.SwapPlayers();
         }
