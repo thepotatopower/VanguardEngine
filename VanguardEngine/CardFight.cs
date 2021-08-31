@@ -125,14 +125,14 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             actingPlayer = player1;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -476,6 +476,8 @@ namespace VanguardEngine
                         int ACTselection = _inputManager.SelectOption(player1, options.ToArray());
                         ActivateACT(player1, ACTs[ACTselection - 1]);
                     }
+                    else
+                        ActivateACT(player1, ACTs[0]);
                     foreach (Ability ability in GetAvailableOrders(player1, false))
                     {
                         if (ability.GetCard().tempID == _inputManager.int_input2)

@@ -35,6 +35,7 @@ namespace VanguardEngine
         public List<int> _ints2 = new List<int>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
+        public EventHandler<CardEventArgs> OnChosen;
 
         public void Initialize(Player player1, Player player2)
         {
@@ -512,6 +513,12 @@ namespace VanguardEngine
             prompt = request;
             value = amount;
             SelectActiveUnit_Input();
+            if (OnChosen != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.card = _player1.GetCard(int_input);
+                OnChosen(this, args);
+            }
             return int_input;
         }
 
@@ -671,6 +678,15 @@ namespace VanguardEngine
             SelectFromList_Input();
             if (swapped)
                 SwapPlayers();
+            foreach (int tempID in intlist_input)
+            {
+                if (OnChosen != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = actingPlayer.GetCard(tempID);
+                    OnChosen(this, args);
+                }
+            }
             return intlist_input;
         }
 
