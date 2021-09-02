@@ -476,7 +476,7 @@ namespace VanguardEngine
                         int ACTselection = _inputManager.SelectOption(player1, options.ToArray());
                         ActivateACT(player1, ACTs[ACTselection - 1]);
                     }
-                    else
+                    else if (ACTs.Count == 1)
                         ActivateACT(player1, ACTs[0]);
                     foreach (Ability ability in GetAvailableOrders(player1, false))
                     {
@@ -486,6 +486,29 @@ namespace VanguardEngine
                             break;
                         }
                     }
+                }
+                else if (selection == MainPhaseAction.SoulCharge)
+                {
+                    player1.SoulCharge(1);
+                }
+                else if (selection == MainPhaseAction.CounterCharge)
+                {
+                    List<Card> canCC = new List<Card>();
+                    foreach (Card card in player1.GetDamageZone())
+                    {
+                        if (!player1.IsFaceUp(card))
+                            canCC.Add(card);
+                    }
+                    if (canCC.Count > 0)
+                        CounterCharge(player1, canCC, 1);
+                }
+                else if (selection == MainPhaseAction.TakeDamage)
+                {
+                    TriggerCheck(player1, player2, false);
+                }
+                else if (selection == MainPhaseAction.Heal)
+                {
+                    Heal(player1);
                 }
             }
         }

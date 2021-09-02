@@ -700,9 +700,9 @@ namespace VanguardEngine
             return base.AddToZone(card, bottom);
         }
 
-        protected override void RemoveToken(Card card)
+        protected override bool RemoveToken(Card card)
         {
-            
+            return false;
         }
 
         public override Card AddRide(Card card)
@@ -1055,8 +1055,8 @@ namespace VanguardEngine
     public class PlayerState
     {
         public const int FinalRush = 1;
-        public const int DarkNight = 2;
-        public const int AbyssalDarkNight = 3;
+        //public const int DarkNight = 2;
+        //public const int AbyssalDarkNight = 3;
         public const int FreeSBAvailable = 4;
         public const int GuardWithTwo = 5;
         public const int CannotGuardFromHand = 6;
@@ -1143,11 +1143,12 @@ namespace VanguardEngine
             ResetCard(card);
             previousZone = _field.CardLocations[card.tempID];
             List<Card> associatedCards = new List<Card>();
+            bool tokenRemoved = false;
             if (previousZone != null)
                 associatedCards.AddRange(previousZone.Remove(card));
             if (card.unitType == UnitType.Token)
-                RemoveToken(card);
-            else
+                tokenRemoved = RemoveToken(card);
+            if (!tokenRemoved)
             {
                 _field.CardLocations[card.tempID] = this;
                 if (bottom)
@@ -1166,7 +1167,10 @@ namespace VanguardEngine
                 args.previousLocation = new Tuple<int, int>(-1, -1);
             else
                 args.previousLocation = new Tuple<int, int>(previousZone.GetLocation(), previousZone.GetFL());
-            args.currentLocation = new Tuple<int, int>(location, _FL);
+            if (tokenRemoved)
+                args.currentLocation = new Tuple<int, int>(-1, -1);
+            else
+                args.currentLocation = new Tuple<int, int>(location, _FL);
             args.faceup = _field.Orientation.IsFaceUp(card.tempID);
             args.upright = _field.Orientation.IsUpRight(card.tempID);
             args.card = card;
@@ -1186,9 +1190,10 @@ namespace VanguardEngine
             return AddToZone(card, false);
         }
 
-        protected virtual void RemoveToken(Card card)
+        protected virtual bool RemoveToken(Card card)
         {
             _field.RemoveToken(card);
+            return true;
         }
 
         public Card Add(int tempID)

@@ -2513,24 +2513,44 @@ namespace VanguardEngine
             return count;
         }
 
-        public void DarkNight()
-        {
-            MyStates.AddContinuousState(PlayerState.DarkNight);
-        }
+        //public void DarkNight()
+        //{
+        //    MyStates.AddContinuousState(PlayerState.DarkNight);
+        //}
 
-        public void AbyssalDarkNight()
-        {
-            MyStates.AddContinuousState(PlayerState.AbyssalDarkNight);
-        }
+        //public void AbyssalDarkNight()
+        //{
+        //    MyStates.AddContinuousState(PlayerState.AbyssalDarkNight);
+        //}
 
         public bool IsDarkNight()
         {
-            return MyStates.HasState(PlayerState.DarkNight);
+            int worlds = 0;
+            foreach (Card card in PlayerOrder.GetCards())
+            {
+                if (card.orderType != OrderType.World)
+                    return false;
+                else
+                    worlds++;
+            }
+            if (worlds == 1)
+                return true;
+            return false;
         }
 
         public bool IsAbyssalDarkNight()
         {
-            return MyStates.HasState(PlayerState.AbyssalDarkNight);
+            int worlds = 0;
+            foreach (Card card in PlayerOrder.GetCards())
+            {
+                if (card.orderType != OrderType.World)
+                    return false;
+                else
+                    worlds++;
+            }
+            if (worlds >= 2)
+                return true;
+            return false;
         }
 
         public bool WorldPlayed()

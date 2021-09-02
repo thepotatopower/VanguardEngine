@@ -2644,15 +2644,15 @@ namespace VanguardEngine
             return _player1.NumWorlds();
         }
 
-        public void DarkNight()
-        {
-            _player1.DarkNight();
-        }
+        //public void DarkNight()
+        //{
+        //    _player1.DarkNight();
+        //}
 
-        public void AbyssalDarkNight()
-        {
-            _player1.AbyssalDarkNight();
-        }
+        //public void AbyssalDarkNight()
+        //{
+        //    _player1.AbyssalDarkNight();
+        //}
 
         public void NoWorld()
         {

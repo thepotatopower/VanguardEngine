@@ -823,6 +823,10 @@ namespace VanguardEngine
         public const int MoveRearguard = 10;
         public const int ActivateAbility = 11;
         public const int End = 8;
+        public const int SoulCharge = 12;
+        public const int CounterCharge = 13;
+        public const int TakeDamage = 14;
+        public const int Heal = 15;
     }
 
     public class BattlePhaseAction
