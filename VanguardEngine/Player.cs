@@ -3055,7 +3055,10 @@ namespace VanguardEngine
 
         public int GetLocation(Card card)
         {
-            return _field.CardLocations[card.tempID].GetLocation();
+            if (_field.CardLocations[card.tempID] != null)
+                return _field.CardLocations[card.tempID].GetLocation();
+            else
+                return -1;
         }
 
         public bool CardValueChanged(RecordedCardValue previousValues, int currentPower, int currentCritical)
