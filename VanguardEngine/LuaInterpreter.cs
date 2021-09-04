@@ -2664,6 +2664,14 @@ namespace VanguardEngine
             return _player1.WorldPlayed();
         }
 
+        public bool LastPutOnOrderZoneIsWorld()
+        {
+            Card card = _player1.GetLastPutOnOrderZone(_timingCount);
+            if (card != null && card.orderType == OrderType.World)
+                return true;
+            return false;
+        }
+
         public void CallToken(string tokenID)
         {
             int token = _player1.CreateToken(tokenID);
@@ -2990,6 +2998,7 @@ namespace VanguardEngine
         public const int OnBattlePhase = 27;
         public const int OnEndPhase = 28;
         public const int OnRetiredForPlayerCost = 29;
+        public const int PutOnOrderZone = 30;
     }
 
     public class Location

@@ -57,7 +57,7 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.Select(1)
-		if obj.Exists(5) and obj.SuperiorCall(4) then
+		if obj.Exists(5) and obj.SuperiorCall(5) then
 			obj.Draw(2)
 		end
 		obj.EndSelect()

@@ -99,7 +99,7 @@ namespace VanguardEngine
         }
     }
 
-    class UnitType
+    public class UnitType
     {
         public const int NotUnit = -1;
         public const int Normal = 0;
@@ -109,7 +109,7 @@ namespace VanguardEngine
         public const int Token = 4;
     }
 
-    class OrderType
+    public class OrderType
     {
         public const int NotOrder = -1;
         public const int Normal = 0;
@@ -120,7 +120,7 @@ namespace VanguardEngine
         public const int World = 5;
     }
 
-    class Skill
+    public class Skill
     {
         public const int Boost = 0;
         public const int Intercept = 1;
@@ -128,7 +128,7 @@ namespace VanguardEngine
         public const int TripleDrive = 3;
     }
 
-    class Trigger
+    public class Trigger
     {
         public const int NotTrigger = -1;
         public const int Critical = 0;
@@ -139,9 +139,9 @@ namespace VanguardEngine
         public const int Over = 5;
     }
 
-    class Format
+    public class Format
     {
-        public const int Original = 0;
+        public const int P = 0;
         public const int V = 1;
         public const int D = 2;
     }

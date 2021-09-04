@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrderPlayed, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.PutOnOrderZone, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
 		return a.Cont, t.Cont, p.IsMandatory
 	end
@@ -26,7 +26,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and obj.WorldPlayed() then
+		if obj.IsVanguard() and obj.LastPutOnOrderZoneIsWorld() then
 			return true
 		end
 	elseif n == 2 then

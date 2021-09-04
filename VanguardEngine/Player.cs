@@ -24,6 +24,7 @@ namespace VanguardEngine
         protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
         protected List<Card> _lastCalledFromPrison = new List<Card>();
         protected Dictionary<int, List<Card>> _lastPlacedOnVC = new Dictionary<int, List<Card>>();
+        protected Dictionary<int, Card> _lastPutOnOrderZone = new Dictionary<int, Card>();
         protected List<Card> _lastRevealedDriveChecks = new List<Card>();
         protected List<Card> _lastRevealedDamageChecks = new List<Card>();
         protected Card _lastRevealedTrigger = null;
@@ -2325,6 +2326,7 @@ namespace VanguardEngine
                     PlayerOrderArea.Add(card);
                 else
                     PlayerOrder.Add(card);
+                _lastPutOnOrderZone[_lastPutOnOrderZone.Count + 1] = card;
             }
         }
 
@@ -2558,6 +2560,13 @@ namespace VanguardEngine
             if (_lastOrderPlayed != null && _lastOrderPlayed.orderType == OrderType.World)
                 return true;
             return false;
+        }
+
+        public Card GetLastPutOnOrderZone(int timingCount)
+        {
+            if (_lastPutOnOrderZone.ContainsKey(timingCount))
+                return _lastPutOnOrderZone[timingCount];
+            return null;
         }
 
         public int CreateToken(string tokenID)
@@ -2876,6 +2885,7 @@ namespace VanguardEngine
             _lastDiscarded.Clear();
             _lastCalledFromPrison.Clear();
             _lastPlacedOnVC.Clear();
+            _lastPutOnOrderZone.Clear();
             _retiredForPlayerCost.Clear();
             _stoodByCardEffect.Clear();
         }

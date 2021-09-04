@@ -1049,6 +1049,7 @@ namespace VanguardEngine
                 player1.EndOrder();
             }
             _playTimings.AddPlayTiming(Activation.OnOrderPlayed);
+            _playTimings.AddPlayTiming(Activation.PutOnOrderZone);
             if (_player1 == player1)
                 ActivateAbilities(_player1, _player2);
             else
