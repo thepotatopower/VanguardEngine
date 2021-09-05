@@ -617,7 +617,7 @@ namespace VanguardEngine
             return intlist_input;
         }
 
-        public void ChooseOrder_Input()
+        protected virtual void ChooseOrder_Input()
         {
             int selection = 0;
             List<Card> newOrder = new List<Card>();
@@ -785,7 +785,7 @@ namespace VanguardEngine
             DisplayCards_Input();
         }
 
-        protected void DisplayCards_Input()
+        protected virtual void DisplayCards_Input()
         {
             Log.WriteLine("----------");
             for (int i = 0; i < cardsToSelect.Count; i++)

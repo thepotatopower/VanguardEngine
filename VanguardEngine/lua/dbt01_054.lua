@@ -39,7 +39,7 @@ end
 function Activate(n)
 	if n == 1 then
 		if obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then
-			obj.ChooseAddTempPower(2, 10000)
+			obj.ChooseAddTempPower(1, 10000)
 		end
 	end
 	return 0
