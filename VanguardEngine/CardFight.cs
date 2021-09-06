@@ -125,14 +125,14 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             actingPlayer = player1;
-            //TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
+            TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -964,7 +964,7 @@ namespace VanguardEngine
                         givenAbility = _abilities.GetAbility(tuple.Item1, tuple.Item2);
                         if (givenAbility.AbilityType == AbilityType.Cont)
                         {
-                            givenAbility.CheckConditionAsGiven(card);
+                            givenAbility.CheckConditionAsGiven(card, Activation.Cont);
                             givenAbility.ActivateAsGiven(card);
                         }
                     }
@@ -1174,7 +1174,7 @@ namespace VanguardEngine
                         if (ThenNum > 0)
                         {
                             ThenAbility = _abilities.GetAbility(ThenID, ThenNum);
-                            if (!ThenAbility.CheckCondition())
+                            if (!ThenAbility.CheckCondition(Activation.Then))
                                 continue;
                             if (ThenAbility.isMandatory)
                                 ThenAbility.Activate();
@@ -1600,7 +1600,8 @@ namespace VanguardEngine
 
         public void AddActivatedAbility(Ability ability, int count)
         {
-            _playTimings[ability.GetActivation].AddActivatedAbility(ability, count);
+            foreach (int activation in ability.GetActivations)
+                _playTimings[activation].AddActivatedAbility(ability, count);
         }
 
         public void Reset()

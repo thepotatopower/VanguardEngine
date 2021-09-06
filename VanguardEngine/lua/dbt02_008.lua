@@ -5,28 +5,26 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 4
 end
 
 function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Soul, q.NameContains, "Blaster", q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 3 then
 		return q.Location, l.PlayerRC, q.Count, 3
-	elseif n == 4 then
+	elseif n == 3 then
 		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 2, q.Min, 0
-	elseif n == 5 then
+	elseif n == 4 then
 		return q.Location, l.PlayerVC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1, p.Retire, 3
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.Retire, 2
 	end
 end
 
@@ -36,7 +34,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and not obj.Activated() and obj.CanCB(2) and obj.CanRetire(3) then
+		if obj.IsVanguard() then
 			return true
 		end
 	end
@@ -52,20 +50,13 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(2)
-		obj.ChooseRetire(3)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.SuperiorCall(1)
 	elseif n == 2 then
-		obj.ChooseRetire(4)
-		obj.AddTempPower(5, 10000)
-		obj.AddCritical(5, 1)
+		obj.ChooseRetire(3)
+		obj.AddTempPower(4, 10000)
+		obj.AddCritical(4, 1)
 	end
 	return 0
 end

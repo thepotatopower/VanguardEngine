@@ -1139,7 +1139,7 @@ namespace VanguardEngine
 
         public bool CanMoveRearguard()
         {
-            if (!MyStates.HasState(PlayerState.CannotMove))
+            if (MyStates.HasState(PlayerState.CannotMove))
                 return false;
             for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
             {

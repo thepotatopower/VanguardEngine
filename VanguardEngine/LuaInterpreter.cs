@@ -140,7 +140,7 @@ namespace VanguardEngine
                 foreach (Ability ability in _abilities[card.tempID])
                 {
                     ability.SetTimingCount(timingCount);
-                    if (ability.GetActivation == activation && ability.CheckCondition())
+                    if (ability.IsActivation(activation) && ability.CheckCondition(activation))
                     {
                         abilities.Add(ability);
                     }
@@ -177,7 +177,7 @@ namespace VanguardEngine
         {
             foreach (Ability ability in _abilities[tempID])
             {
-                if (ability.GetActivation == Activation.OverDress)
+                if (ability.IsActivation(Activation.OverDress))
                 {
                     if (ability.CanOverDress(tempID, circle))
                         return true;
@@ -231,12 +231,13 @@ namespace VanguardEngine
         bool _activated = false;
         bool _withAlchemagic = true;
         bool _payingCost = false;
-        int _activation;
+        List<int> _activations = new List<int>();
         List<int> _location = new List<int>();
         int _abilityType;
         int _abilityNumber;
         int _abilityID;
         int _timingCount = 0;
+        int _currentActivation = 0;
         List<int> _overDressParams = new List<int>();
         Script _script;
         DynValue _abilityActivate;
@@ -337,15 +338,20 @@ namespace VanguardEngine
                 }
                 _params.Add(param);
             }
-            _activation = (int)activationRequirement.Tuple[0].Number;
-            if (_activation == Activation.OverDress)
+            int index = 0;
+            while ((int)activationRequirement.Tuple[index].Number < 0)
             {
-                for (int i = 1; i < activationRequirement.Tuple.Length; i++)
-                    _overDressParams.Add((int)activationRequirement.Tuple[i].Number);
-                return true;
+                _activations.Add((int)activationRequirement.Tuple[index].Number);
+                if ((int)activationRequirement.Tuple[index].Number == Activation.OverDress)
+                {
+                    for (int j = index + 1; j < activationRequirement.Tuple.Length; j++)
+                        _overDressParams.Add((int)activationRequirement.Tuple[j].Number);
+                    return true;
+                }
+                index++;
             }
-            _abilityType = (int)activationRequirement.Tuple[1].Number;
-            for (int i = 2; i < activationRequirement.Tuple.Length; i++)
+            _abilityType = (int)activationRequirement.Tuple[index].Number;
+            for (int i = index + 1; i < activationRequirement.Tuple.Length; i++)
             {
                 if ((int)activationRequirement.Tuple[i].Number == Property.HasPrompt)
                 {
@@ -469,9 +475,16 @@ namespace VanguardEngine
             set => _isSuperiorCall = value;
         }
 
-        public int GetActivation
+        public List<int> GetActivations
         {
-            get => _activation;
+            get => _activations;
+        }
+
+        public bool IsActivation(int activation)
+        {
+            if (_activations.Contains(activation))
+                return true;
+            return false;
         }
 
         public string Description
@@ -676,8 +689,9 @@ namespace VanguardEngine
             return true;
         }
         
-        public bool CheckCondition()
+        public bool CheckCondition(int activation)
         {
+            _currentActivation = activation;
             if (!CanPayCost())
                 return false;
             if (_oncePerTurn && _activated)
@@ -688,8 +702,9 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool CheckConditionAsGiven(Card card)
+        public bool CheckConditionAsGiven(Card card, int activation)
         {
+            _currentActivation = activation;
             if (!CanPayCost())
                 return false;
             if (_oncePerTurn && _activated)
@@ -721,7 +736,7 @@ namespace VanguardEngine
         public bool CheckConditionWithoutAlchemagic()
         {
             _withAlchemagic = false;
-            bool condition = CheckCondition();
+            bool condition = CheckCondition(Activation.OnOrder);
             _withAlchemagic = true;
             return condition;
         }
@@ -2816,6 +2831,13 @@ namespace VanguardEngine
             }
             return tempIDs;
         }
+
+        public bool CurrentActivationIs(int activation)
+        {
+            if (activation == _currentActivation)
+                return true;
+            return false;
+        }
     }
 
     class Param
@@ -2969,36 +2991,36 @@ namespace VanguardEngine
 
     class Activation
     {
-        public const int OnRide = 1;
-        public const int OnAttack = 2;
-        public const int OnOverDress = 3;
-        public const int OnACT = 4;
-        public const int OnBattleEnds = 5;
-        public const int OverDress = 6;
-        public const int Then = 7;
-        public const int PlacedOnGC = 8;
-        public const int PlacedOnRC = 9;
-        public const int OnDriveCheck = 10;
-        public const int OnOrder = 11;
-        public const int Cont = 12;
-        public const int PlacedOnVC = 13;
-        public const int OnRidePhase = 14;
-        public const int OnBlitzOrder = 15;
-        public const int OnCallFromPrison = 16;
-        public const int OnAttackHits = 17;
-        public const int OnAttackHitsVanguard = 18;
-        public const int OnEnemyRetired = 19;
-        public const int OnOrderPlayed = 20;
-        public const int OnOverTrigger = 21;
-        public const int PlacedOnRCFromHand = 22;
-        public const int OnDiscard = 23;
-        public const int OnStand = 24;
-        public const int OnChosen = 25;
-        public const int PutOnGC = 26;
-        public const int OnBattlePhase = 27;
-        public const int OnEndPhase = 28;
-        public const int OnRetiredForPlayerCost = 29;
-        public const int PutOnOrderZone = 30;
+        public const int OnRide = -1;
+        public const int OnAttack = -2;
+        public const int OnOverDress = -3;
+        public const int OnACT = -4;
+        public const int OnBattleEnds = -5;
+        public const int OverDress = -6;
+        public const int Then = -7;
+        public const int PlacedOnGC = -8;
+        public const int PlacedOnRC = -9;
+        public const int OnDriveCheck = -10;
+        public const int OnOrder = -11;
+        public const int Cont = -12;
+        public const int PlacedOnVC = -13;
+        public const int OnRidePhase = -14;
+        public const int OnBlitzOrder = -15;
+        public const int OnCallFromPrison = -16;
+        public const int OnAttackHits = -17;
+        public const int OnAttackHitsVanguard = -18;
+        public const int OnEnemyRetired = -19;
+        public const int OnOrderPlayed = -20;
+        public const int OnOverTrigger = -21;
+        public const int PlacedOnRCFromHand = -22;
+        public const int OnDiscard = -23;
+        public const int OnStand = -24;
+        public const int OnChosen = -25;
+        public const int PutOnGC = -26;
+        public const int OnBattlePhase = -27;
+        public const int OnEndPhase = -28;
+        public const int OnRetiredForPlayerCost = -29;
+        public const int PutOnOrderZone = -30;
     }
 
     public class Location

@@ -355,7 +355,7 @@ namespace VanguardEngine
                     "2. Right\n");
                 int_input = SelectPrompt(2) - 1;
                 if (_player1.CheckColumn(int_input))
-                    oSignalEvent.Set();
+                    break;
                 else
                     Log.WriteLine("No Rearguards in that column.");
             }

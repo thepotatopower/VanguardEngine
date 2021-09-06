@@ -1,4 +1,4 @@
--- Blaster Dark
+-- Blaster Javelin
 
 function NumberOfAbilities()
 	return 2
@@ -22,9 +22,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.PlacedOnVC, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -50,9 +50,6 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.RevealFromDeck(1)
@@ -61,12 +58,9 @@ function Activate(n)
 		else
 			obj.AddToDrop(2)
 		end
-		obj.OnRideAbilityResolved()
 	elseif n == 2 then
 		if obj.IsPlayerTurn() and obj.Exists(4) then
 			obj.SetAbilityPower(3, 2000)
-		else
-			obj.SetAbilityPower(3, 0)
 		end
 	end
 	return 0

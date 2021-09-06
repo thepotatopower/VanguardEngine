@@ -5,34 +5,32 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 3
+	return 2
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Damage, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.Deck, q.Grade, 1, q.Count, 1
-	elseif n == 3 then
+	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1
+		return a.OnRide, t.Auto, p.HasPrompt, p.CB, 1
 	elseif n == 2 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, false, p.IsMandatory, true
+		return a.OnAttackHits, t.Auto, p.IsMandatory, p.OncePerTurn
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.WasRodeUponBy("Dragon Knight, Nehalem") and obj.CanCB(1) then
+		if obj.WasRodeUponBy("Dragon Knight, Nehalem") then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and not obj.Activated() and obj.VanguardIsAttackingUnit() then
+		if obj.IsRearguard() and obj.VanguardIsAttackingUnit() then
 			return true
 		end
 	end
@@ -41,7 +39,7 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(2) then
+		if obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
@@ -50,18 +48,11 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.CounterBlast(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.Search(2)
-		obj.OnRideAbilityResolved()
+		obj.Search(1)
 	elseif n == 2 then
-		obj.AddTempPower(3, 5000)
+		obj.AddTempPower(2, 5000)
 	end
 	return 0
 end
