@@ -871,7 +871,7 @@ namespace VanguardEngine
             Card Attacker = _field.GetUnit(_field.Attacker);
             for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
             {
-                if (_field.GetUnit(i) != null && _field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
+                if (_field.GetUnit(i) != null && (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
                     cards.Add(_field.GetUnit(i));
             }
             return cards;
