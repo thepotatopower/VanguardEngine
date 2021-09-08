@@ -180,7 +180,7 @@ namespace VanguardEngine
                     args = new CardEventArgs();
                     OnEndPhase(this, args);
                 }
-                _playTimings.AddPlayTiming(Activation.OnEndPhase);
+                _playTimings.AddPlayTiming(Activation.OnEndPhase, 0, null);
                 ActivateAbilities(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
@@ -300,7 +300,7 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnRidePhase(this, args);
             }
-            _playTimings.AddPlayTiming(Activation.OnRidePhase);
+            _playTimings.AddPlayTiming(Activation.OnRidePhase, 0, null);
             ActivateAbilities(player1, player2);
             while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
@@ -340,8 +340,8 @@ namespace VanguardEngine
         public void Ride(Player player1, Player player2, int location, int selection)
         {
             player1.Ride(selection);
-            _playTimings.AddPlayTiming(Activation.OnRide);
-            _playTimings.AddPlayTiming(Activation.PlacedOnVC);
+            _playTimings.AddPlayTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
+            _playTimings.AddPlayTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
             ActivateAbilities(player1, player2);
         }
 
@@ -349,7 +349,7 @@ namespace VanguardEngine
         {
             List<int> cardsToDiscard = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose card(s) to discard.");
             player1.Discard(cardsToDiscard);
-            _playTimings.AddPlayTiming(Activation.OnDiscard);
+            _playTimings.AddPlayTiming(Activation.OnDiscard, player1._playerID, player1.GetLastDiscarded());
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -402,6 +402,7 @@ namespace VanguardEngine
                 else if (selection == MainPhaseAction.CallFromPrison)
                 {
                     CallFromPrison(player1, player2);
+                    ActivateAbilities(player1, player2);
                 }
                 else if (selection == 5)
                 {
@@ -517,8 +518,8 @@ namespace VanguardEngine
         {
             player1.Call(location, selection, overDress);
             _abilities.ResetActivation(selection);
-            _playTimings.AddPlayTiming(Activation.PlacedOnRC);
-            _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand);
+            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
+            _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
             ActivateAbilities(player1, player2);
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
@@ -554,7 +555,7 @@ namespace VanguardEngine
                 selectedCircles.Add(selectedCircle);
                 sc = player1.SuperiorCall(selectedCircle, tempID, overDress, standing);
                 successful = true;
-                if (free && OnFree != null)
+                if (sc == 2 && OnFree != null)
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.playerID = player2._playerID;
@@ -562,10 +563,12 @@ namespace VanguardEngine
                 }
                 _abilities.ResetActivation(tempID);
             }
-            player1.DoneSuperiorCalling();
-            _playTimings.AddPlayTiming(Activation.PlacedOnRC);
+            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
             if (sc == 1)
-                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand);
+                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
+            else if (sc == 2)
+                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison());
+            player1.DoneSuperiorCalling();
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
             return successful;
@@ -593,7 +596,7 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnBattlePhase(this, args);
             }
-            _playTimings.AddPlayTiming(Activation.OnBattlePhase);
+            _playTimings.AddPlayTiming(Activation.OnBattlePhase, 0, null);
             ActivateAbilities(player1, player2);
             while (true)
             {
@@ -659,7 +662,7 @@ namespace VanguardEngine
             List<int> selections;
             bool attackHits = false;
             player1.InitiateAttack(booster, target);
-            _playTimings.AddPlayTiming(Activation.OnAttack);
+            _playTimings.AddPlayTiming(Activation.OnAttack, 0, null);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
@@ -694,8 +697,8 @@ namespace VanguardEngine
                         if (selections.Count == 0)
                             continue;
                         player2.Guard(selections, selection2);
-                        _playTimings.AddPlayTiming(Activation.PlacedOnGC);
-                        _playTimings.AddPlayTiming(Activation.PutOnGC);
+                        _playTimings.AddPlayTiming(Activation.PlacedOnGC, player2._playerID, player2.GetLastPlacedOnGC());
+                        _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                         ActivateAbilities(player2, player1);
                     }
                     else if (selection == 5)
@@ -708,7 +711,7 @@ namespace VanguardEngine
                             else
                                 selection2 = -1;
                             player2.Guard(selections, selection2);
-                            _playTimings.AddPlayTiming(Activation.PutOnGC);
+                            _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                             ActivateAbilities(player2, player1);
                         }
                         else
@@ -736,7 +739,7 @@ namespace VanguardEngine
                         else
                             selection2 = -1;
                         player2.Guard(selections, selection2);
-                        _playTimings.AddPlayTiming(Activation.PutOnGC);
+                        _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                         ActivateAbilities(player2, player1);
                     }
                     else if (selection == GuardStepAction.BlitzOrder)
@@ -785,16 +788,16 @@ namespace VanguardEngine
                             return;
                         }
                     }
-                    _playTimings.AddPlayTiming(Activation.OnAttackHitsVanguard);
+                    _playTimings.AddPlayTiming(Activation.OnAttackHitsVanguard, 0, null);
                 }
                 player2.RetireAttackedUnit();
                 for (int i = 0; i < player2.NumberOfTimesHit(); i++)
-                    _playTimings.AddPlayTiming(Activation.OnAttackHits);
+                    _playTimings.AddPlayTiming(Activation.OnAttackHits, 0, null);
                 _inputManager.SwapPlayers();
                 ActivateAbilities(player1, player2);
                 _inputManager.SwapPlayers();
             }
-            _playTimings.AddPlayTiming(Activation.OnBattleEnds);
+            _playTimings.AddPlayTiming(Activation.OnBattleEnds, 0, null);
             ActivateAbilities(player1, player2);
             if (player1 == _player1)
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
@@ -867,7 +870,7 @@ namespace VanguardEngine
             {
                 if (drivecheck)
                 {
-                    _playTimings.AddPlayTiming(Activation.OnOverTrigger);
+                    _playTimings.AddPlayTiming(Activation.OnOverTrigger, 0, null);
                     AddAbilitiesToQueue(player1, player2);
                 }
                 player1.RemoveTrigger();
@@ -882,7 +885,7 @@ namespace VanguardEngine
             }
             if (drivecheck)
             {
-                _playTimings.AddPlayTiming(Activation.OnDriveCheck);
+                _playTimings.AddPlayTiming(Activation.OnDriveCheck, 0, null);
                 ActivateAbilities(player1, player2);
                 player1.AddTriggerToHand();
             }
@@ -1048,8 +1051,8 @@ namespace VanguardEngine
                 ability.Activate();
                 player1.EndOrder();
             }
-            _playTimings.AddPlayTiming(Activation.OnOrderPlayed);
-            _playTimings.AddPlayTiming(Activation.PutOnOrderZone);
+            _playTimings.AddPlayTiming(Activation.OnOrderPlayed, 0, null);
+            _playTimings.AddPlayTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
             if (_player1 == player1)
                 ActivateAbilities(_player1, _player2);
             else
@@ -1121,8 +1124,10 @@ namespace VanguardEngine
             ActivateContAbilities(player1, player2);
             while (player1Selected || player2Selected)
             {
-                player1Selected = false;
-                player2Selected = false;
+                if (choosingPlayer == player1)
+                    player1Selected = false;
+                else
+                    player2Selected = false;
                 AddAbilitiesToQueue(choosingPlayer, waitingPlayer);
                 while (abilities.Count > 0)
                 {
@@ -1275,14 +1280,13 @@ namespace VanguardEngine
         {
             List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, count, "Choose card(s) to stand.");
             player1.Stand(cardsToStand);
-            player2.Stand(cardsToStand);
-            _playTimings.AddPlayTiming(Activation.OnStand);
+            _playTimings.AddPlayTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
         }
 
         public void Stand(Player player1, Player player2, List<int> toStand)
         {
             player1.Stand(toStand);
-            _playTimings.AddPlayTiming(Activation.OnStand);
+            _playTimings.AddPlayTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
         }
 
         public void Rest(Player player1, Player player2, List<Card> canRest, int count, bool select)
@@ -1361,11 +1365,10 @@ namespace VanguardEngine
             player1.Retire(cardsToRetire);
             if (player1.PlayerRetired() && _currentAbility.GetPlayer1() == player1 && _currentAbility.IsPayingCost())
             {
-                player1.RetiredForPlayerCost(cardsToRetire);
-                _playTimings.AddPlayTiming(Activation.OnRetiredForPlayerCost);
+                _playTimings.AddPlayTiming(Activation.OnRetiredForPlayerCost, player1._playerID, player1.GetLastPlayerRetired());
             }
             if (player1.EnemyRetired())
-                _playTimings.AddPlayTiming(Activation.OnEnemyRetired);
+                _playTimings.AddPlayTiming(Activation.OnEnemyRetired, 0, null);
             AddToChosen(cardsToRetire);
         }
 
@@ -1373,7 +1376,7 @@ namespace VanguardEngine
         {
             player1.Retire(toRetire);
             if (player1.EnemyRetired())
-                _playTimings.AddPlayTiming(Activation.OnEnemyRetired);
+                _playTimings.AddPlayTiming(Activation.OnEnemyRetired, 0, null);
         }
 
         public void ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min)
@@ -1537,7 +1540,7 @@ namespace VanguardEngine
                 if (!_chosen[source].Contains(target))
                     _chosen[source].Add(target);
             }
-            _playTimings.AddPlayTiming(Activation.OnChosen);
+            _playTimings.AddPlayTiming(Activation.OnChosen, 0, null);
         }
 
         public bool AlchemagicableCardsAvailable(Player player, int tempID)
@@ -1554,6 +1557,11 @@ namespace VanguardEngine
             if (ability.Activated())
                 return true;
             return false;
+        }
+
+        public List<Card> GetList(int playTiming, int playerID, int timingCount)
+        {
+            return _playTimings.GetList(playTiming, playerID, timingCount);
         }
     }
 
@@ -1577,12 +1585,21 @@ namespace VanguardEngine
     public class PlayTimings
     {
         Dictionary<int, PlayTiming> _playTimings = new Dictionary<int, PlayTiming>();
+        TimingCountLists _player1TimingCountLists = new TimingCountLists();
+        TimingCountLists _player2TimingCountLists = new TimingCountLists();
 
-        public void AddPlayTiming(int activation)
+        public void AddPlayTiming(int activation, int playerID, List<Card> cards)
         {
             if (!_playTimings.ContainsKey(activation))
                 _playTimings[activation] = new PlayTiming(activation);
             _playTimings[activation].AddPlayTiming();
+            if (cards != null)
+            {
+                if (playerID == 1)
+                    _player1TimingCountLists.AddList(activation, _playTimings[activation].GetTotal(), cards);
+                else if (playerID == 2)
+                    _player2TimingCountLists.AddList(activation, _playTimings[activation].GetTotal(), cards);
+            }
         }
 
         public PlayTiming GetPlayTiming(int activation)
@@ -1611,6 +1628,23 @@ namespace VanguardEngine
                 _playTimings[key].Reset();
             }
             _playTimings.Clear();
+            _player1TimingCountLists.Reset();
+            _player2TimingCountLists.Reset();
+        }
+
+        public int CurrentCount(int playTiming)
+        {
+            if (_playTimings.ContainsKey(playTiming))
+                return (_playTimings[playTiming].GetTotal());
+            return 0;
+        }
+
+        public List<Card> GetList(int playTiming, int playerID, int timingCount)
+        {
+            if (playerID == 1)
+                return _player1TimingCountLists.GetList(playTiming, timingCount);
+            else
+                return _player2TimingCountLists.GetList(playTiming, timingCount);
         }
     }
 
@@ -1651,6 +1685,43 @@ namespace VanguardEngine
             foreach (int key in _activatedAbilities.Keys)
                 _activatedAbilities[key].Clear();
             _activatedAbilities.Clear();
+        }
+    }
+
+    public class TimingCountLists
+    {
+        Dictionary<int, Dictionary<int, List<Card>>> timingCountLists = new Dictionary<int, Dictionary<int, List<Card>>>();
+
+        public void AddList(int playTiming, int timingCount, List<Card> cards)
+        {
+            if (!timingCountLists.ContainsKey(playTiming))
+                timingCountLists[playTiming] = new Dictionary<int, List<Card>>();
+            if (!timingCountLists[playTiming].ContainsKey(timingCount))
+                timingCountLists[playTiming][timingCount] = new List<Card>();
+            timingCountLists[playTiming][timingCount].AddRange(cards);
+        }
+
+        public List<Card> GetList(int playTiming, int timingCount)
+        {
+            if (timingCountLists.ContainsKey(playTiming) && timingCountLists[playTiming].ContainsKey(timingCount))
+                return timingCountLists[playTiming][timingCount];
+            return new List<Card>();
+        }
+
+        public void Reset()
+        {
+            foreach (int key in timingCountLists.Keys)
+            {
+                if (timingCountLists[key] != null)
+                {
+                    foreach (int key2 in timingCountLists[key].Keys)
+                    {
+                        if (timingCountLists[key][key2] != null)
+                            timingCountLists[key][key2].Clear();
+                    }
+                    timingCountLists[key].Clear();
+                }
+            }
         }
     }
 

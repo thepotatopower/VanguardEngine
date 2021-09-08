@@ -12,28 +12,27 @@ namespace VanguardEngine
         protected bool _guarding = false;
         protected Dictionary<int, RecordedCardValue> _recordedCardValues = new Dictionary<int, RecordedCardValue>();
         protected Dictionary<int, int> _recordedShieldValues = new Dictionary<int, int>();
-        protected Dictionary<int, List<Card>> _riddenOnThisTurn = new Dictionary<int, List<Card>>();
-        protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
-        protected Dictionary<int, List<Card>> _lastPlacedOnGC = new Dictionary<int, List<Card>>();
-        protected Dictionary<int, List<Card>> _lastPutOnGC = new Dictionary<int, List<Card>>();
-        protected Dictionary<int, List<Card>> _lastPlacedOnRC = new Dictionary<int, List<Card>>();
-        protected int _lastPlacedOnRC_Count = 1;
-        protected Dictionary<int, List<Card>> _lastPlacedOnRCFromHand = new Dictionary<int, List<Card>>();
-        protected int _lastPlacedOnRCFromHand_Count = 1;
+        protected List<Card> _lastRidden = new List<Card>();
+        //protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
+        protected List<Card> _lastPlacedOnGC = new List<Card>();
+        protected List<Card> _lastPutOnGC = new List<Card>();
+        protected List<Card> _lastPlacedOnRC = new List<Card>();
+        protected List<Card> _lastPlacedOnRCFromHand = new List<Card>();
+        protected List<Card> _lastPlacedOnRCFromPrison = new List<Card>();
         protected List<Card> _unitsCalledThisTurn = new List<Card>();
         protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
-        protected List<Card> _lastCalledFromPrison = new List<Card>();
-        protected Dictionary<int, List<Card>> _lastPlacedOnVC = new Dictionary<int, List<Card>>();
-        protected Dictionary<int, Card> _lastPutOnOrderZone = new Dictionary<int, Card>();
+        protected List<Card> _lastPlayerRetired = new List<Card>();
+        protected List<Card> _lastPlacedOnVC = new List<Card>();
+        protected List<Card> _lastPutOnOrderZone = new List<Card>();
         protected List<Card> _lastRevealedDriveChecks = new List<Card>();
         protected List<Card> _lastRevealedDamageChecks = new List<Card>();
         protected Card _lastRevealedTrigger = null;
-        protected Dictionary<int, List<Card>> _lastDiscarded = new Dictionary<int, List<Card>>();
+        protected List<Card> _lastDiscarded = new List<Card>();
         protected List<Card> _isIntercepting = new List<Card>();
         protected Card _lastOrderPlayed = null;
-        protected Dictionary<int, List<Card>> _stoodByCardEffect = new Dictionary<int, List<Card>>();
+        protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<int> _stoodByCardEffectThisTurn = new List<int>();
-        protected Dictionary<int, List<Card>> _retiredForPlayerCost = new Dictionary<int, List<Card>>();
+        protected List<Card> _retiredForPlayerCost = new List<Card>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
@@ -394,30 +393,14 @@ namespace VanguardEngine
             return PlayerDeck.GetCards();
         }
 
-        public List<Card> GetRiddenOnThisTurn(int count)
+        public List<Card> GetLastRidden()
         {
-            if (_riddenOnThisTurn.ContainsKey(count))
-                return _riddenOnThisTurn[count];
-            else
-                return new List<Card>();
+            return _lastRidden;
         }
 
-        public bool RodeUponBy(int count, int tempID, string name, bool contains)
+        public List<Card> GetLastPlayerRetired()
         {
-            Tuple<int, string> tuple = new Tuple<int, string>(tempID, name);
-            if (!_field.GetSoul(PlayerVanguard).Contains(_field.CardCatalog[tempID]))
-                return false;
-            if (contains)
-            {
-                if (_cardRiddenBy.ContainsKey(count) && _cardRiddenBy[count].Item1 == tempID && _cardRiddenBy[count].Item2.Contains(name))
-                    return true;
-            }
-            else
-            {
-                if (_cardRiddenBy.ContainsKey(count) && _cardRiddenBy[count].Equals(tuple))
-                    return true;
-            }
-            return false;
+            return _lastPlayerRetired;
         }
 
         public Card GetUnitAt(int circle, bool convert)
@@ -614,11 +597,11 @@ namespace VanguardEngine
         {
             CardEventArgs args = new CardEventArgs();
             Card card;
-            _lastDiscarded[_lastDiscarded.Keys.Count + 1] = new List<Card>();
+            _lastDiscarded.Clear();
             foreach (int tempID in list)
             {
                 card = PlayerDrop.Add(tempID);
-                _lastDiscarded[_lastDiscarded.Keys.Count].Add(card);
+                _lastDiscarded.Add(card);
                 args.cardList.Add(card);
             }
             args.playerID = _playerID;
@@ -1275,55 +1258,25 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool IsLastPlacedOnGC(int tempID, int count)
+        public List<Card> GetLastPlacedOnGC()
         {
-            if (!_lastPlacedOnGC.ContainsKey(count))
-                return false;
-            foreach (Card card in _lastPlacedOnGC[count])
-            {
-                if (card.tempID == tempID)
-                    return true;
-            }
-            return false;
+            return _lastPlacedOnGC;
         }
 
-        public bool IsLastPutOnGC(int tempID, int count)
+        public List<Card> GetLastPutOnGC()
         {
-            if (!_lastPutOnGC.ContainsKey(count))
-                return false;
-            foreach (Card card in _lastPutOnGC[count])
-            {
-                if (card.tempID == tempID)
-                    return true;
-            }
-            return false;
+            return _lastPutOnGC;
         }
 
-
-        public bool IsLastPlacedOnRC(int tempID, int count)
+        public List<Card> GetLastPlacedOnRCFromHand()
         {
-            if (!_lastPlacedOnRC.ContainsKey(count))
-                return false;
-            foreach (Card card in _lastPlacedOnRC[count])
-            {
-                if (card.tempID == tempID && IsRearguard(tempID))
-                    return true;
-            }
-            return false;
+            return _lastPlacedOnRCFromHand;
         }
 
-        public bool IsLastPlacedOnRCFromHand(int tempID, int count)
+        public List<Card> GetLastPlacedOnRCFromPrison()
         {
-            if (!_lastPlacedOnRCFromHand.ContainsKey(count))
-                return false;
-            foreach (Card card in _lastPlacedOnRCFromHand[count])
-            {
-                if (card.tempID == tempID && IsRearguard(tempID))
-                    return true;
-            }
-            return false;
+            return _lastPlacedOnRCFromPrison;
         }
-
 
         public List<Card> GetUnitsCalledThisTurn()
         {
@@ -1337,53 +1290,27 @@ namespace VanguardEngine
 
         public List<Card> GetLastPlacedOnRC(int count)
         {
-            if (!_lastPlacedOnRC.ContainsKey(count))
-                return new List<Card>();
-            return _lastPlacedOnRC[count];
+            return _lastPlacedOnRC;
         }
 
         public List<Card> GetLastPlacedOnRC()
         {
-            List<Card> list = new List<Card>();
-            foreach (int key in _lastPlacedOnRC.Keys)
-                list.AddRange(_lastPlacedOnRC[key]);
-            return list;
+            return _lastPlacedOnRC;
         }
 
-        public List<Card> GetLastPlacedOnVC(int count)
+        public List<Card> GetLastPlacedOnVC()
         {
-            if (!_lastPlacedOnVC.ContainsKey(count))
-                return new List<Card>();
-            return _lastPlacedOnVC[count];
+            return _lastPlacedOnVC;
         }
 
-        public List<Card> GetLastStood(int count)
+        public List<Card> GetLastStood()
         {
-            if (!_stoodByCardEffect.ContainsKey(count))
-                return new List<Card>();
-            return _stoodByCardEffect[count];
+            return _stoodByCardEffect;
         }
 
-        public bool IsLastPlacedOnVC(int tempID, int count)
+        public List<Card> GetLastDiscarded()
         {
-            if (!_lastPlacedOnVC.ContainsKey(count))
-                return false;
-            foreach (Card card in _lastPlacedOnVC[count])
-            {
-                if (card.tempID == tempID)
-                    return true;
-            }
-            return false;
-        }
-
-        public bool IsLastDiscarded(int tempID, int count)
-        {
-            if (!_lastDiscarded.ContainsKey(count))
-                return false;
-            Card card = _field.CardCatalog[tempID];
-            if (_lastDiscarded[count].Contains(card) && PlayerDrop.Contains(card))
-                return true;
-            return false;
+            return _lastDiscarded;
         }
 
         public int Drive()
@@ -1489,10 +1416,9 @@ namespace VanguardEngine
         public void Ride(int selection)
         {
             Card card = _field.CardCatalog[selection];
-            _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count + 1] = new List<Card>();
-            _riddenOnThisTurn[_riddenOnThisTurn.Keys.Count].Add(_field.GetUnit(PlayerVanguard));
-            _lastPlacedOnVC[_lastPlacedOnVC.Keys.Count + 1] = new List<Card>();
-            _cardRiddenBy[_cardRiddenBy.Keys.Count + 1] = new Tuple<int, string>(_field.GetUnit(PlayerVanguard).tempID, card.name);
+            _lastRidden.Clear();
+            _lastPlacedOnVC.Clear();
+            _lastRidden.Add(_field.GetUnit(PlayerVanguard));
             bool personaRide = false;
             if (card.name == _field.GetUnit(PlayerVanguard).name && _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
@@ -1507,7 +1433,7 @@ namespace VanguardEngine
             }
             else
                 Log.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
-            _lastPlacedOnVC[_lastPlacedOnVC.Count].Add(card);
+            _lastPlacedOnVC.Add(card);
             _riddenThisTurn = true;
         }
 
@@ -1521,10 +1447,10 @@ namespace VanguardEngine
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
         {
             bool fromHand = false;
+            bool fromPrison = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
-            if (PlayerPrisoners.Contains(_field.CardCatalog[tempID]))
-                _lastCalledFromPrison.Add(ToBeCalled);
-            _lastCalledFromPrison.Add(ToBeCalled);
+            if (EnemyPrisoners.Contains(_field.CardCatalog[tempID]))
+                fromPrison = true;
             if (_field.CardLocations[tempID] == PlayerHand)
                 fromHand = true;
             if (ToBeCalled.orderType >= 0)
@@ -1546,25 +1472,27 @@ namespace VanguardEngine
                 Log.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");
             else
                 Log.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
-            if (!_lastPlacedOnRC.ContainsKey(_lastPlacedOnRC_Count))
-                _lastPlacedOnRC[_lastPlacedOnRC_Count] = new List<Card>();
-            _lastPlacedOnRC[_lastPlacedOnRC_Count].Add(ToBeCalled);
+            _lastPlacedOnRC.Add(ToBeCalled);
             _unitsCalledThisTurn.Add(ToBeCalled);
             if (fromHand)
             {
                 _unitsCalledFromHandThisTurn.Add(ToBeCalled);
-                if (!_lastPlacedOnRCFromHand.ContainsKey(_lastPlacedOnRCFromHand_Count))
-                    _lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count] = new List<Card>();
-                _lastPlacedOnRCFromHand[_lastPlacedOnRCFromHand_Count].Add(ToBeCalled);
+                _lastPlacedOnRCFromHand.Add(ToBeCalled);
                 return 1;
+            }
+            if (fromPrison)
+            {
+                _lastPlacedOnRCFromPrison.Add(ToBeCalled);
+                return 2;
             }
             return 0;
         }
 
         public void DoneSuperiorCalling()
         {
-            _lastPlacedOnRC_Count++;
-            _lastPlacedOnRCFromHand_Count++;
+            _lastPlacedOnRC.Clear();
+            _lastPlacedOnRCFromHand.Clear();
+            _lastPlacedOnRCFromPrison.Clear();
         }
 
         public void ClearOverloadedCards()
@@ -1777,9 +1705,8 @@ namespace VanguardEngine
         {
             Card card;
             bool intercept = false;
-            int _lastPlacedOnGC_Count = _lastPlacedOnGC.Keys.Count + 1;
-            if (!_lastPutOnGC.ContainsKey(_lastPutOnGC.Keys.Count + 1))
-                _lastPutOnGC[_lastPutOnGC.Keys.Count + 1] = new List<Card>();
+            _lastPlacedOnGC.Clear();
+            _lastPutOnGC.Clear();
             foreach (int selection in selections)
             {
                 card = _field.CardCatalog[selection];
@@ -1794,12 +1721,10 @@ namespace VanguardEngine
                     _isIntercepting.Add(card);
                 }
                 _field.GC.Add(card);
-                _lastPutOnGC[_lastPutOnGC.Keys.Count].Add(card);
+                _lastPutOnGC.Add(card);
                 if (!intercept)
                 {
-                    if (!_lastPlacedOnGC.ContainsKey(_lastPlacedOnGC_Count))
-                        _lastPlacedOnGC[_lastPlacedOnGC_Count] = new List<Card>();
-                    _lastPlacedOnGC[_lastPlacedOnGC_Count].Add(card);
+                    _lastPlacedOnGC.Add(card);
                 }
                 Log.WriteLine("----------\nAdded " + card.name + " to Guardian Circle.");
                 //if (OnGuard != null)
@@ -1907,40 +1832,9 @@ namespace VanguardEngine
             return false;
         }
 
-        //public void RemoveFromRC(int tempID, bool imprison)
-        //{
-        //    Card card = _field.CardCatalog[tempID];
-        //    if (GetAllUnitsOnField().Contains(card))
-        //    {
-        //        foreach (Card originalDress in card.soul)
-        //        {
-        //            if (imprison)
-        //            {
-        //                if (card.originalOwner == _playerID)
-        //                {
-        //                    EnemyPrisoners.Add(originalDress);
-        //                    EnemyOrder.Add(originalDress);
-        //                }
-        //                else
-        //                {
-        //                    PlayerPrisoners.Add(originalDress);
-        //                    PlayerOrder.Add(originalDress);
-        //                }
-        //                originalDress.location = Location.Prison;
-        //            }
-        //            else
-        //            {
-        //                PlayerDrop.Add(originalDress);
-        //                originalDress.location = Location.Drop;
-        //            }
-        //        }
-        //        card.soul.Clear();
-        //        _field.SetUnit(GetCircle(card), null);
-        //    }
-        //}
-
         public void Retire(List<int> tempIDs)
         {
+            _lastPlayerRetired.Clear();
             _playerRetired = false;
             _enemyRetired = false;
             foreach (int tempID in tempIDs)
@@ -1959,6 +1853,7 @@ namespace VanguardEngine
                 {
                     if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == tempID)
                     {
+                        _lastPlayerRetired.Add(_field.GetUnit(i));
                         _field.RemoveUnit(i, PlayerDrop);
                         _playerRetired = true;
                         _playerRetiredThisTurn = true;
@@ -1977,25 +1872,6 @@ namespace VanguardEngine
                     list.Add(card.tempID);
             }
             Retire(list);
-        }
-
-        public void RetiredForPlayerCost(List<int> tempIDs)
-        {
-            Card card;
-            _retiredForPlayerCost[_retiredForPlayerCost.Keys.Count + 1] = new List<Card>();
-            foreach (int tempID in tempIDs)
-            {
-                card = _field.CardCatalog[tempID];
-                if (card.originalOwner == _playerID)
-                    _retiredForPlayerCost[_retiredForPlayerCost.Keys.Count].Add(card);
-            }
-        }
-
-        public bool WasRetiredForPlayerCost(int tempID, int timingCount)
-        {
-            if (_retiredForPlayerCost.ContainsKey(timingCount) && _retiredForPlayerCost[timingCount].Contains(_field.CardCatalog[tempID]))
-                return true;
-            return false;
         }
 
         public bool EnemyRetired()
@@ -2228,10 +2104,10 @@ namespace VanguardEngine
         public void Stand(int selection)
         {
             Card target = FindActiveUnit(selection);
-            _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
+            _stoodByCardEffect.Clear();
             if (!IsUpRight(target))
             {
-                _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(target);
+                _stoodByCardEffect.Add(target);
                 if (!_stoodByCardEffectThisTurn.Contains(selection))
                     _stoodByCardEffectThisTurn.Add(selection);
             }
@@ -2326,7 +2202,6 @@ namespace VanguardEngine
                     PlayerOrderArea.Add(card);
                 else
                     PlayerOrder.Add(card);
-                _lastPutOnOrderZone[_lastPutOnOrderZone.Count + 1] = card;
             }
         }
 
@@ -2476,11 +2351,6 @@ namespace VanguardEngine
             return false;
         }
 
-        public List<Card> GetLastCalledFromPrison()
-        {
-            return _lastCalledFromPrison;
-        }
-
         public void SetWorld()
         {
             PlayerWorld = _playedOrder;
@@ -2562,11 +2432,9 @@ namespace VanguardEngine
             return false;
         }
 
-        public Card GetLastPutOnOrderZone(int timingCount)
+        public List<Card> GetLastPutOnOrderZone()
         {
-            if (_lastPutOnOrderZone.ContainsKey(timingCount))
-                return _lastPutOnOrderZone[timingCount];
-            return null;
+            return _lastPutOnOrderZone;
         }
 
         public int CreateToken(string tokenID)
@@ -2676,13 +2544,13 @@ namespace VanguardEngine
 
         public void Stand(List<int> cardsToStand)
         {
-            _stoodByCardEffect[_stoodByCardEffect.Keys.Count + 1] = new List<Card>();
+            _stoodByCardEffect.Clear();
             foreach (int tempID in cardsToStand)
             {
                 if (!_field.Orientation.IsUpRight(tempID))
                 {
                     _field.Orientation.Rotate(tempID, true);
-                    _stoodByCardEffect[_stoodByCardEffect.Keys.Count].Add(_field.CardCatalog[tempID]);
+                    _stoodByCardEffect.Add(_field.CardCatalog[tempID]);
                     _stoodByCardEffectThisTurn.Add(tempID);
                 }
             }
@@ -2859,10 +2727,10 @@ namespace VanguardEngine
             _unitsCalledThisTurn.Clear();
             _unitsCalledFromHandThisTurn.Clear();
             _riddenThisTurn = false;
-            for (int i = 0; i < _field.CirclePower.Length; i++)
-                _field.CirclePower[i] = 0;
-            for (int i = 0; i < _field.CircleCritical.Length; i++)
-                _field.CircleCritical[i] = 0;
+            //for (int i = 0; i < _field.CirclePower.Length; i++)
+            //    _field.CirclePower[i] = 0;
+            //for (int i = 0; i < _field.CircleCritical.Length; i++)
+            //    _field.CircleCritical[i] = 0;
         }
 
         public void RefreshContinuous()
@@ -2875,15 +2743,11 @@ namespace VanguardEngine
         {
             _lastPlacedOnRC.Clear();
             _lastPlacedOnRCFromHand.Clear();
-            _lastPlacedOnRC_Count = 1;
-            _lastPlacedOnRCFromHand_Count = 1;
+            _lastPlacedOnRCFromPrison.Clear();
             _lastPlacedOnGC.Clear();
             _lastPutOnGC.Clear();
-            _riddenOnThisTurn.Clear();
-            _cardRiddenBy.Clear();
             //_lastRevealedTriggers.Clear();
             _lastDiscarded.Clear();
-            _lastCalledFromPrison.Clear();
             _lastPlacedOnVC.Clear();
             _lastPutOnOrderZone.Clear();
             _retiredForPlayerCost.Clear();
@@ -2984,14 +2848,6 @@ namespace VanguardEngine
         public bool RearguardCanDriveCheck()
         {
             return MyStates.HasState(PlayerState.RearguardDriveCheck);
-        }
-
-        public bool StoodByCardEffect(int tempID, int count)
-        {
-            Card card = _field.CardCatalog[tempID];
-            if (_stoodByCardEffect.ContainsKey(count) && _stoodByCardEffect[count].Contains(card))
-                return true;
-            return false;
         }
 
         public bool StoodByCardEffectThisTurn(int tempID)

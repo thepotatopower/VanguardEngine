@@ -779,7 +779,7 @@ namespace VanguardEngine
         }
         public bool IsRodeUponThisTurn()
         {
-            foreach (Card card in _player1.GetRiddenOnThisTurn(_timingCount))
+            foreach (Card card in _cardFight.GetList(Activation.OnRide, _player1._playerID, _timingCount))
             {
                 if (_card.tempID == card.tempID)
                     return true;
@@ -789,17 +789,25 @@ namespace VanguardEngine
 
         public bool WasRodeUponBy(string name)
         {
-            return _player1.RodeUponBy(_timingCount, _card.tempID, name, false);
+            List<Card> lastRiddenOn = _cardFight.GetList(Activation.OnRide, _player1._playerID, _timingCount);
+            List<Card> lastPlacedOnVC = _cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount);
+            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastPlacedOnVC[0].name == name)
+                return true;
+            return false;
         }
 
         public bool WasRodeUponByNameContains(string name)
         {
-            return _player1.RodeUponBy(_timingCount, _card.tempID, name, true);
+            List<Card> lastRiddenOn = _cardFight.GetList(Activation.OnRide, _player1._playerID, _timingCount);
+            List<Card> lastPlacedOnVC = _cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount);
+            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastPlacedOnVC[0].name.Contains(name))
+                return true;
+            return false;
         }
 
         public bool MyVanguardWasPlaced()
         {
-            if (_player1.GetLastPlacedOnVC(_timingCount).Count > 0)
+            if (_cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount).Count > 0)
                 return true;
             return false;
         }
@@ -931,9 +939,9 @@ namespace VanguardEngine
                         currentPool.Add(_player1.GetPlayedOrder());
                 }
                 else if (location == Location.LastCalledFromPrison)
-                    currentPool.AddRange(_player2.GetLastCalledFromPrison());
+                    currentPool.AddRange(_cardFight.GetList(Activation.PlacedOnRCFromPrison, _player2._playerID, _timingCount));
                 else if (location == Location.LastStood)
-                    currentPool.AddRange(_player1.GetLastStood(_timingCount));
+                    currentPool.AddRange(_cardFight.GetList(Activation.OnStand, _player1._playerID, _timingCount));
                 else if (location == Location.InFront)
                     currentPool.AddRange(_player1.GetInFront(_card.tempID));
                 else if (location == Location.UnitsCalledThisTurn)
@@ -1309,12 +1317,22 @@ namespace VanguardEngine
 
         public bool LastPlacedOnGC()
         {
-            return _player1.IsLastPlacedOnGC(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.PlacedOnGC, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool LastPutOnGC()
         {
-            return _player1.IsLastPutOnGC(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.PutOnGC, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool IsIntercepting()
@@ -1324,22 +1342,42 @@ namespace VanguardEngine
 
         public bool LastPlacedOnRC()
         {
-            return _player1.IsLastPlacedOnRC(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.PlacedOnRC, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool LastPlacedOnRCFromHand()
         {
-            return _player1.IsLastPlacedOnRCFromHand(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.PlacedOnRCFromHand, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool LastPlacedOnVC()
         {
-            return _player1.IsLastPlacedOnVC(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool LastDiscarded()
         {
-            return _player1.IsLastDiscarded(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.OnDiscard, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool OnTriggerZone()
@@ -1683,6 +1721,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsFrontRowRearguard()
+        {
+            foreach (Card card in _player1.GetPlayerFrontRow())
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
+        }
+
         public bool IsGuardian()
         {
             List<Card> units = _player1.GetGC();
@@ -1778,7 +1826,12 @@ namespace VanguardEngine
 
         public bool StoodByCardEffect()
         {
-            return _player1.StoodByCardEffect(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.OnStand, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public bool StoodByCardEffectThisTurn()
@@ -2038,7 +2091,12 @@ namespace VanguardEngine
 
         public bool WasRetiredForPlayerCost()
         {
-            return _player1.WasRetiredForPlayerCost(_card.tempID, _timingCount);
+            foreach (Card card in _cardFight.GetList(Activation.OnRetiredForPlayerCost, _player1._playerID, _timingCount))
+            {
+                if (card.tempID == _card.tempID)
+                    return true;
+            }
+            return false;
         }
 
         public void CountsAsTwoRetires(int paramNum)
@@ -2681,8 +2739,8 @@ namespace VanguardEngine
 
         public bool LastPutOnOrderZoneIsWorld()
         {
-            Card card = _player1.GetLastPutOnOrderZone(_timingCount);
-            if (card != null && card.orderType == OrderType.World)
+            List<Card> cards = _cardFight.GetList(Activation.PutOnOrderZone, _player1._playerID, _timingCount);
+            if (cards.Count > 0 && cards[0] != null && cards[0].orderType == OrderType.World)
                 return true;
             return false;
         }
@@ -3021,6 +3079,7 @@ namespace VanguardEngine
         public const int OnEndPhase = -28;
         public const int OnRetiredForPlayerCost = -29;
         public const int PutOnOrderZone = -30;
+        public const int PlacedOnRCFromPrison = -31;
     }
 
     public class Location
