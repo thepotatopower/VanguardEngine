@@ -421,6 +421,11 @@ namespace VanguardEngine
                     _costs[Property.SpecificSB] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.AddToDrop)
+                {
+                    _costs[Property.AddToDrop] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
             }
             if (_abilityType == VanguardEngine.AbilityType.ACT || _abilityType == VanguardEngine.AbilityType.Order)
             {
@@ -663,6 +668,8 @@ namespace VanguardEngine
                 ChooseRest(_costs[Property.Rest]);
             if (_costs.ContainsKey(Property.Retire))
                 ChooseRetire(_costs[Property.Retire]);
+            if (_costs.ContainsKey(Property.AddToDrop))
+                ChooseAddToDrop(_costs[Property.AddToDrop]);
         }
 
         public bool CanPayCost()
@@ -684,6 +691,8 @@ namespace VanguardEngine
                 else if (key == Property.Rest && !CanRest(_costs[key]))
                     return false;
                 else if (key == Property.Retire && !CanRetire(_costs[key]))
+                    return false;
+                else if (key == Property.AddToDrop && !CanAddToDrop(_costs[key]))
                     return false;
             }
             return true;
@@ -1610,6 +1619,14 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanAddToDrop(int paramNum)
+        {
+            List<Card> canAddToDrop = ValidCards(paramNum);
+            if (canAddToDrop != null && canAddToDrop.Count >= GetCount(paramNum))
+                return true;
+            return false;
+        }
+
         public bool CanStand(int paramNum)
         {
             List<Card> units = ValidCards(paramNum);
@@ -1921,7 +1938,7 @@ namespace VanguardEngine
             List<Card> fromHand = ValidCards(paramNum);
             int circle = _player1.GetCircle(ValidCards(paramNum2)[0]);
             List<int> circles = new List<int>();
-            circles[0] = circle;
+            circles.Add(circle);
             _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles, true, true, false);
         }
 
@@ -2063,6 +2080,8 @@ namespace VanguardEngine
         public void ChooseAddToDrop(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
+            if (!HasCount(paramNum) && !HasMin(paramNum))
+                AddToSoul(paramNum);
             List<int> cardsToDrop = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum), "Choose card(s) to send to drop.");
             _player1.AddToDrop(cardsToDrop);
         }
@@ -2302,6 +2321,11 @@ namespace VanguardEngine
         public int NumEnemyOpenCircles()
         {
             return _player1.NumEnemyOpenCircles();
+        }
+
+        public int NumPlayerOpenCircles()
+        {
+            return _player2.NumEnemyOpenCircles();
         }
 
         public void RearguardDriveCheck()
@@ -3207,5 +3231,6 @@ namespace VanguardEngine
         public const int Rest = 12;
         public const int SpecificCB = 13;
         public const int SpecificSB = 14;
+        public const int AddToDrop = 15;
     }
 }

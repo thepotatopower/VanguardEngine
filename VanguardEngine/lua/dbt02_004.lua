@@ -18,9 +18,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 2 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnAttackHits, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -46,21 +46,15 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		if obj.InFinalRush() then
 			obj.SetAbilityPower(1, 5000)
 			obj.AllowColumnAttack(1)
-		else
-			obj.SetAbilityPower(1, 0)
-			obj.DisableColumnAttack(1)
 		end
 	elseif n == 2 then
 		obj.SoulCharge(1) 
-		if obj.VanguardIs("Diabolos, \"Violence\" Bruce") then
+		if obj.VanguardIs("Diabolos, \"Violence\" Bruce") and obj.NumPlayerOpenCircles() > 0 then
 			obj.SuperiorCall(2, FL.OpenCircle)
 		end
 	end

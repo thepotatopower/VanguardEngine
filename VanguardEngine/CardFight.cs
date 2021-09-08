@@ -1153,6 +1153,7 @@ namespace VanguardEngine
                     selection = _inputManager.SelectAbility(choosingPlayer, abilities);
                     if (selection == abilities.Count)
                     {
+                        abilities.Clear();
                         break;
                     }
                     else

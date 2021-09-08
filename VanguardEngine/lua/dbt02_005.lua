@@ -20,9 +20,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 2 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.Retire, 1
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.Retire, 2
 	end
 end
 
@@ -32,7 +32,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.CanRetire(2) then
+		if obj.IsRearguard() and obj.IsAttackingUnit() then
 			return true
 		end
 	end
@@ -50,20 +50,12 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 2 then
-		obj.ChooseRetire(2)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
 		if obj.IsPlayerTurn() and obj.IsDarkNight() then
 			obj.SetAbilityPower(1, 2000)
 		elseif obj.IsPlayerTurn() and obj.IsAbyssalDarkNight() then
 			obj.SetAbilityPower(1, 5000)
-		else
-			obj.SetAbilityPower(1, 0)
 		end
 	elseif n == 2 then
 		obj.ChooseRetire(3)

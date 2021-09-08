@@ -20,9 +20,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnAttack, t.Auto, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1
+		return a.OnACT, t.ACT, p.HasPrompt, p.AddToDrop, 1, p.CB, 1
 	end
 end
 
@@ -32,7 +32,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.Exists(1) and obj.CanCB(2) then
+		if obj.Exists(1) then
 			return true
 		end
 	end
@@ -46,13 +46,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 2 then
-		obj.CounterBlast(2)
-		obj.AddToDrop(1)
-	end
 end
 
 function Activate(n)
