@@ -140,7 +140,7 @@ namespace VanguardEngine
                 foreach (Ability ability in _abilities[card.tempID])
                 {
                     ability.SetTimingCount(timingCount);
-                    if (ability.IsActivation(activation) && ability.CheckCondition(activation))
+                    if (!ability.isGiven && ability.IsActivation(activation) && ability.CheckCondition(activation))
                     {
                         abilities.Add(ability);
                     }
@@ -231,6 +231,7 @@ namespace VanguardEngine
         bool _activated = false;
         bool _withAlchemagic = true;
         bool _payingCost = false;
+        bool _given = false;
         List<int> _activations = new List<int>();
         List<int> _location = new List<int>();
         int _abilityType;
@@ -238,6 +239,7 @@ namespace VanguardEngine
         int _abilityID;
         int _timingCount = 0;
         int _currentActivation = 0;
+        int _resultOf = 0;
         List<int> _overDressParams = new List<int>();
         Script _script;
         DynValue _abilityActivate;
@@ -426,6 +428,30 @@ namespace VanguardEngine
                     _costs[Property.AddToDrop] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
                 }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.SpecificDiscard)
+                {
+                    _costs[Property.SpecificDiscard] = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.ResultOf)
+                {
+                    _resultOf = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Bind)
+                {
+                    _resultOf = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.AddToDamageZone)
+                {
+                    _resultOf = (int)activationRequirement.Tuple[i + 1].Number;
+                    i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.Given)
+                {
+                    _given = true;
+                }
             }
             if (_abilityType == VanguardEngine.AbilityType.ACT || _abilityType == VanguardEngine.AbilityType.Order)
             {
@@ -478,6 +504,11 @@ namespace VanguardEngine
         {
             get => _isSuperiorCall;
             set => _isSuperiorCall = value;
+        }
+
+        public bool isGiven
+        {
+            get => _given;
         }
 
         public List<int> GetActivations
@@ -670,6 +701,12 @@ namespace VanguardEngine
                 ChooseRetire(_costs[Property.Retire]);
             if (_costs.ContainsKey(Property.AddToDrop))
                 ChooseAddToDrop(_costs[Property.AddToDrop]);
+            if (_costs.ContainsKey(Property.SpecificDiscard))
+                SpecificDiscard(_costs[Property.SpecificDiscard]);
+            if (_costs.ContainsKey(Property.Bind))
+                ChooseBind(_costs[Property.Bind]);
+            if (_costs.ContainsKey(Property.AddToDamageZone))
+                AddToDamageZone(_costs[Property.AddToDamageZone]);
         }
 
         public bool CanPayCost()
@@ -693,6 +730,12 @@ namespace VanguardEngine
                 else if (key == Property.Retire && !CanRetire(_costs[key]))
                     return false;
                 else if (key == Property.AddToDrop && !CanAddToDrop(_costs[key]))
+                    return false;
+                else if (key == Property.SpecificDiscard && !CanSpecificDiscard(_costs[key]))
+                    return false;
+                else if (key == Property.Bind && !CanBind(_costs[key]))
+                    return false;
+                else if (key == Property.AddToDamageZone && !Exists(_costs[key]))
                     return false;
             }
             return true;
@@ -930,7 +973,7 @@ namespace VanguardEngine
                 else if (location == Location.Trigger)
                     currentPool.Add(_player1.GetTrigger(true));
                 else if (location == Location.LastCalled)
-                    currentPool.AddRange(_player1.GetLastPlacedOnRC());
+                    currentPool.AddRange(_cardFight.GetList(Activation.PlacedOnRC, _player1._playerID, -1));
                 else if (location == Location.PlayerOrder)
                     currentPool.AddRange(_player1.GetPlayerOrder());
                 else if (location == Location.PlayerUnits)
@@ -1670,6 +1713,20 @@ namespace VanguardEngine
             return true;
         }
 
+        public bool CanSpecificDiscard(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            int inHand = 0;
+            foreach (Card card in cards)
+            {
+                if (_player1.GetHand().Contains(card))
+                    inHand++;
+            }
+            if (inHand >= GetMin(paramNum))
+                return true;
+            return false;
+        }
+
         public bool CanReveal(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -2108,6 +2165,12 @@ namespace VanguardEngine
             _cardFight.Discard(_player1, _player2, cardsToSelect, count, min);
         }
 
+        public void SpecificDiscard(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            _cardFight.Discard(_player1, _player2, cards, GetCount(paramNum), GetMin(paramNum));
+        }
+
         public bool WasRetiredForPlayerCost()
         {
             foreach (Card card in _cardFight.GetList(Activation.OnRetiredForPlayerCost, _player1._playerID, _timingCount))
@@ -2145,6 +2208,14 @@ namespace VanguardEngine
                 _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum - 1].Counts[0], false); 
         }
 
+        public bool CanBind(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            if (cards.Count >= GetMin(paramNum))
+                return true;
+            return false;
+        }
+
         public void Bind(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -2157,7 +2228,10 @@ namespace VanguardEngine
         public void ChooseBind(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
-            _cardFight.ChooseBind(_player1, cards, GetCount(paramNum), GetMin(paramNum));
+            if (!HasCount(paramNum) && !HasMin(paramNum))
+                _player1.Bind(ConvertToTempIDs(cards));
+            else
+                _cardFight.ChooseBind(_player1, cards, GetCount(paramNum), GetMin(paramNum));
         }
 
         public void Retire(int paramNum)
@@ -2865,6 +2939,12 @@ namespace VanguardEngine
             _player1.CannotBoost();
         }
 
+        public void RetireAtEndOfTurn(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            _player1.RetireAtEndOfTurn(ConvertToTempIDs(cards));
+        }
+
         public int SelectOption(params string[] list)
         {
             return _cardFight.SelectOption(_player1, list);
@@ -3232,5 +3312,10 @@ namespace VanguardEngine
         public const int SpecificCB = 13;
         public const int SpecificSB = 14;
         public const int AddToDrop = 15;
+        public const int SpecificDiscard = 16;
+        public const int ResultOf = 17;
+        public const int Bind = 18;
+        public const int AddToDamageZone = 19;
+        public const int Given = 20;
     }
 }

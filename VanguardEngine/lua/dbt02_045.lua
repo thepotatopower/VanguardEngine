@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 5
+	return 4
 end
 
 function GetParam(n)
@@ -14,17 +14,15 @@ function GetParam(n)
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
 	elseif n == 3 then
-		return q.Location, l.Soul, q.Count, 1
-	elseif n == 4 then
 		return q.Location, l.Looking, q.Grade, 1, q.Grade, 0, q.Other, o.Unit, q.Count, 1, q.Min, 0
-	elseif n == 5 then
+	elseif n == 4 then
 		return q.Location, l.PlayerRC, q.Other, o.NotThis, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, true, p.SB, 1, p.Retire, 1
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -44,17 +42,14 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.AddTempPower(2, 5000)
-		if obj.CanSB(3) and obj.CanRetire(5) and obj.YesNo("Soul Blast 1 and retire another rear-guard?") then
-			obj.SoulBlast(3)
-			obj.ChooseRetire(5)
+		if obj.CanSB(1) and obj.CanRetire(4) and obj.YesNo("Soul Blast 1 and retire another rear-guard?") then
+			obj.SoulBlast(1)
+			obj.ChooseRetire(4)
 			obj.LookAtTopOfDeck(5)
-			obj.SuperiorCall(4)
+			obj.SuperiorCall(3)
 			obj.Shuffle()
 		end
 	end

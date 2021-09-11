@@ -20,13 +20,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnACT, t.ACT, p.HasPrompt, p.Rest, 2
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) and obj.Exists(2) then
+		if obj.Exists(1) then
 			return true
 		end
 	end
@@ -40,12 +40,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.Rest(2)
-	end
 end
 
 function Activate(n)

@@ -22,7 +22,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, t.Order, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnOrder, t.Order, p.HasPrompt
 	end
 end
 
@@ -42,9 +42,6 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		obj.Select(1)
@@ -53,7 +50,7 @@ function Activate(n)
 		count = count / 5
 		obj.AddTempPower(4, count * 5000)
 		if obj.Exists(3) then
-			obj.AddCritical(4)
+			obj.AddCritical(4, 1)
 		end
 		obj.EndSelect()
 	end

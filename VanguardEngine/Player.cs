@@ -33,6 +33,7 @@ namespace VanguardEngine
         protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<int> _stoodByCardEffectThisTurn = new List<int>();
         protected List<Card> _retiredForPlayerCost = new List<Card>();
+        protected List<Card> _retireAtEndOfTurn = new List<Card>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
@@ -254,6 +255,8 @@ namespace VanguardEngine
                 OnZoneChanged(this, e);
             }
             UpdateRecordedValues();
+            if (_retireAtEndOfTurn.Contains(e.card))
+                _retireAtEndOfTurn.Remove(e.card);
         }
 
         void _fieldOnZoneSwapped(object sender, CardEventArgs e)
@@ -2187,6 +2190,7 @@ namespace VanguardEngine
 
         public void PlayOrder(int tempID)
         {
+            _lastPutOnOrderZone.Clear();
             Card card = _field.CardCatalog[tempID];
             if (PlayerDrop.Contains(card))
             {
@@ -2201,7 +2205,10 @@ namespace VanguardEngine
                 if (card.orderType == OrderType.Normal || card.orderType == OrderType.Blitz)
                     PlayerOrderArea.Add(card);
                 else
+                {
                     PlayerOrder.Add(card);
+                    _lastPutOnOrderZone.Add(card);
+                }
             }
         }
 
@@ -2711,6 +2718,7 @@ namespace VanguardEngine
 
         public void EndTurn()
         {
+            RetireCardsMarkedForRetire();
             MyStates.EndTurn();
             _field.CardStates.EndTurn();
             _alchemagicFreeSB = false;
@@ -2731,6 +2739,21 @@ namespace VanguardEngine
             //    _field.CirclePower[i] = 0;
             //for (int i = 0; i < _field.CircleCritical.Length; i++)
             //    _field.CircleCritical[i] = 0;
+        }
+
+        public void RetireCardsMarkedForRetire()
+        {
+            while (_retireAtEndOfTurn.Count > 0)
+            {
+                Card card = _retireAtEndOfTurn[0];
+                _retireAtEndOfTurn.Remove(card);
+                if (GetActiveUnits().Contains(card))
+                {
+                    List<int> list = new List<int>();
+                    list.Add(card.tempID);
+                    Retire(list);
+                }
+            }
         }
 
         public void RefreshContinuous()
@@ -2936,6 +2959,17 @@ namespace VanguardEngine
                 return true;
             }
             return false;
+        }
+
+        public void RetireAtEndOfTurn(List<int> tempIDs)
+        {
+            Card card;
+            foreach (int tempID in tempIDs)
+            {
+                card = _field.CardCatalog[tempID];
+                if (card != null && GetActiveUnits().Contains(card))
+                    _retireAtEndOfTurn.Add(card);
+            }
         }
     }
 

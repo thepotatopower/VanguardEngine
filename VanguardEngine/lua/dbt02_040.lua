@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.Retire, 1
+		return a.OnAttack, t.Auto, p.HasPrompt, p.Retire, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and (obj.IsAttackingUnit() or obj.IsBooster()) and obj.IsAbyssalDarkNight() and obj.CanRetire(1) then
+		if obj.IsRearguard() and (obj.IsAttackingUnit() or obj.IsBooster()) and obj.IsAbyssalDarkNight() then
 			return true
 		end
 	end
@@ -38,12 +38,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.ChooseRetire(1)
-	end
 end
 
 function Activate(n)

@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnEndPhase, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnEndPhase, t.Auto, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -36,9 +36,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

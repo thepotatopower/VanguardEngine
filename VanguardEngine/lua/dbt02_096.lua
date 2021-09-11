@@ -12,19 +12,19 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.RevealedTrigger, q.UnitType, u.Trigger, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This, q.Count, 1
+		return q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.Retire, 1
+		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.Retire, 2
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) and obj.VanguardIs("Hexaorb Sorceress") and obj.CanRetire(2) then
+		if obj.Exists(1) and obj.VanguardIs("Hexaorb Sorceress") then
 			return true
 		end
 	end

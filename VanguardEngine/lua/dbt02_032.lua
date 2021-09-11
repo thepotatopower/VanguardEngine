@@ -16,13 +16,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.AddToSoul, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() and obj.Exists(1) then
+		if obj.LastPlacedOnRC() then
 			return true
 		end
 	end
@@ -34,12 +34,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.ChooseAddToSoul(1)
-	end
 end
 
 function Activate(n)

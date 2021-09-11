@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.CB, 1
+		return a.OnAttackHits, t.Auto, p.HasPrompt
 	end
 end
 
@@ -34,9 +34,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

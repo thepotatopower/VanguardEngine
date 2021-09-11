@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, false, p.Retire, 1
+		return a.OnAttackHits, t.Auto, p.HasPrompt, p.Retire, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsBooster() and obj.VanguardIsAttackingUnit() then
+		if obj.IsRearguard() and obj.IsBooster() and obj.VanguardIsAttackingUnit() then
 			return true
 		end
 	end
@@ -38,12 +38,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.Retire(1)
-	end
 end
 
 function Activate(n)

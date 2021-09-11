@@ -18,13 +18,13 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.Discard, 1
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.SpecificDiscard, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and not obj.Activated() and obj.Exists(1) then
+		if obj.IsRearguard() then
 			return true
 		end
 	end
@@ -38,13 +38,7 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.Discard(1)
-	end
-end
+end 
 
 function Activate(n)
 	if n == 1 then

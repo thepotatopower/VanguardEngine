@@ -1,28 +1,34 @@
--- Knight of Heavenly Thunder, Leedy
+-- Black Sage, Charon
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 1
+	return 4
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Soul, q.Count, 2
+		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 2 then
+		return q.Location, l.PlayerVC, q.NameContains, "Blaster", q.Count, 1
+	elseif n == 3 then
+		return q.Location, l.Looking, q.Other, o.Unit, q.Count, 1
+	elseif n == 4 then
+		return q.Location, l.LastCalled
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, true, p.IsMandatory, false, p.SB, 2
+		return a.PlacedOnRC, t.Auto, p.HasPrompt, p.Rest, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and obj.CanSB(1) then
+		if obj.LastPlacedOnRC() and obj.Exists(2) then
 			return true
 		end
 	end
@@ -36,15 +42,15 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
-end
-
 function Activate(n)
 	if n == 1 then
-		obj.AddBonusDriveCheckPower(5000)
+		obj.LookAtTopOfDeck(1)
+		if obj.SuperiorCall(3) then
+			obj.RetireAtEndOfTurn()
+		if obj.Exists(3) then
+			obj.SuperiorCall(3)
+			obj.RetireAtEndOfTurn(4)
+		end
 	end
 	return 0
 end

@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -36,15 +36,10 @@ function CanFullyResolve(n)
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
 		if obj.EnemyVanguardGrade() >= 3 then
 			obj.SetAbilityShield(1, 5000)
-		else
-			obj.SetAbilityShield(1, 0)
 		end
 	end
 	return 0

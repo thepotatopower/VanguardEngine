@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttackHits, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttackHits, t.Auto, p.HasPrompt, p.Bind, 1
 	end
 end
 
@@ -38,12 +38,6 @@ function CanFullyResolve(n)
 		end
 	end
 	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.Bind(1)
-	end
 end
 
 function Activate(n)

@@ -563,11 +563,11 @@ namespace VanguardEngine
                 }
                 _abilities.ResetActivation(tempID);
             }
-            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
+            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), true);
             if (sc == 1)
-                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
+                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), true);
             else if (sc == 2)
-                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison());
+                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison(), true);
             player1.DoneSuperiorCalling();
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
@@ -1591,9 +1591,15 @@ namespace VanguardEngine
 
         public void AddPlayTiming(int activation, int playerID, List<Card> cards)
         {
+            AddPlayTiming(activation, playerID, cards, false);
+        }
+
+        public void AddPlayTiming(int activation, int playerID, List<Card> cards, bool append)
+        {
             if (!_playTimings.ContainsKey(activation))
                 _playTimings[activation] = new PlayTiming(activation);
-            _playTimings[activation].AddPlayTiming();
+            if (!append || _playTimings[activation].GetTotal() == 0)
+                _playTimings[activation].AddPlayTiming();
             if (cards != null)
             {
                 if (playerID == 1)
@@ -1704,8 +1710,13 @@ namespace VanguardEngine
 
         public List<Card> GetList(int playTiming, int timingCount)
         {
-            if (timingCountLists.ContainsKey(playTiming) && timingCountLists[playTiming].ContainsKey(timingCount))
-                return timingCountLists[playTiming][timingCount];
+            if (timingCountLists.ContainsKey(playTiming) && timingCountLists[playTiming].Keys.Count > 0)
+            {
+                if (timingCount == -1)
+                    return timingCountLists[playTiming][timingCountLists[playTiming].Keys.Max()];
+                if (timingCountLists[playTiming].ContainsKey(timingCount))
+                    return timingCountLists[playTiming][timingCount];
+            }
             return new List<Card>();
         }
 

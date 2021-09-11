@@ -20,19 +20,19 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, true, p.IsMandatory, false
+		return a.OnAttack, t.Auto, p.HasPrompt
 	elseif n == 2 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, true, p.IsMandatory, true
+		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.IsMandatory, p.ResultOf, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsBooster() and obj.Exists(1) then
+		if obj.IsRearguard() and obj.IsBooster() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsBooster() and obj.Activated(1) then
+		if obj.IsRearguard() and obj.IsBooster() and obj.Activated(1) then
 			return true
 		end
 	end
@@ -46,9 +46,6 @@ function CanFullyResolve(n)
 		return true
 	end
 	return false
-end
-
-function Cost(n)
 end
 
 function Activate(n)

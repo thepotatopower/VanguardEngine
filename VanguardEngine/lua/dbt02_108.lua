@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	end
 end
 
@@ -35,21 +35,14 @@ end
 
 function CanFullyResolve(n)
 	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
+		return true
 	end
 	return false
 end
 
-function Cost(n)
-end
-
 function Activate(n)
 	if n == 1 then
-		if obj.GetNumberOf(1) > obj.GetNumberOf(2) then
-			obj.AllowAttack(3)
-		else
+		if not (obj.GetNumberOf(1) > obj.GetNumberOf(2)) then
 			obj.DisableAttack(3)
 		end
 	end
