@@ -12,6 +12,8 @@ namespace VanguardEngine
         public static List<string> GenerateList(string deckFilepath, int loadCode)
         {
             string[] f1 = File.ReadAllLines(deckFilepath);
+            if (f1.Length != 52)
+                return null;
             List<string> output = new List<string>();
             if (loadCode == LoadCode.WithRideDeck)
             {
@@ -46,6 +48,13 @@ namespace VanguardEngine
                 deck.Add(card);
             }
             return deck;
+        }
+
+        public static List<Card> Search(string query, string connectionString)
+        {
+            SQLiteDataAccess sql = new SQLiteDataAccess();
+            sql.connectionString = connectionString;
+            return sql.Search(query);
         }
     }
 

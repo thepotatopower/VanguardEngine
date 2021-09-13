@@ -20,6 +20,15 @@ namespace VanguardEngine
                 return output[0];
             }
         }
+
+        public List<Card> Search(string query)
+        {
+            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            {
+                return cnn.Query<Card>(query, new DynamicParameters()).ToList();
+            }
+        }
+
         private string LoadConnectionString(string id = "Default")
         {
             //return ConfigurationManager.ConnectionStrings[id].ConnectionString;

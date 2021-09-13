@@ -69,7 +69,7 @@ namespace VanguardEngine
         }
     }
 
-    class Nation
+    public class Nation
     {
         public const int KeterSanctuary = 0;
         public const int DragonEmpire = 1;
@@ -78,7 +78,7 @@ namespace VanguardEngine
         public const int Stoicheia = 4;
         public const int LyricalMonasterio = 5;
 
-        public string NationName(int name)
+        public static string NationName(int name)
         {
             switch(name)
             {
