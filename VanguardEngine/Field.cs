@@ -708,7 +708,6 @@ namespace VanguardEngine
         public override Card AddRide(Card card)
         {
             base.AddRide(card);
-            card.overDress = true;
             return card;
         }
 
@@ -723,6 +722,10 @@ namespace VanguardEngine
             circle._soul = tempSoul;
             circle._cards = tempCards;
             circle._overloadedUnits = tempOverloaded;
+            if (circle._cards.Count > 0)
+                _field.CardLocations[circle._cards[0].tempID] = circle;
+            if (_cards.Count > 0)
+                _field.CardLocations[_cards[0].tempID] = this;
         }
     }
 
@@ -1135,7 +1138,6 @@ namespace VanguardEngine
         protected virtual void ResetCard(Card card)
         {
             _field.CardStates.ResetCardValues(card.tempID);
-            card.overDress = false;
         }
 
         protected virtual Card AddToZone(Card card, bool bottom)

@@ -125,14 +125,14 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             actingPlayer = player1;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -521,6 +521,7 @@ namespace VanguardEngine
             _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
             _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
             ActivateAbilities(player1, player2);
+            player1.DoneCalling();
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
         }
@@ -568,7 +569,7 @@ namespace VanguardEngine
                 _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), true);
             else if (sc == 2)
                 _playTimings.AddPlayTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison(), true);
-            player1.DoneSuperiorCalling();
+            player1.DoneCalling();
             player1.ClearOverloadedCards();
             player2.ClearOverloadedCards();
             return successful;

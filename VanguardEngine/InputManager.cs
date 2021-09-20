@@ -205,7 +205,7 @@ namespace VanguardEngine
                     "1. Ride from Ride Deck.\n" +
                     "2. Ride from hand.\n" +
                     "3. End Ride Phase.");
-            int_input = SelectPrompt(4);
+            int_input = SelectPrompt(3);
             oSignalEvent.Set();
         }
 

@@ -28,7 +28,7 @@ end
 
 function CheckCondition(n)
 	if n == 2 then
-		if obj.InOverDress and obj.IsAttackingUnit() and obj.TargetIsEnemyVanguard() then
+		if obj.InOverDress() and obj.IsAttackingUnit() and obj.TargetIsEnemyVanguard() then
 			return true
 		end
 	end

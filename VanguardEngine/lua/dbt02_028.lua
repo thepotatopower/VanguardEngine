@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.OnAttack, t.Auto, p.IsMandatory
 	end
 end
 
@@ -45,7 +45,8 @@ function Activate(n)
 		if obj.Exists(3) then
 			obj.AddBattleOnlyPower(1, 5000)
 		end
-		if obj.CanCB(2) and obj.YesNo("Counter Blast 1 to retire opponent's grade 2 or less rear-guard?") then
+		if obj.CanCB(1) and obj.YesNo("Counter Blast 1 to retire opponent's grade 2 or less rear-guard?") then
+			obj.CounterBlast(1)
 			obj.ChooseRetire(2)
 		end
 	end

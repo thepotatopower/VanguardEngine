@@ -843,7 +843,7 @@ namespace VanguardEngine
         {
             List<Card> lastRiddenOn = _cardFight.GetList(Activation.OnRide, _player1._playerID, _timingCount);
             List<Card> lastPlacedOnVC = _cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount);
-            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastPlacedOnVC[0].name == name)
+            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastRiddenOn[0].tempID == _card.tempID && lastPlacedOnVC[0].name == name)
                 return true;
             return false;
         }
@@ -852,7 +852,7 @@ namespace VanguardEngine
         {
             List<Card> lastRiddenOn = _cardFight.GetList(Activation.OnRide, _player1._playerID, _timingCount);
             List<Card> lastPlacedOnVC = _cardFight.GetList(Activation.PlacedOnVC, _player1._playerID, _timingCount);
-            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastPlacedOnVC[0].name.Contains(name))
+            if (lastRiddenOn.Count > 0 && lastPlacedOnVC.Count > 0 && lastRiddenOn[0].tempID == _card.tempID && lastPlacedOnVC[0].name.Contains(name))
                 return true;
             return false;
         }
@@ -1116,7 +1116,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.overDress)
+                            if (_player1.IsOverDress(card.tempID))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -1722,7 +1722,7 @@ namespace VanguardEngine
                 if (_player1.GetHand().Contains(card))
                     inHand++;
             }
-            if (inHand >= GetMin(paramNum))
+            if (inHand > 0 && inHand >= GetMin(paramNum))
                 return true;
             return false;
         }
@@ -1730,7 +1730,7 @@ namespace VanguardEngine
         public bool CanReveal(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
-            if (cards != null && cards.Count >= _params[paramNum - 1].Counts[0])
+            if (cards != null && cards.Count > 0 && cards.Count >= _params[paramNum - 1].Counts[0])
                 return true;
             return false;
         }
@@ -1738,7 +1738,7 @@ namespace VanguardEngine
         public bool CanRest(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
-            if (cards.Count >= GetMin(paramNum))
+            if (cards.Count > 0 && cards.Count >= GetMin(paramNum))
             {
                 foreach (Card card in cards)
                 {
@@ -1844,8 +1844,7 @@ namespace VanguardEngine
 
         public bool InOverDress()
         {
-            Card card = _player1.GetCard(_card.tempID);
-            if (card.overDress)
+            if (_player1.IsOverDress(_card.tempID))
                 return true;
             return false;
         }
@@ -2318,7 +2317,8 @@ namespace VanguardEngine
             }
             if (!HasCount(paramNum) && !HasMin(paramNum))
                 _player1.Rest(ConvertToTempIDs(canRest));
-            _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
+            else
+                _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
         }
 
         public void Rest(int paramNum)

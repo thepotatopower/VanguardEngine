@@ -891,7 +891,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand.GetCards())
                 {
-                    if (card.orderType < 0 && card.grade <= _field.GetUnit(PlayerVanguard).grade && 
+                    if (card.orderType < 0 && 
                         (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || card.grade >= MyStates.GetValue(PlayerState.MinGradeForGuard)))
                         cards.Add(card);
                 }
@@ -1443,7 +1443,6 @@ namespace VanguardEngine
         public void Call(int location, int selection, bool overDress)
         {
             SuperiorCall(location, selection, overDress, true);
-            DoneSuperiorCalling();
             _field.ClearOverloadedCards();
         }
 
@@ -1491,7 +1490,7 @@ namespace VanguardEngine
             return 0;
         }
 
-        public void DoneSuperiorCalling()
+        public void DoneCalling()
         {
             _lastPlacedOnRC.Clear();
             _lastPlacedOnRCFromHand.Clear();
@@ -2970,6 +2969,16 @@ namespace VanguardEngine
                 if (card != null && GetActiveUnits().Contains(card))
                     _retireAtEndOfTurn.Add(card);
             }
+        }
+
+        public bool IsOverDress(int tempID)
+        {
+            foreach (Card card in GetActiveUnits())
+            {
+                if (card.tempID == tempID && _field.GetSoul(GetCircle(card)).Count > 0)
+                    return true;
+            }
+            return false;
         }
     }
 
