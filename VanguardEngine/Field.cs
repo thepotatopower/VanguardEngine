@@ -135,12 +135,17 @@ namespace VanguardEngine
 
         public int GetRow(int circle)
         {
-            return _circles[circle].Row;
+            if (_circles[circle] != null)
+                return _circles[circle].Row;
+            else
+                return -1;
         }
 
         public int GetColumn(int circle)
         {
-            return _circles[circle].Column;
+            if (_circles[circle] != null)
+                return _circles[circle].Column;
+            return -1;
         }
 
         public List<Card> GetSoul(int circle)
@@ -1093,6 +1098,9 @@ namespace VanguardEngine
         public const int CannotBeRidden = 16;
         public const int CannotBeCalledToFrontRow = 17;
         public const int CannotMoveToFrontRow = 18;
+        public const int RetireAtEndOfTurn = 19;
+        public const int CanOnlyBeCalledToBackRowCenter = 20;
+        public const int CannotAttackVanguard = 21;
     }
 
     public class Zone
@@ -1143,6 +1151,12 @@ namespace VanguardEngine
         protected virtual Card AddToZone(Card card, bool bottom)
         {
             ResetCard(card);
+            if (_field.Booster != -1 && _field.GetUnit(_field.Booster).tempID == card.tempID)
+                _field.Booster = -1;
+            if (_field.Attacker != -1 && _field.GetUnit(_field.Attacker).tempID == card.tempID)
+                _field.Attacker = -1;
+            if (_field.Attacked.Exists(c => c.tempID == card.tempID))
+                _field.Attacked.Remove(_field.Attacked.Find(c => c.tempID == card.tempID));
             previousZone = _field.CardLocations[card.tempID];
             List<Card> associatedCards = new List<Card>();
             bool tokenRemoved = false;

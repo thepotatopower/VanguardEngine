@@ -27,6 +27,7 @@ namespace VanguardEngine
         public int value;
         public int int_value;
         public int int_value2;
+        public int int_value3;
         public bool bool_value;
         public Card card_input;
         public string _query;
@@ -611,7 +612,8 @@ namespace VanguardEngine
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
             intlist_input.Clear();
-            ChooseOrder_Input();
+            if (cardsToRearrange.Count > 0)
+                ChooseOrder_Input();
             if (swapped)
                 SwapPlayers();
             return intlist_input;
@@ -654,6 +656,8 @@ namespace VanguardEngine
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query)
         {
             bool swapped = false;
+            int trueMin = min;
+            List<int> temporaryList = new List<int>();
             if (actingPlayer._playerID != _player1._playerID)
             {
                 SwapPlayers();
@@ -673,11 +677,44 @@ namespace VanguardEngine
                 intlist_input.Clear();
                 return intlist_input;
             }
-            int_value = count;
-            int_value2 = min;
-            SelectFromList_Input();
-            if (swapped)
-                SwapPlayers();
+            while (count > 1 && _query.Contains("retire") && cards.Exists(card => _player1.CanCountAsTwoRetires(card.tempID) && !_player1.IsEnemy(card.tempID)))
+            {
+                _query = query;
+                int_value = 1;
+                if (min > 0)
+                    int_value2 = 1;
+                else
+                    int_value2 = 0;
+                int_value3 = trueMin;
+                SelectFromList_Input();
+                if (intlist_input.Count == 0)
+                    break;
+                else
+                {
+                    if (_player1.CanCountAsTwoRetires(intlist_input[0]) && YesNo(actingPlayer, "Count as two retires?"))
+                    {
+                        count -= 2;
+                        min -= 2;
+                        trueMin -= 2;
+                    }
+                    else
+                    {
+                        count--;
+                        min--;
+                        trueMin--;
+                    }
+                    temporaryList.Add(intlist_input[0]);
+                    cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
+                    intlist_input.Clear();
+                }
+            }
+            if (count > 0 || min > 0)
+            {
+                int_value = count;
+                int_value2 = min;
+                SelectFromList_Input();
+            }
+            intlist_input.AddRange(temporaryList);
             foreach (int tempID in intlist_input)
             {
                 if (OnChosen != null)
@@ -687,6 +724,8 @@ namespace VanguardEngine
                     OnChosen(this, args);
                 }
             }
+            if (swapped)
+                SwapPlayers();
             return intlist_input;
         }
 
@@ -695,7 +734,6 @@ namespace VanguardEngine
             int selection;
             int count = int_value;
             int min = int_value2;
-            int bonus = 0;
             intlist_input.Clear();
             for (int j = 0; j < count; j++)
             {
@@ -711,9 +749,7 @@ namespace VanguardEngine
                 }
                 else
                     selection = SelectPrompt(cardsToSelect.Count) - 1;
-                if (_query.Contains("retire") && _player1.CanCountAsTwoRetires(cardsToSelect[selection].tempID) && !_player1.IsEnemy(cardsToSelect[selection].tempID))
-                    bonus++;
-                if (intlist_input.Count + bonus >= min && selection == cardsToSelect.Count)
+                if (intlist_input.Count >= min && selection == cardsToSelect.Count)
                     return;
                 intlist_input.Add(cardsToSelect[selection].tempID);
                 cardsToSelect.RemoveAt(selection);
@@ -827,6 +863,8 @@ namespace VanguardEngine
         public const int CounterCharge = 13;
         public const int TakeDamage = 14;
         public const int Heal = 15;
+        public const int MoveRearguardFreeSwap = 16;
+        public const int ActivateAbilityFromDrop = 17;
     }
 
     public class BattlePhaseAction

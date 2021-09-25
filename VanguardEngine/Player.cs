@@ -33,7 +33,6 @@ namespace VanguardEngine
         protected List<Card> _stoodByCardEffect = new List<Card>();
         protected List<int> _stoodByCardEffectThisTurn = new List<int>();
         protected List<Card> _retiredForPlayerCost = new List<Card>();
-        protected List<Card> _retireAtEndOfTurn = new List<Card>();
         protected Card _playedOrder;
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
@@ -45,6 +44,7 @@ namespace VanguardEngine
         protected bool _orderPlayed = false;
         protected bool _isAlchemagic = false;
         protected bool _alchemagicFreeSB = false;
+        protected bool _alchemagicFreeSBActive = false;
         protected int _alchemagicFreeCBAvailable = 0;
         protected bool _alchemagicUsed = false;
         protected bool _riddenThisTurn = false;
@@ -255,8 +255,6 @@ namespace VanguardEngine
                 OnZoneChanged(this, e);
             }
             UpdateRecordedValues();
-            if (_retireAtEndOfTurn.Contains(e.card))
-                _retireAtEndOfTurn.Remove(e.card);
         }
 
         void _fieldOnZoneSwapped(object sender, CardEventArgs e)
@@ -504,7 +502,7 @@ namespace VanguardEngine
                     {
                         if (IsEnemy(c.tempID))
                             inFront.Add(c);
-                        if (c.tempID != tempID && _field.GetRow(GetCircle(c)) == 0)
+                        else if (c.tempID != tempID && _field.GetRow(GetCircle(c)) == 0)
                             inFront.Add(c);
                     }
                 }
@@ -857,6 +855,8 @@ namespace VanguardEngine
             Card Attacker = _field.GetUnit(_field.Attacker);
             for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
             {
+                if (i == EnemyVanguard && _field.CardStates.HasState(Attacker.tempID, CardState.CannotAttackVanguard))
+                    continue;
                 if (_field.GetUnit(i) != null && (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
                     cards.Add(_field.GetUnit(i));
             }
@@ -870,6 +870,18 @@ namespace VanguardEngine
                 cards.Add(_field.GetUnit(EnemyFrontLeft));
             if (_field.GetUnit(EnemyFrontRight) != null)
                 cards.Add(_field.GetUnit(EnemyFrontRight));
+            return cards;
+        }
+
+        public List<Card> GetEnemyBackRowRearguards()
+        {
+            List<Card> cards = new List<Card>();
+            if (_field.GetUnit(EnemyBackLeft) != null)
+                cards.Add(_field.GetUnit(EnemyBackLeft));
+            if (_field.GetUnit(EnemyBackCenter) != null)
+                cards.Add(_field.GetUnit(EnemyBackCenter));
+            if (_field.GetUnit(EnemyBackRight) != null)
+                cards.Add(_field.GetUnit(EnemyBackRight));
             return cards;
         }
 
@@ -891,7 +903,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand.GetCards())
                 {
-                    if (card.orderType < 0 && 
+                    if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
                         (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || card.grade >= MyStates.GetValue(PlayerState.MinGradeForGuard)))
                         cards.Add(card);
                 }
@@ -1456,7 +1468,10 @@ namespace VanguardEngine
             if (_field.CardLocations[tempID] == PlayerHand)
                 fromHand = true;
             if (ToBeCalled.orderType >= 0)
+            {
                 PlayerDrop.Add(ToBeCalled);
+                return -1;
+            }
             else
             {
                 if (!overDress)
@@ -1604,6 +1619,55 @@ namespace VanguardEngine
             {
                 _field.SwapUnits(GetCircle(_field.CardCatalog[tempID]), location);
             }
+        }
+
+        //public void MoveRearguardFreeSwap(int tempID, int circle)
+        //{
+        //    if (!IsPlayer(circle))
+        //        return;
+        //    if (_field.CardStates.HasState(tempID, CardState.CannotMove) || (_field.GetUnit(circle) != null && _field.CardStates.HasState(_field.GetUnit(circle).tempID, CardState.CannotMove)))
+        //        return;
+        //    int row = _field.GetRow(circle);
+        //    int column = _field.GetColumn(circle);
+        //    Card card = _field.CardCatalog[tempID];
+        //    if (card == null)
+        //        return;
+        //    if (circle == PlayerVanguard || GetCircle(card) == PlayerVanguard)
+        //        return;
+        //    if (!((Math.Abs(row - _field.GetRow(GetCircle(card))) == 1 && Math.Abs(column - _field.GetColumn(GetCircle(card))) == 0) ||
+        //        (Math.Abs(row - _field.GetRow(GetCircle(card))) == 0 && Math.Abs(column - _field.GetColumn(GetCircle(card))) == 1)))
+        //        return;
+        //    if (row == 0 && _field.CardStates.HasState(tempID, CardState.CannotMoveToFrontRow))
+        //        return;
+        //    if (_field.GetUnit(circle) != null && _field.GetRow(GetCircle(card)) == 0 && _field.CardStates.HasState(tempID, CardState.CannotMoveToFrontRow))
+        //        return;
+        //    _field.SwapUnits(circle, GetCircle(card));
+        //}
+
+        public void MoveRearguardFreeSwap(int tempID, int circle)
+        {
+            _field.SwapUnits(GetCircle(_field.CardCatalog[tempID]), circle);
+        }
+
+        public List<int> GetCirclesForFreeSwap(int tempID)
+        {
+            List<int> availableCircles = new List<int>();
+            Card card = _field.CardCatalog[tempID];
+            if (_field.CardStates.HasState(tempID, CardState.CannotMove))
+                return availableCircles;
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
+            {
+                if (GetCircle(card) != i && 
+                    ((Math.Abs(_field.GetRow(GetCircle(card)) - _field.GetRow(i)) == 1 && Math.Abs(_field.GetColumn(GetCircle(card)) - _field.GetColumn(i)) == 0) ||
+                    (Math.Abs(_field.GetRow(GetCircle(card)) - _field.GetRow(i)) == 0 && Math.Abs(_field.GetColumn(GetCircle(card)) - _field.GetColumn(i)) == 1)))
+                {
+                    if (!((_field.GetRow(i) == 0 && _field.CardStates.HasState(tempID, CardState.CannotMoveToFrontRow)) ||
+                        (_field.GetRow(GetCircle(card)) == 0 && _field.GetUnit(i) != null && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotMoveToFrontRow)) ||
+                        (_field.GetUnit(i) != null && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotMove))))
+                        availableCircles.Add(i);
+                }
+            }
+            return availableCircles;
         }
 
         public int GetBooster(int attacker)
@@ -2270,6 +2334,7 @@ namespace VanguardEngine
         {
             _isAlchemagic = false;
             _alchemagicFreeSB = false;
+            _alchemagicFreeSBActive = false;
         }
 
         public bool CanAlchemagicDiff()
@@ -2290,6 +2355,17 @@ namespace VanguardEngine
         public void AlchemagicFreeSB()
         {
             _alchemagicFreeSB = true;
+        }
+
+        public void UsedAlchemagicFreeSB()
+        {
+            _alchemagicFreeSB = false;
+            _alchemagicFreeSBActive = true;
+        }
+
+        public bool AlchemagicFreeSBActive()
+        {
+            return _alchemagicFreeSBActive;
         }
 
         public void AddAlchemagicFreeCB(int count)
@@ -2742,11 +2818,9 @@ namespace VanguardEngine
 
         public void RetireCardsMarkedForRetire()
         {
-            while (_retireAtEndOfTurn.Count > 0)
+            foreach (Card card in GetActiveUnits())
             {
-                Card card = _retireAtEndOfTurn[0];
-                _retireAtEndOfTurn.Remove(card);
-                if (GetActiveUnits().Contains(card))
+                if (_field.CardStates.HasState(card.tempID, CardState.RetireAtEndOfTurn))
                 {
                     List<int> list = new List<int>();
                     list.Add(card.tempID);
@@ -2888,6 +2962,11 @@ namespace VanguardEngine
         public List<int> GetAvailableCircles(int tempID)
         {
             List<int> circles = new List<int>();
+            if (_field.CardStates.HasState(tempID, CardState.CanOnlyBeCalledToBackRowCenter))
+            {
+                circles.Add(PlayerBackCenter);
+                return circles;
+            }
             circles.Add(PlayerBackRight);
             circles.Add(PlayerBackCenter);
             circles.Add(PlayerBackLeft);
@@ -2967,7 +3046,7 @@ namespace VanguardEngine
             {
                 card = _field.CardCatalog[tempID];
                 if (card != null && GetActiveUnits().Contains(card))
-                    _retireAtEndOfTurn.Add(card);
+                    _field.CardStates.AddUntilEndOfTurnState(tempID, CardState.RetireAtEndOfTurn);
             }
         }
 

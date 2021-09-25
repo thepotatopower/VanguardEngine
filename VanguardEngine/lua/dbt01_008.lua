@@ -32,7 +32,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and obj.Exists(1) and obj.Exists(2) then
+		if obj.IsVanguard() and obj.IsPlayerTurn() and obj.Exists(1) and obj.Exists(2) then
 			return true
 		end
 	elseif n == 2 then

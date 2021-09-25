@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.SB, 1, p.Bind, 2
+		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.SB, 1, p.Bind, 1
 	end
 end
 
@@ -44,7 +44,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(3, FL.OpenCircle)
+		obj.SuperiorCall(2, FL.OpenCircle)
 	end
 	return 0
 end

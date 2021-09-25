@@ -22,7 +22,7 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OverDress, 1, 2
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.HasPrompt, false, p.IsMandatory, true
+		return a.Cont, t.Cont, p.IsMandatory
 	elseif n == 3 then
 		return a.OnAttackHits, t.Auto, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.Discard, 1
 	end

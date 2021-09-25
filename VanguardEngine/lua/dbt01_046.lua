@@ -5,7 +5,7 @@ function NumberOfAbilities()
 end
 
 function NumberOfParams()
-	return 2
+	return 4
 end
 
 function GetParam(n)
@@ -13,6 +13,10 @@ function GetParam(n)
 		return q.Location, l.Looking
 	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 3 then
+		return q.Location, l.Looking, q.Count, 1, q.Min, 0
+	elseif n == 4 then
+		return q.Location, l.Selected
 	end
 end
 
@@ -51,12 +55,10 @@ function Activate(n)
 		obj.LookAtTopOfDeck(3)
 		obj.RearrangeOnTop(1)
 	elseif n == 2 then
-		local t = 0
 		obj.LookAtTopOfDeck(1)
-		obj.DisplayCards(1)
-		t = obj.SelectOption("Put on top of deck.", "Put on bottom of deck.")
-		if t == 1 then
-			obj.SendToTop(1)
+		obj.Select(3, "Choose card to put on top of deck.")
+		if obj.GetNumberOf(4) > 0 then
+			obj.SendToTop(4)
 		else
 			obj.SendToBottom(1)
 			obj.AddTempPower(2, 2000)

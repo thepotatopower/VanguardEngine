@@ -34,7 +34,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.TriggerRevealed() then
+		if obj.IsRearguard() and obj.IsPlayerTurn() and obj.TriggerRevealed() then
 			return true
 		end
 	end

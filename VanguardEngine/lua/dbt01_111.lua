@@ -55,7 +55,7 @@ function Activate(n)
 		if obj.Exists(1) then
 			t = obj.YesNo("Discard an order card?")
 			if t then
-				obj.Discard(1)
+				obj.SpecificDiscard(1)
 			end
 		end
 		if not t then

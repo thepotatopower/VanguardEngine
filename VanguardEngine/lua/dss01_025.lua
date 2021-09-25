@@ -1,4 +1,4 @@
--- Divine Sister, Faciata
+-- Twin Press Smasher
 
 function NumberOfAbilities()
 	return 1
@@ -10,21 +10,21 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.RevealedTrigger, q.UnitType, u.Trigger, q.Count, 1
+		return q.Location, l.PlayerRC, q.Other, o.This
 	elseif n == 2 then
-		return q.Location, l.Damage, q.Other, o.FaceDown, q.Count, 1
+		return q.Location, l.FrontRowEnemyRC, q.Other, o.CanChoose, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.OncePerTurn, p.SB, 2
+		return a.ACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.SB, 1, p.Rest, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsRearguard() and obj.IsPlayerTurn() and obj.Exists(1) then
+		if obj.IsRearguard() then
 			return true
 		end
 	end
@@ -42,7 +42,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.CounterCharge(1)
+		obj.ChooseRetire(2)
 	end
 	return 0
 end

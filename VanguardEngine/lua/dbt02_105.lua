@@ -45,10 +45,7 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.LookAtTopOfDeck(1)
-		if obj.SuperiorCall(3) then
-			obj.RetireAtEndOfTurn()
-		if obj.Exists(3) then
-			obj.SuperiorCall(3)
+		if obj.Exists(3) and obj.SuperiorCall(3) then
 			obj.RetireAtEndOfTurn(4)
 		end
 	end

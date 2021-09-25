@@ -30,7 +30,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.Exists(2) then
+		if obj.IsRearguard() and obj.IsPlayerTurn() and obj.Exists(2) then
 			return true
 		end
 	end

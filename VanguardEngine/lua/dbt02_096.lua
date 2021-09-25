@@ -24,7 +24,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) and obj.VanguardIs("Hexaorb Sorceress") then
+		if obj.IsRearguard() and obj.IsPlayerTurn() and obj.Exists(1) and obj.VanguardIs("Hexaorb Sorceress") then
 			return true
 		end
 	end

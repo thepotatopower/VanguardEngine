@@ -41,11 +41,11 @@ end
 function Activate(n)
 	if n == 1 then
 		if obj.IsPlayerTurn() then
-			obj.ChooseRetire(2)
-			obj.EnemyChooseRetire(1)
+			obj.ChooseRetire(1)
+			obj.EnemyChooseRetire(2)
 		else
-			obj.EnemyChooseRetire(1)
-			obj.ChooseRetire(2)
+			obj.EnemyChooseRetire(2)
+			obj.ChooseRetire(1)
 		end
 	end
 	return 0
