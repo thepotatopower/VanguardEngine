@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnAttack, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.OnAttack, p.HasPrompt, p.IsMandatory
 	end
 end
 

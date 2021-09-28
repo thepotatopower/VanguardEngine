@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnEnemyRetired, t.Auto, p.HasPrompt, p.Retire, 1
+		return a.OnEnemyRetired, p.HasPrompt, p.Retire, 1
 	end
 end
 

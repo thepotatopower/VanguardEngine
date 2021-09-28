@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.ACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
+		return a.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
 	end
 end
 

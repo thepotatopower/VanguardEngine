@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnBlitzOrder, t.Order, p.HasPrompt
+		return a.OnBlitzOrder, p.HasPrompt
 	end
 end
 

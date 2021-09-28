@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.IsMandatory
+		return a.Cont, p.IsMandatory
 	end
 end
 

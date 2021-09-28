@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDiscard, t.Auto, p.HasPrompt
+		return a.OnDiscard, p.HasPrompt
 	end
 end
 

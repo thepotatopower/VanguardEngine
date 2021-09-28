@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.AddToSoul, 2
+		return a.OnBattleEnds, p.HasPrompt, p.AddToSoul, 2
 	end
 end
 

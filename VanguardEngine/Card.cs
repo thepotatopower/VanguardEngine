@@ -117,6 +117,14 @@ namespace VanguardEngine
         public const int Music = 3;
         public const int Prison = 4;
         public const int World = 5;
+        public const int Song = 6;
+        public const int Gem = 7;
+        public static bool IsSetOrder(int type)
+        {
+            if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song)
+                return true;
+            return false;
+        }
     }
 
     public class Skill
@@ -136,6 +144,11 @@ namespace VanguardEngine
         public const int Heal = 3;
         public const int Stand = 4;
         public const int Over = 5;
+    }
+
+    public class Race
+    {
+        public const int Ghost = 0;
     }
 
     public class Format

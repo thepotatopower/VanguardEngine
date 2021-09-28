@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PutOnGC, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.PutOnGC, p.HasPrompt, p.IsMandatory
 	end
 end
 

@@ -24,9 +24,9 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OverDress, 1
 	elseif n == 2 then
-		return a.OnBattleEnds, t.Auto, p.HasPrompt, p.SB, 2
+		return a.OnBattleEnds, p.HasPrompt, p.SB, 2
 	elseif n == 3 then
-		return a.Cont, t.Cont, p.HasPrompt, p.IsMandatory
+		return a.Cont, p.HasPrompt, p.IsMandatory
 	end
 end
 

@@ -18,9 +18,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.CB, 1
+		return a.OnACT, p.HasPrompt, p.CB, 1
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.IsMandatory, p.Given
+		return a.Cont, p.IsMandatory, p.Given
 	end
 end
 

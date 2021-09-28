@@ -1,0 +1,58 @@
+-- Astesice, Kairi
+
+function NumberOfAbilities()
+	return 2
+end
+
+function NumberOfParams()
+	return 2
+end
+
+function GetParam(n)
+	if n == 1 then
+		return q.Location, l.PlayerRC, q.Count, 2, q.Min, 1
+	elseif n == 2 then
+		return q.Location, l.PlayerHand, q.Count, 2, q.Min, 1
+	end
+end
+
+function ActivationRequirement(n)
+	if n == 1 then
+		return a.OnAttack, p.HasPrompt, p.SB, 1
+	elseif n == 2 then
+		return a.OnBattleEnds, p.HasPrompt
+	end
+end
+
+function CheckCondition(n)
+	if n == 1 then
+		if obj.IsVanguard() and obj.IsAttackingUnit() then
+			return true
+		end
+	elseif n == 2 then
+		if obj.IsVanguard() and obj.PersonaRode() and obj.Exists(2) then
+			return true
+		end
+	end
+	return false
+end
+
+function CanFullyResolve(n) 
+	if n == 1 then
+		if obj.Exists(1) then
+			return true
+		end
+	elseif n == 2 then
+		return true
+	end
+	return false
+end
+
+function Activate(n)
+	if n == 1 then
+		obj.ChooseAddToHand(1)
+	elseif n == 2 then
+		obj.SuperiorCallToDifferentRows(2)
+	end
+	return 0
+end

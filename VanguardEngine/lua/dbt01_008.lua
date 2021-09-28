@@ -24,9 +24,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.OnDriveCheck, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.SB, 1
+		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.SB, 1
 	end
 end
 

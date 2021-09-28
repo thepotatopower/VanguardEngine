@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnEndPhase, t.Auto, p.HasPrompt, p.IsMandatory
+		return a.OnEndPhase, p.HasPrompt, p.IsMandatory
 	end
 end
 

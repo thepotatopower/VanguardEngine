@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, t.Auto, p.HasPrompt, p.Retire, 2
+		return a.OnDriveCheck, p.HasPrompt, p.Retire, 2
 	end
 end
 

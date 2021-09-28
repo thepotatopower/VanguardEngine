@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, t.Auto, p.HasPrompt
+		return a.PlacedOnRC, p.HasPrompt
 	end
 end
 

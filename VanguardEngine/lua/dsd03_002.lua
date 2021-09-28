@@ -20,9 +20,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, t.Auto, p.HasPrompt, p.Reveal, 1
+		return a.OnRide, p.HasPrompt, p.Reveal, 1
 	elseif n == 2 then
-		return a.Cont, t.Cont, p.IsMandatory
+		return a.Cont, p.IsMandatory
 	end
 end
 

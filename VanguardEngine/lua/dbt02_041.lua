@@ -20,7 +20,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.Rest, 2
+		return a.OnACT, p.HasPrompt, p.Rest, 2
 	end
 end
 

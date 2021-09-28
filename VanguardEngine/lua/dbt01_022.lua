@@ -10,7 +10,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOverTrigger, t.OverTrigger, p.HasPrompt, p.IsMandatory
+		return a.OnOverTrigger, p.HasPrompt, p.IsMandatory
 	end
 end
 

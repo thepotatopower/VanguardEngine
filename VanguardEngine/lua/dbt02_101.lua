@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.SB, 1, p.AddToDamageZone, 1
+		return a.OnACT, p.HasPrompt, p.SB, 1, p.AddToDamageZone, 1
 	end
 end
 

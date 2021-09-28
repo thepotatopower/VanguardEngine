@@ -333,6 +333,14 @@ namespace VanguardEngine
                         output += "Enemy Front Right.";
                     else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyFrontLeft))
                         output += "Enemy Front Left.";
+                    else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyBackRight))
+                        output += "EnemyBack Right.";
+                    else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyBackCenter))
+                        output += "Enemy Back Center.";
+                    else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyBackLeft))
+                        output += "Enemy Back Left.";
+                    else if (intlist_input[i] == _actingPlayer.Convert(FL.EnemyVanguard))
+                        output += "Enemy Vanguard";
                     Log.WriteLine(output);
                 }
                 int_input = SelectPrompt(intlist_input.Count);

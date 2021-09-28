@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRetiredForPlayerCost, t.Auto, p.HasPrompt, p.CB, 1, p.SB, 1
+		return a.OnRetiredForPlayerCost, p.HasPrompt, p.CB, 1, p.SB, 1
 	end
 end
 

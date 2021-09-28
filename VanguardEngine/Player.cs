@@ -22,6 +22,7 @@ namespace VanguardEngine
         protected List<Card> _unitsCalledThisTurn = new List<Card>();
         protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
         protected List<Card> _lastPlayerRetired = new List<Card>();
+        protected List<Card> _lastPlayerRCRetired = new List<Card>();
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastPutOnOrderZone = new List<Card>();
         protected List<Card> _lastRevealedDriveChecks = new List<Card>();
@@ -396,12 +397,17 @@ namespace VanguardEngine
 
         public List<Card> GetLastRidden()
         {
-            return _lastRidden;
+            return new List<Card>(_lastRidden);
         }
 
         public List<Card> GetLastPlayerRetired()
         {
-            return _lastPlayerRetired;
+            return new List<Card>(_lastPlayerRetired);
+        }
+
+        public List<Card> GetLastPlayerRCRetired()
+        {
+            return new List<Card>(_lastPlayerRCRetired);
         }
 
         public Card GetUnitAt(int circle, bool convert)
@@ -669,9 +675,10 @@ namespace VanguardEngine
                 "11. " + PrintRGData(PlayerBackLeft) + " | 12. " + PrintRGData(PlayerBackCenter) + " | 13. " + PrintRGData(PlayerBackRight) + "\n" +
                 "14. Display Drop.\n" +
                 "15. Display Soul.\n" +
-                "16. Go back.";
+                "16. Display Bind.\n" +
+                "17. Go back.";
             Log.WriteLine(output);
-            return 16;
+            return 17;
         }
 
         public string PrintRGData(int location)
@@ -736,6 +743,21 @@ namespace VanguardEngine
             for (int i = 0; i < soul.Count; i++)
             {
                 Log.WriteLine(i + 1 + ". " + soul[i].name);
+            }
+        }
+
+        public void DisplayBind()
+        {
+            List<Card> bind = PlayerBind.GetCards();
+            if (bind.Count == 0)
+            {
+                Log.WriteLine("----------No cards in Bind.");
+                return;
+            }
+            Log.WriteLine("----------");
+            for (int i = 0; i < bind.Count; i++)
+            {
+                Log.WriteLine(i + 1 + ". " + bind[i].name);
             }
         }
 
@@ -857,7 +879,9 @@ namespace VanguardEngine
             {
                 if (i == EnemyVanguard && _field.CardStates.HasState(Attacker.tempID, CardState.CannotAttackVanguard))
                     continue;
-                if (_field.GetUnit(i) != null && (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
+                if (_field.GetUnit(i) != null && 
+                    !CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID) && 
+                    (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
                     cards.Add(_field.GetUnit(i));
             }
             return cards;
@@ -904,7 +928,8 @@ namespace VanguardEngine
                 foreach (Card card in PlayerHand.GetCards())
                 {
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
-                        (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || card.grade >= MyStates.GetValue(PlayerState.MinGradeForGuard)))
+                        (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || card.grade >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
+                        MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType)
                         cards.Add(card);
                 }
             }
@@ -1275,57 +1300,52 @@ namespace VanguardEngine
 
         public List<Card> GetLastPlacedOnGC()
         {
-            return _lastPlacedOnGC;
+            return new List<Card>(_lastPlacedOnGC);
         }
 
         public List<Card> GetLastPutOnGC()
         {
-            return _lastPutOnGC;
+            return new List<Card>(_lastPutOnGC);
         }
 
         public List<Card> GetLastPlacedOnRCFromHand()
         {
-            return _lastPlacedOnRCFromHand;
+            return new List<Card>(_lastPlacedOnRCFromHand);
         }
 
         public List<Card> GetLastPlacedOnRCFromPrison()
         {
-            return _lastPlacedOnRCFromPrison;
+            return new List<Card>(_lastPlacedOnRCFromPrison);
         }
 
         public List<Card> GetUnitsCalledThisTurn()
         {
-            return _unitsCalledThisTurn;
+            return new List<Card>(_unitsCalledThisTurn);
         }
 
         public List<Card> GetUnitsCalledFromHandThisTurn()
         {
-            return _unitsCalledFromHandThisTurn;
-        }
-
-        public List<Card> GetLastPlacedOnRC(int count)
-        {
-            return _lastPlacedOnRC;
+            return new List<Card>(_unitsCalledFromHandThisTurn);
         }
 
         public List<Card> GetLastPlacedOnRC()
         {
-            return _lastPlacedOnRC;
+            return new List<Card>(_lastPlacedOnRC);
         }
 
         public List<Card> GetLastPlacedOnVC()
         {
-            return _lastPlacedOnVC;
+            return new List<Card>(_lastPlacedOnVC);
         }
 
         public List<Card> GetLastStood()
         {
-            return _stoodByCardEffect;
+            return new List<Card>(_stoodByCardEffect);
         }
 
         public List<Card> GetLastDiscarded()
         {
-            return _lastDiscarded;
+            return new List<Card>(_lastDiscarded);
         }
 
         public int Drive()
@@ -1692,46 +1712,56 @@ namespace VanguardEngine
             _field.Attacker = GetCircle(_field.CardCatalog[tempID]);
         }
 
-        public void InitiateAttack(int booster, int target)
+        public void InitiateAttack(int booster, params int[] targets)
         {
             Card Attacker = _field.GetUnit(_field.Attacker);
-            Card Attacked = _field.CardCatalog[target];
-            int circle = GetCircle(Attacked);
+            Card Attacked;
             _field.Orientation.Rotate(Attacker.tempID, false);
             _field.Attacker = GetCircle(Attacker);
-            _field.Attacked.Add(Attacked);
             if (booster >= 0)
             {
                 _field.Booster = booster;
                 _field.Orientation.Rotate(_field.GetUnit(_field.Booster).tempID, false);
             }
-            if (_field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
+            if (targets.Length > 1)
             {
-                if (GetCircle(Attacked) == EnemyFrontLeft)
-                    circle = EnemyBackLeft;
-                else if (GetCircle(Attacked) == EnemyBackLeft)
-                    circle = EnemyFrontLeft;
-                else if (GetCircle(Attacked) == EnemyVanguard)
-                    circle = EnemyBackCenter;
-                else if (GetCircle(Attacked) == EnemyBackCenter)
-                    circle = EnemyVanguard;
-                else if (GetCircle(Attacked) == EnemyFrontRight)
-                    circle = EnemyBackRight;
-                else if (GetCircle(Attacked) == EnemyBackRight)
-                    circle = EnemyFrontRight;
-                if (_field.GetUnit(circle) != null && !_field.Attacked.Contains(_field.GetUnit(circle)))
-                    _field.Attacked.Add(_field.GetUnit(circle));
+                foreach (int target in targets)
+                    _field.Attacked.Add(_field.CardCatalog[target]);
             }
-            if (_field.CardStates.HasState(Attacker.tempID, CardState.CanAttackAllFrontRow))
+            else
             {
-                if (GetCircle(Attacked) == EnemyFrontLeft || GetCircle(Attacked) == EnemyVanguard || GetCircle(Attacked) == EnemyFrontRight)
+                Attacked = _field.CardCatalog[targets[0]];
+                int circle = GetCircle(Attacked);
+                _field.Attacked.Add(Attacked);
+                if (_field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack))
                 {
-                    if (_field.GetUnit(EnemyFrontLeft) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyFrontLeft)))
-                        _field.Attacked.Add(_field.GetUnit(EnemyFrontLeft));
-                    if (_field.GetUnit(EnemyVanguard) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyVanguard)))
-                        _field.Attacked.Add(_field.GetUnit(EnemyVanguard));
-                    if (_field.GetUnit(EnemyFrontRight) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyFrontRight)))
-                        _field.Attacked.Add(_field.GetUnit(EnemyFrontRight));
+
+                    if (GetCircle(Attacked) == EnemyFrontLeft)
+                        circle = EnemyBackLeft;
+                    else if (GetCircle(Attacked) == EnemyBackLeft)
+                        circle = EnemyFrontLeft;
+                    else if (GetCircle(Attacked) == EnemyVanguard)
+                        circle = EnemyBackCenter;
+                    else if (GetCircle(Attacked) == EnemyBackCenter)
+                        circle = EnemyVanguard;
+                    else if (GetCircle(Attacked) == EnemyFrontRight)
+                        circle = EnemyBackRight;
+                    else if (GetCircle(Attacked) == EnemyBackRight)
+                        circle = EnemyFrontRight;
+                    if (_field.GetUnit(circle) != null && !_field.Attacked.Contains(_field.GetUnit(circle)))
+                        _field.Attacked.Add(_field.GetUnit(circle));
+                }
+                if (_field.CardStates.HasState(Attacker.tempID, CardState.CanAttackAllFrontRow))
+                {
+                    if (GetCircle(Attacked) == EnemyFrontLeft || GetCircle(Attacked) == EnemyVanguard || GetCircle(Attacked) == EnemyFrontRight)
+                    {
+                        if (_field.GetUnit(EnemyFrontLeft) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyFrontLeft)))
+                            _field.Attacked.Add(_field.GetUnit(EnemyFrontLeft));
+                        if (_field.GetUnit(EnemyVanguard) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyVanguard)))
+                            _field.Attacked.Add(_field.GetUnit(EnemyVanguard));
+                        if (_field.GetUnit(EnemyFrontRight) != null && !_field.Attacked.Contains(_field.GetUnit(EnemyFrontRight)))
+                            _field.Attacked.Add(_field.GetUnit(EnemyFrontRight));
+                    }
                 }
             }
             Log.WriteLine("----------");
@@ -1901,6 +1931,7 @@ namespace VanguardEngine
         public void Retire(List<int> tempIDs)
         {
             _lastPlayerRetired.Clear();
+            _lastPlayerRCRetired.Clear();
             _playerRetired = false;
             _enemyRetired = false;
             foreach (int tempID in tempIDs)
@@ -1920,6 +1951,8 @@ namespace VanguardEngine
                     if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == tempID)
                     {
                         _lastPlayerRetired.Add(_field.GetUnit(i));
+                        if (i != PlayerVanguard)
+                            _lastPlayerRCRetired.Add(_field.GetUnit(i));
                         _field.RemoveUnit(i, PlayerDrop);
                         _playerRetired = true;
                         _playerRetiredThisTurn = true;
@@ -1976,7 +2009,7 @@ namespace VanguardEngine
             return false;
         }
 
-        public void SendToDeck(List<int> cardsToSend, bool bottom)
+        public bool SendToDeck(List<int> cardsToSend, bool bottom)
         {
             Card card;
             Zone deck;
@@ -2003,6 +2036,7 @@ namespace VanguardEngine
                 else
                     deck.AddToTop(card);
             }
+            return true;
         }
 
         public int TriggerCheck(bool drivecheck)
@@ -3058,6 +3092,46 @@ namespace VanguardEngine
                     return true;
             }
             return false;
+        }
+
+        public int GetRowNum(int circle)
+        {
+            return _field.GetRow(circle);
+        }
+
+        public int GetColumnNum(int circle)
+        {
+            return _field.GetColumn(circle);
+        }
+
+        public List<int> PlayerRCCircles()
+        {
+            List<int> circles = new List<int>();
+            for (int i = PlayerFrontLeft; i < PlayerVanguard; i++)
+                circles.Add(i);
+            return circles;
+        }
+
+        public List<int> PlayerCircles()
+        {
+            List<int> circles = new List<int>();
+            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+                circles.Add(i);
+            return circles;
+        }
+
+        public bool CanChooseThreeCirclesWhenAttacking(int tempID)
+        {
+            return _field.CardStates.HasState(tempID, CardState.CanChooseThreeCirclesWhenAttacking);
+        }
+
+        public void PutIntoOrderZone(List<int> tempIDs)
+        {
+            foreach (int tempID in tempIDs)
+            {
+                Card card = _field.CardCatalog[tempID];
+                PlayerOrder.Add(card);
+            }
         }
     }
 

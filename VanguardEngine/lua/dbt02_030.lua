@@ -16,7 +16,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.Cont, t.Cont, p.HasPrompt, p.IsMandatory
+		return a.Cont, p.HasPrompt, p.IsMandatory
 	end
 end
 

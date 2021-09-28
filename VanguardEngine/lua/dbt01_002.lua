@@ -24,9 +24,9 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.Description, "Rest two rear-guards, choose one of your opponent's rear-guards, retire it, and this unit gets Power+10000 until end of turn.", p.Rest, 1
+		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.Description, "Rest two rear-guards, choose one of your opponent's rear-guards, retire it, and this unit gets Power+10000 until end of turn.", p.Rest, 1
 	elseif n == 2 then
-		return a.OnACT, t.ACT, p.HasPrompt, p.OncePerTurn, p.Description, "Soul Blast 5, look at the same number of cards from the top of your deck as the number of your opponent's open RC, choose any number of unit cards from among them, call them to RC, and put the rest into your soul.", p.SB, 5
+		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.Description, "Soul Blast 5, look at the same number of cards from the top of your deck as the number of your opponent's open RC, choose any number of unit cards from among them, call them to RC, and put the rest into your soul.", p.SB, 5
 	end
 end
 

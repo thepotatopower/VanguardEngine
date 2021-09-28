@@ -980,7 +980,7 @@ namespace VanguardEngine
             foreach (Tuple<int, int> key in _untilEndOfTurnValues.Keys)
                 _untilEndOfTurnValues[key].Clear();
             foreach (int key in _untilEndOfTurnAbilities.Keys)
-                _untilEndOfTurn[key].Clear();
+                _untilEndOfTurnAbilities[key].Clear();
             foreach (int key in _untilEndOfNextTurn.Keys)
             {
                 if (!_untilEndOfTurn.ContainsKey(key))
@@ -1076,6 +1076,8 @@ namespace VanguardEngine
         public const int CanAlchemagicSame = 12;
         public const int MinGradeForGuard = 13;
         public const int RearguardDriveCheck = 14;
+        public const int SoulBlastForRideDeck = 15;
+        public const int CannotGuardWithUnitType = 16;
     }
 
     public class CardState
@@ -1101,6 +1103,8 @@ namespace VanguardEngine
         public const int RetireAtEndOfTurn = 19;
         public const int CanOnlyBeCalledToBackRowCenter = 20;
         public const int CannotAttackVanguard = 21;
+        public const int CanChooseThreeCirclesWhenAttacking = 22;
+        public const int CannotAttackUnit = 23;
     }
 
     public class Zone
