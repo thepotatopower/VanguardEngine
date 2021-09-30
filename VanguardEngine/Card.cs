@@ -106,6 +106,13 @@ namespace VanguardEngine
         public const int Sentinel = 2;
         public const int overDress = 3;
         public const int Token = 4;
+
+        public static bool IsNormal(int unitType)
+        {
+            if (unitType != Token && unitType != NotUnit && unitType != 1)
+                return true;
+            return false;
+        }
     }
 
     public class OrderType

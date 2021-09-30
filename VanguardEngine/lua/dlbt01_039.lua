@@ -1,43 +1,45 @@
--- Aurora Battle Princess, Kyanite Blue
+-- Expanding World, Wilista
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Other, o.Prison, q.Count, 1
+		return q.Location, l.LastOrderPlayed, q.Other, o.Gem, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerPrisoners, q.Count, 1
+		return q.Location, l.GC, q.Other, o.This
+	elseif n == 3 then
+		return q.Location, l.Drop, q.Other, o.Gem
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnVC, p.HasPrompt, p.IsMandatory
+		return a.OnOrderPlayed, p.HasPrompt, p.IsMandatory, p.OncePerTurn
 	elseif n == 2 then
-		return a.PlacedOnRC, p.HasPrompt, p.CB, 1, p.SB, 1
+		return a.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.Exists(1) then
+		if obj.IsVanguard() and obj.Exists(1) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.LastPlacedOnRC() and obj.Exists(2) then
+		if obj.IsGuardian() then
 			return true
 		end
 	end
 	return false
 end
 
-function CanFullyResolve(n)
+function CanFullyResolve(n) 
 	if n == 1 then
 		return true
 	elseif n == 2 then
@@ -48,11 +50,9 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Store(obj.Search(1))
-		obj.Reveal(obj.Stored())
-		obj.Shuffle()
-	elseif n == 2 then
 		obj.Draw(1)
+	elseif n == 2 then
+		obj.SetAbilityShield(2, math.floor(obj.GetNumberOf(3) / 2) * 5000)
 	end
 	return 0
 end

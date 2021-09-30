@@ -50,7 +50,9 @@ function Activate(n)
 	if n == 1 then
 		obj.Select(2)
 		obj.Inject(4, q.Name, obj.GetSelectedName(5))
-		obj.Search(4)
+		obj.Store(obj.Search(4))
+		obj.Reveal(obj.Stored())
+		obj.Shuffle()
 	end
 	return 0
 end

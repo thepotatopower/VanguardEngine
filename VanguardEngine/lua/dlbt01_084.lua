@@ -12,9 +12,9 @@ function GetParam(n)
 	if n == 1 then
 		return q.Location, l.Deck, q.Location, l.PlayerHand, q.Grade, 1, q.Other, o.Song, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.Revealed, q.Location, l.Deck, q.Count, 1
+		return q.Location, l.Deck, q.Other, o.Revealed, q.Count, 1
 	elseif n == 3 then
-		return q.Location, l.Revealed, q.Location, l.PlayerHand, q.Count, 1
+		return q.Location, l.PlayerHand, q.Other, o.Revealed, q.Count, 1
 	end
 end
 
@@ -42,11 +42,11 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Reveal(1)
+		obj.ChooseReveal(1)
 		if obj.Exists(2) then
 			obj.PutIntoOrderZone(2)
 			obj.Shuffle()
-		elseif obj.Exists(3) and obj.PutIntoOrderZone(3)
+		elseif obj.Exists(3) and obj.PutIntoOrderZone(3) then
 			obj.Draw(1)
 		end
 	end

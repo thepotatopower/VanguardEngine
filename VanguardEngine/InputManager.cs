@@ -164,7 +164,7 @@ namespace VanguardEngine
         public virtual List<int> SelectCardsToMulligan()
         {
             SelectCardsToMulligan_Input();
-            return intlist_input;
+            return new List<int>(intlist_input);
         }
 
         protected virtual void SelectCardsToMulligan_Input()
@@ -624,7 +624,7 @@ namespace VanguardEngine
                 ChooseOrder_Input();
             if (swapped)
                 SwapPlayers();
-            return intlist_input;
+            return new List<int>(intlist_input);
         }
 
         protected virtual void ChooseOrder_Input()
@@ -680,14 +680,15 @@ namespace VanguardEngine
                     min = cardsToSelect.Count;
                 count = cardsToSelect.Count;
             }
+            _query = "Choose " + count + " card(s) " + query + " min: (" + min + ")";
             if (cardsToSelect.Count == 0 || cardsToSelect.Count < min)
             {
                 intlist_input.Clear();
-                return intlist_input;
+                return new List<int>(intlist_input);
             }
             while (count > 1 && _query.Contains("retire") && cards.Exists(card => _player1.CanCountAsTwoRetires(card.tempID) && !_player1.IsEnemy(card.tempID)))
             {
-                _query = query;
+                _query = "Choose " + count + " card(s) " + query + " min: (" + min + ")";
                 int_value = 1;
                 if (min > 0)
                     int_value2 = 1;
@@ -734,7 +735,7 @@ namespace VanguardEngine
             }
             if (swapped)
                 SwapPlayers();
-            return intlist_input;
+            return new List<int>(intlist_input);
         }
 
         protected virtual void SelectFromList_Input()

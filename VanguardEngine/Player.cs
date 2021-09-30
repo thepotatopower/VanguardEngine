@@ -19,6 +19,7 @@ namespace VanguardEngine
         protected List<Card> _lastPlacedOnRC = new List<Card>();
         protected List<Card> _lastPlacedOnRCFromHand = new List<Card>();
         protected List<Card> _lastPlacedOnRCFromPrison = new List<Card>();
+        protected List<Card> _lastPlacedOnRCOtherThanFromHand = new List<Card>();
         protected List<Card> _unitsCalledThisTurn = new List<Card>();
         protected List<Card> _unitsCalledFromHandThisTurn = new List<Card>();
         protected List<Card> _lastPlayerRetired = new List<Card>();
@@ -1318,6 +1319,11 @@ namespace VanguardEngine
             return new List<Card>(_lastPlacedOnRCFromPrison);
         }
 
+        public List<Card> GetLastPlacedOnRCOtherThanFromHand()
+        {
+            return new List<Card>(_lastPlacedOnRCOtherThanFromHand);
+        }
+
         public List<Card> GetUnitsCalledThisTurn()
         {
             return new List<Card>(_unitsCalledThisTurn);
@@ -1517,6 +1523,8 @@ namespace VanguardEngine
                 _lastPlacedOnRCFromHand.Add(ToBeCalled);
                 return 1;
             }
+            else
+                _lastPlacedOnRCOtherThanFromHand.Add(ToBeCalled);
             if (fromPrison)
             {
                 _lastPlacedOnRCFromPrison.Add(ToBeCalled);
@@ -1530,12 +1538,18 @@ namespace VanguardEngine
             _lastPlacedOnRC.Clear();
             _lastPlacedOnRCFromHand.Clear();
             _lastPlacedOnRCFromPrison.Clear();
+            _lastPlacedOnRCOtherThanFromHand.Clear();
         }
 
-        public void ClearOverloadedCards()
+        public int ClearOverloadedCards()
         {
-            if (_field.ClearOverloadedCards())
+            bool cleared = _field.ClearOverloadedCards();
+            if (cleared)
+            {
                 _playerRetiredThisTurn = true;
+                return 1;
+            }
+            return 0;
         }
 
         public void MoveRearguard(int location)
@@ -1993,13 +2007,18 @@ namespace VanguardEngine
             return _playerRetiredThisTurn;
         }
 
-        public void RetireGC()
+        public int RetireGC()
         {
+            bool retired = false;
             _isIntercepting.Clear();
             foreach (Card card in _field.GC.GetCards())
             {
+                retired = true;
                 PlayerDrop.Add(card);
             }
+            if (retired)
+                return 1;
+            return 0;
         }
 
         public bool IsIntercepting(int tempID)
@@ -2285,28 +2304,45 @@ namespace VanguardEngine
             }
         }
 
-        public void PlayOrder(int tempID)
+        public bool CanPlayOrder()
+        {
+            if (!_orderPlayed || MyStates.GetValue(PlayerState.AdditionalOrder) > 0)
+                return true;
+            return false;
+        }
+
+        public int PlayOrder(int tempID)
         {
             _lastPutOnOrderZone.Clear();
+            _lastOrderPlayed = null;
             Card card = _field.CardCatalog[tempID];
             if (PlayerDrop.Contains(card))
             {
                 PlayerBind.Add(card);
                 _isAlchemagic = true;
+                return 2;
             }
             else if (PlayerHand.Contains(card))
             {
                 _playedOrder = card;
                 _lastOrderPlayed = card;
-                _orderPlayed = true;
+                if (_orderPlayed)
+                    MyStates.DecrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, 1);
+                else
+                    _orderPlayed = true;
                 if (card.orderType == OrderType.Normal || card.orderType == OrderType.Blitz)
+                {
                     PlayerOrderArea.Add(card);
+                    return 0;
+                }
                 else
                 {
                     PlayerOrder.Add(card);
                     _lastPutOnOrderZone.Add(card);
+                    return 1;
                 }
             }
+            return 0;
         }
 
         public Card GetPlayedOrder()
@@ -2654,7 +2690,6 @@ namespace VanguardEngine
                     PlayerHand.Add(_field.CardCatalog[tempID]);
                 List<int> list = new List<int>();
                 list.Add(tempID);
-                Reveal(list);
             }
         }
 
@@ -2811,6 +2846,13 @@ namespace VanguardEngine
 
         public void EndAttack()
         {
+            List<int> sendToDeck = new List<int>();
+            foreach (Card card in GetActiveUnits())
+            {
+                if (CardStates.HasState(card.tempID, CardState.SendToBottomAtEndOfBattle))
+                    sendToDeck.Add(card.tempID);
+            }
+            SendToDeck(sendToDeck, true);
             MyStates.EndAttack();
             _field.CardStates.EndAttack();
             _field.Sentinel.Clear();
@@ -3127,11 +3169,58 @@ namespace VanguardEngine
 
         public void PutIntoOrderZone(List<int> tempIDs)
         {
+            _lastPutOnOrderZone.Clear();
             foreach (int tempID in tempIDs)
             {
                 Card card = _field.CardCatalog[tempID];
                 PlayerOrder.Add(card);
+                _lastPutOnOrderZone.Add(card);
             }
+        }
+
+        public void Flip(List<int> tempIDs, bool faceup)
+        {
+            foreach (int tempID in tempIDs)
+            {
+                _field.Orientation.Flip(tempID, faceup);
+            }
+        }
+
+        public List<Card> GetLastOrderPlayed()
+        {
+            List<Card> list = new List<Card>();
+            if (_lastOrderPlayed != null)
+                list.Add(_lastOrderPlayed);
+            return list;
+        }
+
+        public List<int> ConvertToTempIDs(List<Card> cards)
+        {
+            List<int> tempIDs = new List<int>();
+            if (cards == null)
+                return tempIDs;
+            foreach (Card card in cards)
+            {
+                tempIDs.Add(card.tempID);
+            }
+            return tempIDs;
+        }
+
+        public List<Card> ConvertToCards(List<int> tempIDs)
+        {
+            List<Card> cards = new List<Card>();
+            if (tempIDs == null)
+                return cards;
+            foreach (int tempID in tempIDs)
+            {
+                cards.Add(GetCard(tempID));
+            }
+            return cards;
+        }
+
+        public FieldSnapShot GenerateSnapShot()
+        {
+            return new FieldSnapShot(_field);
         }
     }
 

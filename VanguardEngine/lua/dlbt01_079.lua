@@ -1,36 +1,38 @@
--- Heartfelt Song, Loronerol
+-- Beautiful Day Off, Feltyrosa
 
 function NumberOfAbilities()
 	return 2
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerOrder, q.Other, o.Song, q.Other, o.FaceUp, q.Count, 1
+		return q.Location, l.Drop, q.Race, r.Ghost, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.PlayerOrder, q.Other, o.Song, q.Other, o.FaceDown, q.Count, 2
+		return q.Location, l.PlayerRC, q.Race, r.Ghost, q.Count, 1
+	elseif n == 3 then
+		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
+		return a.OnRide, p.HasPrompt, p.SB, 1
 	elseif n == 2 then
-		return a.OnAttack, p.HasPrompt, p.IsMandatory
+		return a.Cont, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() then
+		if obj.IsApplicable() then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.Exists(2) then
+		if obj.IsVanguard() or obj.IsRearguard() then
 			return true
 		end
 	end
@@ -50,10 +52,11 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Sing(1)
+		obj.ChooseAddToHand(1)
 	elseif n == 2 then
-		obj.Sing(1)
-		obj.AddUntilEndOfBattleEnemyValue(ps.CannotGuardWithUnitType, u.Sentinel)
+		if obj.IsPlayerTurn() and obj.Exists(2) then
+			obj.SetAbilityPower(3, 2000)
+		end
 	end
 	return 0
 end

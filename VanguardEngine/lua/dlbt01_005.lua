@@ -1,4 +1,4 @@
--- Embodiment of Armor, Bahr
+-- Downpouring Singer, Elkiel
 
 function NumberOfAbilities()
 	return 2
@@ -10,38 +10,36 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Deck, q.Grade, 1, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 2 then
+		return q.Location, l.Applicable, q.Other, o.Player, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnRide, p.HasPrompt, p.CB, 1
+		return a.PlacedOnVC, p.HasPrompt, p.Bind, 1
 	elseif n == 2 then
-		return a.OnAttackHits, p.IsMandatory, p.OncePerTurn
+		return a.OnBind, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.WasRodeUponBy("Dragon Knight, Nehalem") then
+		if obj.IsRearguard() and obj.Exists(2) then
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsRearguard() and obj.VanguardIsAttackingUnit() then
+		if obj.IsApplicable() then
 			return true
 		end
 	end
 	return false
 end
 
-function CanFullyResolve(n)
+function CanFullyResolve(n) 
 	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
+		return true
 	elseif n == 2 then
 		return true
 	end
@@ -50,11 +48,9 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Store(obj.Search(1))
-		obj.Reveal(obj.Stored())
-		obj.Shuffle()
+		obj.Draw(1)
 	elseif n == 2 then
-		obj.AddTempPower(2, 5000)
+		obj.AddUntilEndOfTurnPlayerState(ps.BlackAndWhiteWingsActive)
 	end
 	return 0
 end

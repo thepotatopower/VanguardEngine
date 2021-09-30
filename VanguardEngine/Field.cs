@@ -98,7 +98,7 @@ namespace VanguardEngine
 
         public Card GetUnit(int circle)
         {
-            if (circle < 0 || _circles[circle] == null)
+            if (circle < 0 || circle >= FL.MaxFL() || _circles[circle] == null)
                 return null;
             return _circles[circle].Index(0);
         }
@@ -778,6 +778,7 @@ namespace VanguardEngine
         public const int GuardianCircle = 14;
         public const int OpenCircle = 100;
         public const int BackRow = 101;
+        public const int FrontRow = 102;
 
         public static int SwitchSides(int location)
         {
@@ -829,6 +830,24 @@ namespace VanguardEngine
         public void AddUntilEndOfTurnValue(int state, int value)
         {
             _untilEndOfTurnValues[state] = value;
+        }
+
+        public void IncrementUntilEndOfTurnValue(int state, int value)
+        {
+            if (_untilEndOfTurnValues.ContainsKey(state))
+                _untilEndOfTurnValues[state] += value;
+            else
+                _untilEndOfTurnValues[state] = value;
+        }
+
+        public void DecrementUntilEndOfTurnValue(int state, int value)
+        {
+            if (_untilEndOfTurnValues.ContainsKey(state))
+            {
+                _untilEndOfTurnValues[state] -= value;
+                if (_untilEndOfTurnValues[state] < 0)
+                    _untilEndOfTurnValues[state] = 0;
+            }
         }
 
         public void AddUntilEndOfNextTurnState(int state)
@@ -1078,6 +1097,8 @@ namespace VanguardEngine
         public const int RearguardDriveCheck = 14;
         public const int SoulBlastForRideDeck = 15;
         public const int CannotGuardWithUnitType = 16;
+        public const int BlackAndWhiteWingsActive = 17;
+        public const int AdditionalOrder = 18;
     }
 
     public class CardState
@@ -1105,6 +1126,7 @@ namespace VanguardEngine
         public const int CannotAttackVanguard = 21;
         public const int CanChooseThreeCirclesWhenAttacking = 22;
         public const int CannotAttackUnit = 23;
+        public const int SendToBottomAtEndOfBattle = 24;
     }
 
     public class Zone
@@ -1195,8 +1217,8 @@ namespace VanguardEngine
             args.upright = _field.Orientation.IsUpRight(card.tempID);
             args.card = card;
             ActivateEvent();
-            if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
-                throw new ArgumentException("deck out.");
+            //if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
+            //    throw new ArgumentException("deck out.");
             return card;
         }
 
@@ -1586,6 +1608,31 @@ namespace VanguardEngine
                 list[k] = temp;
             }
             return key;
+        }
+    }
+
+    public class FieldSnapShot
+    {
+        Card[] _snapShot = new Card[FL.MaxFL() + 1];
+        Field _field;
+
+        public FieldSnapShot(Field field)
+        {
+            _field = field;
+            for (int i = 0; i < FL.MaxFL(); i++)
+            {
+                _snapShot[i] = _field.GetUnit(i);
+            }
+        }
+
+        public int GetColumn(int tempID)
+        {
+            for (int i = 0; i < _snapShot.Length; i++)
+            {
+                if (_snapShot[i] != null && _snapShot[i].tempID == tempID)
+                    return _field.GetColumn(i);
+            }
+            return -1;
         }
     }
 }

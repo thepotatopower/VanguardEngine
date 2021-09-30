@@ -20,9 +20,9 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.PlacedOnVC, p.HasPrompt, p.IsMandatory
 	elseif n == 2 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
+		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.WhiteWings, p.CB, 1
 	elseif n == 3 then
-		return a.Cont, p.IsMandatory
+		return a.Cont, p.IsMandatory, p.BlackWings
 	end
 end
 
@@ -32,11 +32,11 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsWhiteWings() then
+		if obj.IsVanguard() then
 			return true
 		end
 	elseif n == 3 then
-		if obj.IsVanguard() and obj.IsBlackWings() then
+		if obj.IsVanguard() then
 			return true
 		end
 	end

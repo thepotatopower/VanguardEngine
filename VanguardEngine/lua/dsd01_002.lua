@@ -51,7 +51,8 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Search(1)
+		obj.Store(obj.Search(1))
+		obj.Reveal(obj.Stored())
 		obj.Shuffle()
 	elseif n == 2 then
 		obj.AddBattleOnlyPower(2, 2000)

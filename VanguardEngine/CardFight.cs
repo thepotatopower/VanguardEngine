@@ -20,11 +20,12 @@ namespace VanguardEngine
         public List<Card> _deck1;
         public List<Card> _deck2;
         public Abilities _abilities;
-        public List<Tuple<Ability, int>> _abilityQueue = new List<Tuple<Ability, int>>();
+        public List<Tuple<Ability, int>> _player1AbilityQueue = new List<Tuple<Ability, int>>();
+        public List<Tuple<Ability, int>> _player2AbilityQueue = new List<Tuple<Ability, int>>();
         public List<Ability> _alchemagicQueue = new List<Ability>();
         public List<Ability> _activatedAbilities = new List<Ability>();
         public List<Tuple<Ability, int>> _skippedAbilities = new List<Tuple<Ability, int>>();
-        public PlayTimings _playTimings = new PlayTimings();
+        public AbilityTimings _abilityTimings = new AbilityTimings();
         public Dictionary<int, List<int>> _chosen = new Dictionary<int, List<int>>();
         public Ability _currentAbility = null;
         public EventHandler<CardEventArgs> OnStandPhase;
@@ -142,18 +143,21 @@ namespace VanguardEngine
             while (true)
             {
                 actingPlayer = player1;
-                ActivateAbilities(player1, player2);
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
                 _phase = Phase.Stand;
                 if (OnStandPhase != null)
                     OnStandPhase(this, new CardEventArgs());
+                PerformCheckTiming(player1, player2);
                 player1.StandAll();
+                PerformCheckTiming(player1, player2);
                 _phase = Phase.Draw;
                 if (OnDrawPhase != null)
                     OnDrawPhase(this, new CardEventArgs());
                 Log.WriteLine("----------\nSTAND AND DRAW");
+                PerformCheckTiming(player1, player2);
                 Draw(player1, player2, 1);
+                PerformCheckTiming(player1, player2);
                 Log.WriteLine("----------\nRIDE PHASE");
                 _phase = Phase.Ride;
                 RidePhaseMenu(player1, player2);
@@ -182,8 +186,8 @@ namespace VanguardEngine
                     args = new CardEventArgs();
                     OnEndPhase(this, args);
                 }
-                _playTimings.AddPlayTiming(Activation.OnEndPhase, 0, null);
-                ActivateAbilities(player1, player2);
+                AddAbilityTiming(Activation.OnEndPhase, 0, null);
+                PerformCheckTiming(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
                 player1.IncrementTurn();
@@ -304,8 +308,8 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnRidePhase(this, args);
             }
-            _playTimings.AddPlayTiming(Activation.OnRidePhase, 0, null);
-            ActivateAbilities(player1, player2);
+            AddAbilityTiming(Activation.OnRidePhase, 0, null);
+            PerformCheckTiming(player1, player2);
             while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
                 selection = _inputManager.SelectRidePhaseAction();
@@ -317,9 +321,9 @@ namespace VanguardEngine
                             SoulBlast(player1, player2, player1.GetSoul(), 1);
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
-                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "Select card to ride.")[0];
+                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
                         Ride(player1, player2, 0, input);
-                        ActivateAbilities(player1, player2);
+                        PerformCheckTiming(player1, player2);
                     }
                     else
                         Log.WriteLine("Invalid.");
@@ -328,9 +332,9 @@ namespace VanguardEngine
                 {
                     if (player1.CanRideFromHand())
                     {
-                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "Select card to ride.")[0];
+                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "to ride.")[0];
                         Ride(player1, player2, 0, input);
-                        ActivateAbilities(player1, player2);
+                        PerformCheckTiming(player1, player2);
                     }
                     else
                         Log.WriteLine("Invalid.");
@@ -338,6 +342,7 @@ namespace VanguardEngine
                 else if (selection == RidePhaseAction.RideFromHand)
                 {
                     Ride(player1, player2, 0, _inputManager.int_input2);
+                    PerformCheckTiming(player1, player2);
                 }
                 else if (selection == RidePhaseAction.End)
                     break;
@@ -347,16 +352,15 @@ namespace VanguardEngine
         public void Ride(Player player1, Player player2, int location, int selection)
         {
             player1.Ride(selection);
-            _playTimings.AddPlayTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
-            _playTimings.AddPlayTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
-            ActivateAbilities(player1, player2);
+            AddAbilityTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
+            AddAbilityTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
         }
 
         public void Discard(Player player1, Player player2, List<Card> cardsToSelect, int max, int min)
         {
-            List<int> cardsToDiscard = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose " + max + " card(s) to discard. (min: " + min + ")");
+            List<int> cardsToDiscard = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "to discard.");
             player1.Discard(cardsToDiscard);
-            _playTimings.AddPlayTiming(Activation.OnDiscard, player1._playerID, player1.GetLastDiscarded());
+            AddAbilityTiming(Activation.OnDiscard, player1._playerID, player1.GetLastDiscarded());
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -372,8 +376,8 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnMainPhase(this, args);
             }
-            _playTimings.AddPlayTiming(Activation.OnMainPhase, 0, null);
-            ActivateAbilities(player1, player2);
+            AddAbilityTiming(Activation.OnMainPhase, 0, null);
+            PerformCheckTiming(player1, player2);
             while (true)
             {
                 canSelect.Clear();
@@ -411,7 +415,6 @@ namespace VanguardEngine
                 else if (selection == MainPhaseAction.CallFromPrison)
                 {
                     CallFromPrison(player1, player2);
-                    ActivateAbilities(player1, player2);
                 }
                 else if (selection == 5)
                 {
@@ -437,7 +440,7 @@ namespace VanguardEngine
                 }
                 else if (selection == 7) //Order
                 {
-                    if (!player1.OrderPlayed())
+                    if (player1.CanPlayOrder())
                     {
                         ChooseOrderToActivate(player1, false);
                     }
@@ -545,6 +548,7 @@ namespace VanguardEngine
                 {
                     Heal(player1);
                 }
+                PerformCheckTiming(player1, player2);
             }
         }
 
@@ -552,12 +556,9 @@ namespace VanguardEngine
         {
             player1.Call(location, selection, overDress);
             _abilities.ResetActivation(selection);
-            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
-            _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
+            AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC());
+            AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand());
             player1.DoneCalling();
-            ActivateAbilities(player1, player2);
-            player1.ClearOverloadedCards();
-            player2.ClearOverloadedCards();
         }
 
         public List<Card> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing, bool free, bool differentRows)
@@ -567,7 +568,7 @@ namespace VanguardEngine
             List<int> selectedCircles = new List<int>();
             List<int> canSelect = new List<int>();
             int sc = 0;
-            selections = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "Choose " + max + " card(s) to Call. (min: " + min + ")");
+            selections = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "to call.");
             foreach (int tempID in selections)
             {
                 if (circles != null)
@@ -607,14 +608,14 @@ namespace VanguardEngine
                 _abilities.ResetActivation(tempID);
             }
             List<Card> lastPlacedOnRC = player1.GetLastPlacedOnRC();
-            _playTimings.AddPlayTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
+            AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
             if (sc == 1)
-                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
-            else if (sc == 2)
-                _playTimings.AddPlayTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison(), player1.IsAlchemagic());
+                AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
+            else
+                AddAbilityTiming(Activation.PlacedOnRCOtherThanFromHand, player1._playerID, player1.GetLastPlacedOnRCOtherThanFromHand(), player1.IsAlchemagic());
+            if (sc == 2)
+                AddAbilityTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison(), player1.IsAlchemagic());
             player1.DoneCalling();
-            player1.ClearOverloadedCards();
-            player2.ClearOverloadedCards();
             return lastPlacedOnRC;
         }
 
@@ -640,8 +641,8 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnBattlePhase(this, args);
             }
-            _playTimings.AddPlayTiming(Activation.OnBattlePhase, 0, null);
-            ActivateAbilities(player1, player2);
+            AddAbilityTiming(Activation.OnBattlePhase, 0, null);
+            PerformCheckTiming(player1, player2);
             while (true)
             {
                 if (player1.CanAttack())
@@ -720,7 +721,8 @@ namespace VanguardEngine
             player1.InitiateAttack(booster, targets);
             if (targets.Length > 0)
             {
-                ActivateAbilities(player1, player2);
+                AddAbilityTiming(Activation.OnAttack, 0, null);
+                PerformCheckTiming(player1, player2);
                 if (player1 == _player1)
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                 else
@@ -748,15 +750,14 @@ namespace VanguardEngine
                             else
                                 selection2 = -1;
                             if (player2.MustGuardWithTwo())
-                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 2, "Choose card(s) to guard with. (min: 2)");
+                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 2, "to guard with.");
                             else
-                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "Choose card(s) to guard with.");
+                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "to guard with.");
                             if (selections.Count == 0)
                                 continue;
                             player2.Guard(selections, selection2);
-                            _playTimings.AddPlayTiming(Activation.PlacedOnGC, player2._playerID, player2.GetLastPlacedOnGC());
-                            _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
-                            ActivateAbilities(player2, player1);
+                            AddAbilityTiming(Activation.PlacedOnGC, player2._playerID, player2.GetLastPlacedOnGC());
+                            AddAbilityTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                         }
                         else if (selection == 5)
                         {
@@ -768,15 +769,14 @@ namespace VanguardEngine
                                 else
                                     selection2 = -1;
                                 player2.Guard(selections, selection2);
-                                _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
-                                ActivateAbilities(player2, player1);
+                                AddAbilityTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                             }
                             else
                                 Log.WriteLine("No interceptable cards available.");
                         }
                         else if (selection == 6)
                         {
-                            if (!player2.OrderPlayed())
+                            if (player2.CanPlayOrder())
                             {
                                 ChooseOrderToActivate(player2, true);
                             }
@@ -796,8 +796,7 @@ namespace VanguardEngine
                             else
                                 selection2 = -1;
                             player2.Guard(selections, selection2);
-                            _playTimings.AddPlayTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
-                            ActivateAbilities(player2, player1);
+                            AddAbilityTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
                         }
                         else if (selection == GuardStepAction.BlitzOrder)
                         {
@@ -810,6 +809,7 @@ namespace VanguardEngine
                                 }
                             }
                         }
+                        PerformCheckTiming(player1, player2);
                     }
                 }
                 if (player1.GetAttacker() != null && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck()))
@@ -819,9 +819,11 @@ namespace VanguardEngine
                     else
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     _inputManager.SwapPlayers();
-                    drive = player1.Drive();
-                    for (int i = 0; i < drive; i++)
+                    for (int i = 0; i < player1.Drive(); i++)
+                    {
                         TriggerCheck(player1, player2, true);
+                        PerformCheckTiming(player1, player2);
+                    }
                     if (player1 == _player1)
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     else
@@ -831,6 +833,7 @@ namespace VanguardEngine
                 if (player1.GetAttacker() != null && player2.GetAttackedCards().Count > 0 && player2.AttackHits())
                     attackHits = true;
                 player2.RetireGC();
+                PerformCheckTiming(player1, player2);
                 if (attackHits)
                 {
                     if (player2.VanguardHit(C.Player))
@@ -839,26 +842,22 @@ namespace VanguardEngine
                         for (int i = 0; i < critical; i++)
                         {
                             TriggerCheck(player2, player1, false);
-                            if (player2.Damage() == 6)
-                            {
-                                _gameOver = true;
-                                return;
-                            }
+                            PerformCheckTiming(player1, player2);
                         }
-                        _playTimings.AddPlayTiming(Activation.OnAttackHitsVanguard, 0, null);
+                        AddAbilityTiming(Activation.OnAttackHitsVanguard, 0, null);
                     }
-                    player2.RetireAttackedUnit();
                     if (player2.GetLastPlayerRCRetired().Count > 0)
-                        _playTimings.AddPlayTiming(Activation.OnPlayerRCRetired, player2._playerID, player2.GetLastPlayerRCRetired());
+                        AddAbilityTiming(Activation.OnPlayerRCRetired, player2._playerID, player2.GetLastPlayerRCRetired());
                     for (int i = 0; i < player2.NumberOfTimesHit(); i++)
-                        _playTimings.AddPlayTiming(Activation.OnAttackHits, 0, null);
+                        AddAbilityTiming(Activation.OnAttackHits, 0, null);
                     _inputManager.SwapPlayers();
-                    ActivateAbilities(player1, player2);
+                    PerformCheckTiming(player1, player2);
+                    player2.RetireAttackedUnit();
                     _inputManager.SwapPlayers();
                 }
             }
-            _playTimings.AddPlayTiming(Activation.OnBattleEnds, 0, null);
-            ActivateAbilities(player1, player2);
+            AddAbilityTiming(Activation.OnBattleEnds, 0, null);
+            PerformCheckTiming(player1, player2);
             if (player1 == _player1)
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             else
@@ -927,7 +926,7 @@ namespace VanguardEngine
             {
                 if (drivecheck)
                 {
-                    _playTimings.AddPlayTiming(Activation.OnOverTrigger, 0, null);
+                    AddAbilityTiming(Activation.OnOverTrigger, 0, null);
                 }
                 player1.RemoveTrigger();
                 Draw(player1, player2, 1);
@@ -937,19 +936,21 @@ namespace VanguardEngine
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
                 if (drivecheck)
-                    ActivateAbilities(player1, player2);
+                    PerformCheckTiming(player1, player2);
             }
             if (drivecheck)
             {
-                _playTimings.AddPlayTiming(Activation.OnDriveCheck, 0, null);
-                ActivateAbilities(player1, player2);
+                List<Card> list = new List<Card>();
+                if (player1.GetTrigger(true) != null)
+                    list.Add(player1.GetTrigger(true));
+                AddAbilityTiming(Activation.OnDriveCheck, player1._playerID, list);
+                PerformCheckTiming(player1, player2);
                 player1.AddTriggerToHand();
             }
             else
             {
                 player1.TakeDamage();
             }
-            ActivateContAbilities(player1, player2);
         }
 
         public void PerfectGuard(Player player1, Player player2)
@@ -969,11 +970,11 @@ namespace VanguardEngine
         {
             List<Card> cards = new List<Card>();
             List<Ability> abilities = new List<Ability>();
-            PlayTiming playTiming;
-            foreach (int activation in _playTimings.GetActivations())
+            AbilityTiming abilityTiming;
+            foreach (int activation in _abilityTimings.GetActivations())
             {
-                playTiming = _playTimings.GetPlayTiming(activation);
-                for (int i = 1; i <= playTiming.GetTotal(); i++)
+                abilityTiming = _abilityTimings.GetAbilityTiming(activation);
+                for (int i = 1; i <= abilityTiming.GetTotal(); i++)
                 {
                     cards.Add(player1.GetTrigger(C.Player));
                     abilities.AddRange(_abilities.GetAbilities(activation, cards, i));
@@ -982,7 +983,9 @@ namespace VanguardEngine
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC(), i));
-                    foreach (Ability ability in playTiming.GetActivatedAbilities(i))
+                    abilities.AddRange(_abilities.GetAbilities(activation, player1.GetPlayerOrder(), i));
+                    abilities.AddRange(_abilities.GetAbilities(activation, player1.GetBind(), i));
+                    foreach (Ability ability in abilityTiming.GetActivatedAbilities(i))
                     {
                         while (abilities.Contains(ability))
                             abilities.Remove(ability);
@@ -994,7 +997,11 @@ namespace VanguardEngine
                     }
                     foreach (Ability ability in abilities)
                     {
-                        _abilityQueue.Add(new Tuple<Ability, int>(ability, i));
+                        Tuple<Ability, int> newAbility = new Tuple<Ability, int>(ability, i);
+                        if (_player1 == player1 && !_player1AbilityQueue.Contains(newAbility))
+                            _player1AbilityQueue.Add(newAbility);
+                        else if (_player2 == player1 && !_player2AbilityQueue.Contains(newAbility))
+                            _player2AbilityQueue.Add(newAbility);
                     }
                     abilities.Clear();
                 }
@@ -1106,12 +1113,9 @@ namespace VanguardEngine
                 ability.Activate();
                 player1.EndOrder();
             }
-            _playTimings.AddPlayTiming(Activation.OnOrderPlayed, 0, null);
-            _playTimings.AddPlayTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
-            if (_player1 == player1)
-                ActivateAbilities(_player1, _player2);
-            else
-                ActivateAbilities(_player2, _player1);
+            List<Card> list = new List<Card>();
+            list.Add(ability.GetCard());
+            AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
         }
 
         public List<Ability> GetACTAbilities(Player player)
@@ -1147,10 +1151,6 @@ namespace VanguardEngine
             ability.PayCost();
             ability.Activate();
             player1.UpdateRecordedValues();
-            if (player1 == _player1)
-                ActivateAbilities(_player1, _player2);
-            else
-                ActivateAbilities(_player2, _player1);
         }
 
         public void CallFromPrison(Player player1, Player player2)
@@ -1164,114 +1164,94 @@ namespace VanguardEngine
             abilities[0].Activate();
         }
 
-        public void ActivateAbilities(Player player1, Player player2)
+        public int ActivateAbilities(Player player)
         {
             int selection;
-            List<Tuple<Ability, int>> skippedAbilities = new List<Tuple<Ability, int>>();
-            List<Tuple<Ability, int>> abilities = _abilityQueue;
+            int abilityActivated = 0;
+            List<Tuple<Ability, int>> abilities;
+            if (player == _player1)
+                abilities = _player1AbilityQueue;
+            else
+                abilities = _player2AbilityQueue;
             List<Ability> tempQueue = new List<Ability>();
             int ThenNum = 0;
-            Player choosingPlayer = player1;
-            Player waitingPlayer = player2;
-            List<Tuple<Ability, int>> player1Abilities = new List<Tuple<Ability, int>>();
-            List<Tuple<Ability, int>> player2Abilities = new List<Tuple<Ability, int>>();
-            ActivateContAbilities(player1, player2);
-            while (true)
+            foreach (Tuple<Ability, int> ability in NoPromptAbilitiesInQueue(abilities))
             {
-                abilities.Clear();
-                player1Abilities.Clear();
-                player2Abilities.Clear();
-                AddAbilitiesToQueue(player1);
-                AddAbilitiesToQueue(player2);
-                foreach (Tuple<Ability, int> ability in NoPromptAbilitiesInQueue())
+                ability.Item1.SetTimingCount(ability.Item2);
+                if (OnAbilityActivated != null)
                 {
-                    ability.Item1.SetTimingCount(ability.Item2);
-                    if (OnAbilityActivated != null)
-                    {
-                        CardEventArgs args = new CardEventArgs();
-                        args.card = ability.Item1.GetCard();
-                        OnAbilityActivated(this, args);
-                    }
-                    ability.Item1.Activate();
-                    player1.UpdateRecordedValues();
-                    player2.UpdateRecordedValues();
-                    _playTimings.AddActivatedAbility(ability.Item1, ability.Item2);
-                    abilities.Remove(ability);
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = ability.Item1.GetCard();
+                    OnAbilityActivated(this, args);
                 }
-                foreach (Tuple<Ability, int> ability in abilities)
-                {
-                    if (ability.Item1.GetPlayer1()._playerID == player1._playerID)
-                        player1Abilities.Add(ability);
-                    else
-                        player2Abilities.Add(ability);
-                }
-                if (player1Abilities.Count > 0)
-                    choosingPlayer = player1;
-                else if (player2Abilities.Count > 0)
-                    choosingPlayer = player2;
-                else
-                    break;
-                selection = _inputManager.SelectAbility(choosingPlayer, abilities);
-                if (selection == abilities.Count)
-                {
-                    if (choosingPlayer == player1)
-                    {
-                        foreach (Tuple<Ability, int> ability in player1Abilities)
-                            skippedAbilities.Add(ability);
-                    }
-                    else
-                    {
-                        foreach (Tuple<Ability, int> ability in player2Abilities)
-                            skippedAbilities.Add(ability);
-                    }
-                    break;
-                }
-                else
-                {
-                    _currentAbility = abilities[selection].Item1;
-                    Log.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
-                    if (OnAbilityActivated != null)
-                    {
-                        CardEventArgs args = new CardEventArgs();
-                        args.card = abilities[selection].Item1.GetCard();
-                        OnAbilityActivated(this, args);
-                    }
-                    abilities[selection].Item1.PayCost();
-                    ThenNum = abilities[selection].Item1.Activate();
-                    player1.UpdateRecordedValues();
-                    player2.UpdateRecordedValues();
-                    _playTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
-                    //ThenID = abilities[selection].Item1.GetID();
-                    //abilities.Clear();
-                    //if (ThenNum > 0)
-                    //{
-                    //    ThenAbility = _abilities.GetAbility(ThenID, ThenNum);
-                    //    if (!ThenAbility.CheckCondition(Activation.Then))
-                    //        continue;
-                    //    if (ThenAbility.isMandatory)
-                    //        ThenAbility.Activate();
-                    //    else
-                    //    {
-                    //        //Log.WriteLine("Activate ability?");
-                    //        if (_inputManager.YesNo(choosingPlayer, "Activate ability?"))
-                    //            ThenAbility.Activate();
-                    //    }
-                    //}
-                }
+                ability.Item1.Activate();
+                _player1.UpdateRecordedValues();
+                _player2.UpdateRecordedValues();
+                _abilityTimings.AddActivatedAbility(ability.Item1, ability.Item2);
+                abilities.Remove(ability);
+                abilityActivated++;
             }
-            abilities.Clear();
-            _chosen.Clear();
-            _playTimings.Reset();
-            _skippedAbilities.Clear();
-            player1.AllAbilitiesResolved();
-            player2.AllAbilitiesResolved();
-            ActivateContAbilities(player1, player2);
+            if (abilities.Count == 0)
+                return abilityActivated;
+            selection = _inputManager.SelectAbility(player, abilities);
+            if (selection == abilities.Count)
+            {
+                foreach (Tuple<Ability, int> ability in abilities)
+                    _skippedAbilities.Add(ability);
+            }
+            else
+            {
+                _currentAbility = abilities[selection].Item1;
+                Log.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
+                if (OnAbilityActivated != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = abilities[selection].Item1.GetCard();
+                    OnAbilityActivated(this, args);
+                }
+                abilities[selection].Item1.SetTimingCount(abilities[selection].Item2);
+                abilities[selection].Item1.PayCost();
+                ThenNum = abilities[selection].Item1.Activate();
+                abilityActivated++;
+                _player1.UpdateRecordedValues();
+                _player2.UpdateRecordedValues();
+                _abilityTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
+                abilities.Remove(abilities[selection]);
+                //ThenID = abilities[selection].Item1.GetID();
+                //abilities.Clear();
+                //if (ThenNum > 0)
+                //{
+                //    ThenAbility = _abilities.GetAbility(ThenID, ThenNum);
+                //    if (!ThenAbility.CheckCondition(Activation.Then))
+                //        continue;
+                //    if (ThenAbility.isMandatory)
+                //        ThenAbility.Activate();
+                //    else
+                //    {
+                //        //Log.WriteLine("Activate ability?");
+                //        if (_inputManager.YesNo(choosingPlayer, "Activate ability?"))
+                //            ThenAbility.Activate();
+                //    }
+                //}
+            }
+            return abilityActivated;
         }
 
-        public List<Tuple<Ability, int>> NoPromptAbilitiesInQueue()
+        public void AllAbilitiesResolved()
+        {
+            _player1AbilityQueue.Clear();
+            _player2AbilityQueue.Clear();
+            _chosen.Clear();
+            _abilityTimings.Reset();
+            _skippedAbilities.Clear();
+            _player1.AllAbilitiesResolved();
+            _player2.AllAbilitiesResolved();
+        }
+
+        public List<Tuple<Ability, int>> NoPromptAbilitiesInQueue(List<Tuple<Ability, int>> abilities)
         {
             List<Tuple<Ability, int>> noPromptAbilities = new List<Tuple<Ability, int>>();
-            foreach (Tuple<Ability, int> ability in _abilityQueue)
+            foreach (Tuple<Ability, int> ability in abilities)
             {
                 if (!ability.Item1.hasPrompt)
                     noPromptAbilities.Add(ability);
@@ -1298,7 +1278,7 @@ namespace VanguardEngine
                 if (min < 0)
                     min = 0;
             }
-            List<int> cardsToCB = _inputManager.SelectFromList(player1, canCB, count, min, "Choose " + count + " card(s) to Counter Blast. (min: " + min + ")");
+            List<int> cardsToCB = _inputManager.SelectFromList(player1, canCB, count, min, "to Counter Blast.");
             player1.AddAlchemagicFreeCB(-1 * (originalCount - cardsToCB.Count));
             player1.CounterBlast(cardsToCB);
         }
@@ -1313,13 +1293,13 @@ namespace VanguardEngine
                     return;
                 }
             }
-            List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, count, "Choose " + count + " card(s) to Soul Blast.");
+            List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, count, "to Soul Blast.");
             player1.SoulBlast(cardsToSB);
         }
 
         public void CounterCharge(Player player1, List<Card> canCC, int count)
         {
-            List<int> cardsToCharge = _inputManager.SelectFromList(player1, canCC, count, count, "Choose " + count + " card(s) to flip up.");
+            List<int> cardsToCharge = _inputManager.SelectFromList(player1, canCC, count, count, "to flip up.");
             player1.CounterCharge(cardsToCharge);
         }
 
@@ -1328,42 +1308,44 @@ namespace VanguardEngine
             player1.SoulCharge(count);
         }
 
-        public void Search(Player player1, Player player2, List<Card> canSearch)
+        public List<int> Search(Player player1, Player player2, List<Card> canSearch)
         {
-            List<int> cardsToSearch = _inputManager.SelectFromList(player1, canSearch, 1, 1, "Choose card(s) to search.");
+            List<int> cardsToSearch = _inputManager.SelectFromList(player1, canSearch, 1, 1, "to search.");
             player1.Search(cardsToSearch);
+            return cardsToSearch;
         }
 
-        public void Stand(Player player1, Player player2, List<Card> canStand, int count, bool select)
+        public List<Card> Stand(Player player1, Player player2, List<Card> canStand, int count, bool select)
         {
-            List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, count, "Choose " + count + "card(s) to stand.");
+            List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, count, "card(s) to stand.");
             player1.Stand(cardsToStand);
-            _playTimings.AddPlayTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
+            AddAbilityTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
+            return player1.GetLastStood();
         }
 
         public void Stand(Player player1, Player player2, List<int> toStand)
         {
             player1.Stand(toStand);
-            _playTimings.AddPlayTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
+            AddAbilityTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
         }
 
         public void Rest(Player player1, Player player2, List<Card> canRest, int count, bool select)
         {
-            List<int> cardsToRest = _inputManager.SelectFromList(player1, canRest, count, count, "Choose " + count + " card(s) to rest.");
+            List<int> cardsToRest = _inputManager.SelectFromList(player1, canRest, count, count, "to rest.");
             player1.Rest(cardsToRest);
             player2.Rest(cardsToRest);
         }
 
         public void ChooseAddTempPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
         {
-            List<int> cardsToAddPower = _inputManager.SelectFromList(player1, canAdd, count, count, "Choose " + count + " card(s) to give +" + power + " to.");
+            List<int> cardsToAddPower = _inputManager.SelectFromList(player1, canAdd, count, count, "to give +" + power + " to.");
             player1.AddTempPower(cardsToAddPower, power);
             AddToChosen(cardsToAddPower);
         }
 
         public void ChooseAddBattleOnlyPower(Player player1, Player player2, List<Card> canAdd, int power, int count)
         {
-            List<int> cardsToAddPower = _inputManager.SelectFromList(player1, canAdd, count, count, "Choose " + count + " card(s) to give +" + power + " to.");
+            List<int> cardsToAddPower = _inputManager.SelectFromList(player1, canAdd, count, count, "to give +" + power + " to.");
             foreach (int tempID in cardsToAddPower)
                 player1.AddTempPower(tempID, power, true);
             AddToChosen(cardsToAddPower);
@@ -1371,7 +1353,7 @@ namespace VanguardEngine
 
         public void ChooseAddCritical(Player player1, Player player2, List<Card> canAdd, int critical, int count)
         {
-            List<int> cardsToAddCritical = _inputManager.SelectFromList(player1, canAdd, count, count, "Choose " + count + " card(s) to give +" + critical + " critical to.");
+            List<int> cardsToAddCritical = _inputManager.SelectFromList(player1, canAdd, count, count, "to give +" + critical + " critical to.");
             foreach (int tempID in cardsToAddCritical)
             {
                 player1.AddCritical(tempID, critical);
@@ -1381,7 +1363,7 @@ namespace VanguardEngine
 
         public void ChooseAddDrive(Player player1, Player player2, List<Card> canAdd, int drive, int count)
         {
-            List<int> cardsToAddDrive = _inputManager.SelectFromList(player1, canAdd, count, count, "Choose " + count + " card(s) to give +" + drive + " drive to.");
+            List<int> cardsToAddDrive = _inputManager.SelectFromList(player1, canAdd, count, count, "to give +" + drive + " drive to.");
             foreach (int tempID in cardsToAddDrive)
             {
                 player1.AddDrive(tempID, drive);
@@ -1391,7 +1373,7 @@ namespace VanguardEngine
 
         public void ChooseAddBattleOnlyCritical(Player player1, List<Card> canAdd, int critical, int count, int min)
         {
-            List<int> cardsToAddCritical = _inputManager.SelectFromList(player1, canAdd, count, min, "Choose " + count + " card(s) to give +" + critical + " critical to.");
+            List<int> cardsToAddCritical = _inputManager.SelectFromList(player1, canAdd, count, min, "to give +" + critical + " critical to.");
             foreach (int tempID in cardsToAddCritical)
             {
                 player1.AddBattleOnlyCritical(tempID, critical);
@@ -1407,28 +1389,28 @@ namespace VanguardEngine
 
         public void AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
-            List<int> cardsToAddToHand = _inputManager.SelectFromList(player1, canAddToHand, count, min, "Choose " + count + " card(s) to add to hand.");
+            List<int> cardsToAddToHand = _inputManager.SelectFromList(player1, canAddToHand, count, min, "to add to hand.");
             player1.AddToHand(cardsToAddToHand);
         }
 
         public void AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
-            List<int> cardsToAddToSoul = _inputManager.SelectFromList(player1, canAddToHand, count, min, "Choose " + count + " card(s) to add to soul.");
+            List<int> cardsToAddToSoul = _inputManager.SelectFromList(player1, canAddToHand, count, min, "to add to soul.");
             player1.AddToSoul(cardsToAddToSoul);
         }
 
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
         {
-            List<int> cardsToRetire = _inputManager.SelectFromList(player1, canRetire, count, count, "Choose " + count + " card(s) to retire.");
+            List<int> cardsToRetire = _inputManager.SelectFromList(player1, canRetire, count, count, "to retire.");
             player1.Retire(cardsToRetire);
             if (player1.GetLastPlayerRCRetired().Count > 0)
-                _playTimings.AddPlayTiming(Activation.OnPlayerRCRetired, player1._playerID, player1.GetLastPlayerRCRetired());
+                AddAbilityTiming(Activation.OnPlayerRCRetired, player1._playerID, player1.GetLastPlayerRCRetired());
             if (player1.PlayerRetired() && _currentAbility.GetPlayer1() == player1 && _currentAbility.IsPayingCost())
             {
-                _playTimings.AddPlayTiming(Activation.OnRetiredForPlayerCost, player1._playerID, player1.GetLastPlayerRetired());
+                AddAbilityTiming(Activation.OnRetiredForPlayerCost, player1._playerID, player1.GetLastPlayerRetired());
             }
             if (player1.EnemyRetired())
-                _playTimings.AddPlayTiming(Activation.OnEnemyRetired, 0, null);
+                AddAbilityTiming(Activation.OnEnemyRetired, 0, null);
             AddToChosen(cardsToRetire);
         }
 
@@ -1436,19 +1418,23 @@ namespace VanguardEngine
         {
             player1.Retire(toRetire);
             if (player1.EnemyRetired())
-                _playTimings.AddPlayTiming(Activation.OnEnemyRetired, 0, null);
+                AddAbilityTiming(Activation.OnEnemyRetired, 0, null);
         }
 
-        public bool ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min)
+        public bool ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
         {
-            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "Choose " + max + " card(s) to send to bottom of deck. (min: " + min + ")");
+            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "to bottom of deck.");
             AddToChosen(cardsToSend);
+            if (cost)
+                player1.Reveal(cardsToSend);
             return player1.SendToDeck(cardsToSend, true);
         }
 
-        public void ChooseSendToTop(Player player1, Player player2, List<Card> canSend, int max, int min)
+        public void ChooseSendToTop(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
         {
-            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "Choose " + max + " card(s) to send to top of deck. (min: " + min + ")");
+            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "to send to top of deck.");
+            if (cost)
+                player1.Reveal(cardsToSend);
             player1.SendToDeck(cardsToSend, false);
             AddToChosen(cardsToSend);
         }
@@ -1461,12 +1447,16 @@ namespace VanguardEngine
 
         public void PlayOrder(Player player1, int tempID, bool alchemagic)
         {
-            player1.PlayOrder(tempID);
+            int result = player1.PlayOrder(tempID);
+            if (result == 1)
+            {
+                AddAbilityTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
+            }
         }
 
         public void ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
         {
-            List<int> cardsToReveal = _inputManager.SelectFromList(player1, canReveal, max, min, "Choose " + max + " card(s) to reveal. (min: " + min + ")");
+            List<int> cardsToReveal = _inputManager.SelectFromList(player1, canReveal, max, min, "to reveal.");
             player1.Reveal(cardsToReveal);
         }
 
@@ -1482,14 +1472,14 @@ namespace VanguardEngine
 
         public void ChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
         {
-            List<int> cardsToImprison = _inputManager.SelectFromList(player1, cardsToSelect, count, min, "Choose " + count + "card(s) to imprison. (min: " + min + ")");
+            List<int> cardsToImprison = _inputManager.SelectFromList(player1, cardsToSelect, count, min, "to imprison.");
             player1.Imprison(cardsToImprison);
             AddToChosen(cardsToImprison);
         }
 
         public void EnemyChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
         {
-            List<int> cardsToImprison = _inputManager.SelectFromList(player2, cardsToSelect, count, min, "Choose " + count + "card(s) to imprison. (min: " + min + ")");
+            List<int> cardsToImprison = _inputManager.SelectFromList(player2, cardsToSelect, count, min, "to imprison.");
             player1.Imprison(cardsToImprison);
         }
 
@@ -1501,7 +1491,7 @@ namespace VanguardEngine
                 _inputManager.SwapPlayers();
                 swapped = true;
             }
-            int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "Choose unit to switch places.")[0];
+            int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "to switch places.")[0];
             int selection2 = _inputManager.SelectCircle(player1, availableCircles);
             player1.MoveRearguardSpecific(selection, selection2);
             if (swapped)
@@ -1513,7 +1503,7 @@ namespace VanguardEngine
             int selection;
             if (player1.CanHeal())
             {
-                selection = _inputManager.SelectFromList(player1, player1.GetDamageZone(), 1, 1, "Choose damage to heal.")[0];
+                selection = _inputManager.SelectFromList(player1, player1.GetDamageZone(), 1, 1, "to heal.")[0];
                 player1.Heal(selection);
             }
         }
@@ -1570,8 +1560,15 @@ namespace VanguardEngine
 
         public void ChooseBind(Player player1, List<Card> cards, int max, int min)
         {
-            List<int> toBind = _inputManager.SelectFromList(player1, cards, max, min, "Choose " + max + " card(s) to bind. (min: " + min + ")");
+            List<int> toBind = _inputManager.SelectFromList(player1, cards, max, min, "to bind.");
             player1.Bind(toBind);
+            AddAbilityTiming(Activation.OnBind, player1._playerID, player1.ConvertToCards(toBind));
+        }
+
+        public void Bind(Player player, List<int> tempIDs)
+        {
+            _player1.Bind(tempIDs);
+            AddAbilityTiming(Activation.OnBind, player._playerID, player.ConvertToCards(tempIDs));
         }
 
         public void DisplayCards(Player player1, List<Card> cardsToDisplay)
@@ -1598,7 +1595,7 @@ namespace VanguardEngine
                 if (!_chosen[source].Contains(target))
                     _chosen[source].Add(target);
             }
-            _playTimings.AddPlayTiming(Activation.OnChosen, 0, null);
+            AddAbilityTiming(Activation.OnChosen, 0, null);
         }
 
         public bool AlchemagicableCardsAvailable(Player player, int tempID)
@@ -1617,22 +1614,27 @@ namespace VanguardEngine
             return false;
         }
 
-        public List<Card> GetList(int playTiming, int playerID, int timingCount)
+        public List<Card> GetList(int abilityTiming, int playerID, int timingCount)
         {
-            return _playTimings.GetList(playTiming, playerID, timingCount);
+            return _abilityTimings.GetList(abilityTiming, playerID, timingCount);
+        }
+
+        public FieldSnapShot GetSnapShot(int abilityTiming, int timingCount)
+        {
+            return _abilityTimings.GetSnapShot(abilityTiming, timingCount);
         }
 
         public void Sing(Player player, List<Card> cardsToSing, int count)
         {
-            List<int> selectedCards = _inputManager.SelectFromList(player, cardsToSing, count, count, "Choose " + count + " card(s) to sing. (min: " + count + ")");
+            List<int> selectedCards = _inputManager.SelectFromList(player, cardsToSing, count, count, "to sing.");
             if (selectedCards.Count == 0)
                 return;
             List<Card> songs = new List<Card>();
             foreach (int tempID in selectedCards)
                 songs.Add(player.GetCard(tempID));
             List<Ability> abilities = _abilities.GetAbilities(Activation.OnSing, songs, 0);
-            int index = _inputManager.SelectAbility(player, abilities);
-            Ability ability = abilities[index];
+            //int index = _inputManager.SelectAbility(player, abilities);
+            Ability ability = abilities[0];
             Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
             //_currentAbility = ability;
             if (OnAbilityActivated != null)
@@ -1643,6 +1645,69 @@ namespace VanguardEngine
             }
             ability.PayCost();
             ability.Activate();
+            player.Flip(selectedCards, false);
+        }
+
+        public void ChooseFlip(Player actingPlayer, List<Card> cardsToFlip, int max, int min, bool faceup)
+        {
+            List<int> selectedCards;
+            if (faceup)
+                selectedCards = _inputManager.SelectFromList(actingPlayer, cardsToFlip, max, min, "to flip up.");
+            else
+                selectedCards = _inputManager.SelectFromList(actingPlayer, cardsToFlip, max, min, "to flip down.");
+            actingPlayer.Flip(selectedCards, faceup);
+        }
+
+        public void PutIntoOrderZone(Player player)
+        {
+            AddAbilityTiming(Activation.PutOnOrderZone, player._playerID, player.GetLastPutOnOrderZone());
+        }
+
+        public void AddAbilityTiming(int activation, int playerID, List<Card> cards)
+        {
+            _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), cards, false);
+        }
+
+        public void AddAbilityTiming(int activation, int playerID, List<Card> cards, bool append)
+        {
+            _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), cards, append);
+        }
+
+        public void PerformCheckTiming(Player turnPlayer, Player nonTurnPlayer)
+        {
+            int actionPerformed;
+            do
+            {
+                actionPerformed = 0;
+                AddAbilitiesToQueue(turnPlayer);
+                AddAbilitiesToQueue(nonTurnPlayer);
+                actionPerformed += ResolveRuleActions();
+                ActivateContAbilities(turnPlayer, nonTurnPlayer);
+                actionPerformed += ActivateAbilities(turnPlayer);
+                actionPerformed += ActivateAbilities(nonTurnPlayer);
+            } while (actionPerformed > 0);
+            ActivateContAbilities(turnPlayer, nonTurnPlayer);
+            AllAbilitiesResolved();
+        }
+
+        public int ResolveRuleActions()
+        {
+            int ruleActionPerformed = 0;
+
+            ruleActionPerformed += _player1.ClearOverloadedCards();
+            ruleActionPerformed += _player2.ClearOverloadedCards();
+            ruleActionPerformed += _player1.RetireGC();
+            ruleActionPerformed += _player2.RetireGC();
+            //rule action for riding from soul onto empty VC
+
+            if (_player1.GetDamageZone().Count >= 6 || _player2.GetDamageZone().Count >= 6)
+                throw new ArgumentException("damage zone reached 6");
+            if (_player1.GetDeck().Count == 0 || _player2.GetDeck().Count == 0)
+                throw new ArgumentException("deck out");
+            if (_player1.Vanguard() == null || _player2.Vanguard() == null)
+                throw new ArgumentException("no vanguard");
+
+            return ruleActionPerformed;
         }
     }
 
@@ -1663,41 +1728,36 @@ namespace VanguardEngine
         public const int End = 6;
     }
 
-    public class PlayTimings
+    public class AbilityTimings
     {
-        Dictionary<int, PlayTiming> _playTimings = new Dictionary<int, PlayTiming>();
+        Dictionary<int, AbilityTiming> _abilityTimings = new Dictionary<int, AbilityTiming>();
         TimingCountLists _player1TimingCountLists = new TimingCountLists();
         TimingCountLists _player2TimingCountLists = new TimingCountLists();
 
-        public void AddPlayTiming(int activation, int playerID, List<Card> cards)
+        public void AddAbilityTiming(int activation, int playerID, FieldSnapShot snapShot, List<Card> cards, bool append)
         {
-            AddPlayTiming(activation, playerID, cards, false);
-        }
-
-        public void AddPlayTiming(int activation, int playerID, List<Card> cards, bool append)
-        {
-            if (!_playTimings.ContainsKey(activation))
-                _playTimings[activation] = new PlayTiming(activation);
-            if (!append || _playTimings[activation].GetTotal() == 0)
-                _playTimings[activation].AddPlayTiming();
+            if (!_abilityTimings.ContainsKey(activation))
+                _abilityTimings[activation] = new AbilityTiming(activation);
+            if (!append || _abilityTimings[activation].GetTotal() == 0)
+                _abilityTimings[activation].AddAbilityTiming(snapShot);
             if (cards != null)
             {
                 if (playerID == 1)
-                    _player1TimingCountLists.AddList(activation, _playTimings[activation].GetTotal(), cards);
+                    _player1TimingCountLists.AddList(activation, _abilityTimings[activation].GetTotal(), cards);
                 else if (playerID == 2)
-                    _player2TimingCountLists.AddList(activation, _playTimings[activation].GetTotal(), cards);
+                    _player2TimingCountLists.AddList(activation, _abilityTimings[activation].GetTotal(), cards);
             }
         }
 
-        public PlayTiming GetPlayTiming(int activation)
+        public AbilityTiming GetAbilityTiming(int activation)
         {
-            return _playTimings[activation];
+            return _abilityTimings[activation];
         }
 
         public List<int> GetActivations()
         {
             List<int> activations = new List<int>();
-            foreach (int key in _playTimings.Keys)
+            foreach (int key in _abilityTimings.Keys)
                 activations.Add(key);
             return activations;
         }
@@ -1705,51 +1765,60 @@ namespace VanguardEngine
         public void AddActivatedAbility(Ability ability, int count)
         {
             foreach (int activation in ability.GetActivations)
-                _playTimings[activation].AddActivatedAbility(ability, count);
+                _abilityTimings[activation].AddActivatedAbility(ability, count);
         }
 
         public void Reset()
         {
-            foreach (int key in _playTimings.Keys)
+            foreach (int key in _abilityTimings.Keys)
             {
-                _playTimings[key].Reset();
+                _abilityTimings[key].Reset();
             }
-            _playTimings.Clear();
+            _abilityTimings.Clear();
             _player1TimingCountLists.Reset();
             _player2TimingCountLists.Reset();
         }
 
-        public int CurrentCount(int playTiming)
+        public int CurrentCount(int abilityTiming)
         {
-            if (_playTimings.ContainsKey(playTiming))
-                return (_playTimings[playTiming].GetTotal());
+            if (_abilityTimings.ContainsKey(abilityTiming))
+                return (_abilityTimings[abilityTiming].GetTotal());
             return 0;
         }
 
-        public List<Card> GetList(int playTiming, int playerID, int timingCount)
+        public List<Card> GetList(int abilityTiming, int playerID, int timingCount)
         {
             if (playerID == 1)
-                return _player1TimingCountLists.GetList(playTiming, timingCount);
+                return _player1TimingCountLists.GetList(abilityTiming, timingCount);
             else
-                return _player2TimingCountLists.GetList(playTiming, timingCount);
+                return _player2TimingCountLists.GetList(abilityTiming, timingCount);
+        }
+
+        public FieldSnapShot GetSnapShot(int abilityTiming, int timingCount)
+        {
+            if (_abilityTimings.ContainsKey(abilityTiming))
+                return _abilityTimings[abilityTiming].GetSnapShot(timingCount);
+            return null;
         }
     }
 
-    public class PlayTiming
+    public class AbilityTiming
     {
         int _activation;
         int _number = 0;
         Dictionary<int, List<Ability>> _activatedAbilities = new Dictionary<int, List<Ability>>();
+        Dictionary<int, FieldSnapShot> _snapShots = new Dictionary<int, FieldSnapShot>();
         
-        public PlayTiming(int activation)
+        public AbilityTiming(int activation)
         {
             _activation = activation;
         }
 
-        public void AddPlayTiming()
+        public void AddAbilityTiming(FieldSnapShot snapShot)
         {
             _number++;
             _activatedAbilities[_number] = new List<Ability>();
+            _snapShots[_number] = snapShot;
         }
 
         public int GetTotal()
@@ -1773,29 +1842,36 @@ namespace VanguardEngine
                 _activatedAbilities[key].Clear();
             _activatedAbilities.Clear();
         }
+
+        public FieldSnapShot GetSnapShot(int timingCount)
+        {
+            if (_snapShots.ContainsKey(timingCount))
+                return _snapShots[timingCount];
+            return null;
+        }
     }
 
     public class TimingCountLists
     {
         Dictionary<int, Dictionary<int, List<Card>>> timingCountLists = new Dictionary<int, Dictionary<int, List<Card>>>();
 
-        public void AddList(int playTiming, int timingCount, List<Card> cards)
+        public void AddList(int abilityTiming, int timingCount, List<Card> cards)
         {
-            if (!timingCountLists.ContainsKey(playTiming))
-                timingCountLists[playTiming] = new Dictionary<int, List<Card>>();
-            if (!timingCountLists[playTiming].ContainsKey(timingCount))
-                timingCountLists[playTiming][timingCount] = new List<Card>();
-            timingCountLists[playTiming][timingCount].AddRange(cards);
+            if (!timingCountLists.ContainsKey(abilityTiming))
+                timingCountLists[abilityTiming] = new Dictionary<int, List<Card>>();
+            if (!timingCountLists[abilityTiming].ContainsKey(timingCount))
+                timingCountLists[abilityTiming][timingCount] = new List<Card>();
+            timingCountLists[abilityTiming][timingCount].AddRange(cards);
         }
 
-        public List<Card> GetList(int playTiming, int timingCount)
+        public List<Card> GetList(int abilityTiming, int timingCount)
         {
-            if (timingCountLists.ContainsKey(playTiming) && timingCountLists[playTiming].Keys.Count > 0)
+            if (timingCountLists.ContainsKey(abilityTiming) && timingCountLists[abilityTiming].Keys.Count > 0)
             {
                 if (timingCount == -1)
-                    return timingCountLists[playTiming][timingCountLists[playTiming].Keys.Max()];
-                if (timingCountLists[playTiming].ContainsKey(timingCount))
-                    return timingCountLists[playTiming][timingCount];
+                    return timingCountLists[abilityTiming][timingCountLists[abilityTiming].Keys.Max()];
+                if (timingCountLists[abilityTiming].ContainsKey(timingCount))
+                    return timingCountLists[abilityTiming][timingCount];
             }
             return new List<Card>();
         }
