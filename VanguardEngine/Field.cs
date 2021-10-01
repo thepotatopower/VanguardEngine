@@ -1099,6 +1099,7 @@ namespace VanguardEngine
         public const int CannotGuardWithUnitType = 16;
         public const int BlackAndWhiteWingsActive = 17;
         public const int AdditionalOrder = 18;
+        public const int VanguardHasSungSongThisTurn = 19;
     }
 
     public class CardState

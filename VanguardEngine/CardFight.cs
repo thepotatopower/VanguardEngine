@@ -134,8 +134,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -1193,30 +1193,36 @@ namespace VanguardEngine
             }
             if (abilities.Count == 0)
                 return abilityActivated;
-            selection = _inputManager.SelectAbility(player, abilities);
+            List<Tuple<Ability, int>> canActivate = new List<Tuple<Ability, int>>();
+            foreach (Tuple<Ability, int> ability in abilities)
+            {
+                if (ability.Item1.CanActivate())
+                    canActivate.Add(ability);
+            }
+            selection = _inputManager.SelectAbility(player, canActivate);
             if (selection == abilities.Count)
             {
-                foreach (Tuple<Ability, int> ability in abilities)
+                foreach (Tuple<Ability, int> ability in canActivate)
                     _skippedAbilities.Add(ability);
             }
             else
             {
-                _currentAbility = abilities[selection].Item1;
-                Log.WriteLine("----------\n" + abilities[selection].Item1.Name + "'s effect activates!");
+                _currentAbility = canActivate[selection].Item1;
+                Log.WriteLine("----------\n" + canActivate[selection].Item1.Name + "'s effect activates!");
                 if (OnAbilityActivated != null)
                 {
                     CardEventArgs args = new CardEventArgs();
-                    args.card = abilities[selection].Item1.GetCard();
+                    args.card = canActivate[selection].Item1.GetCard();
                     OnAbilityActivated(this, args);
                 }
-                abilities[selection].Item1.SetTimingCount(abilities[selection].Item2);
-                abilities[selection].Item1.PayCost();
-                ThenNum = abilities[selection].Item1.Activate();
+                canActivate[selection].Item1.SetTimingCount(canActivate[selection].Item2);
+                canActivate[selection].Item1.PayCost();
+                ThenNum = canActivate[selection].Item1.Activate();
                 abilityActivated++;
                 _player1.UpdateRecordedValues();
                 _player2.UpdateRecordedValues();
-                _abilityTimings.AddActivatedAbility(abilities[selection].Item1, abilities[selection].Item2);
-                abilities.Remove(abilities[selection]);
+                _abilityTimings.AddActivatedAbility(canActivate[selection].Item1, canActivate[selection].Item2);
+                abilities.Remove(canActivate[selection]);
                 //ThenID = abilities[selection].Item1.GetID();
                 //abilities.Clear();
                 //if (ThenNum > 0)
@@ -1646,6 +1652,7 @@ namespace VanguardEngine
             ability.PayCost();
             ability.Activate();
             player.Flip(selectedCards, false);
+            player.MyStates.AddUntilEndOfTurnState(PlayerState.VanguardHasSungSongThisTurn);
         }
 
         public void ChooseFlip(Player actingPlayer, List<Card> cardsToFlip, int max, int min, bool faceup)

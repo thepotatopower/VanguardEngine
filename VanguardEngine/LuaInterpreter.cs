@@ -234,6 +234,7 @@ namespace VanguardEngine
         bool _withAlchemagic = true;
         bool _payingCost = false;
         bool _given = false;
+        bool _costRequired = true;
         List<int> _activations = new List<int>();
         List<int> _location = new List<int>();
         List<int> _calledForCost = new List<int>();
@@ -277,6 +278,11 @@ namespace VanguardEngine
         public int GetCurrentTimingCount()
         {
             return _timingCount;
+        }
+
+        public bool CostRequired()
+        {
+            return _costRequired;
         }
 
         public bool StoreAbility(Script script, int num, bool player)
@@ -352,6 +358,11 @@ namespace VanguardEngine
                     else if (returnedParam.Tuple[j].Number == Query.Race)
                     {
                         param.AddRace((int)returnedParam.Tuple[j + 1].Number);
+                        j++;
+                    }
+                    else if (returnedParam.Tuple[j].Number == Query.MaxPower)
+                    {
+                        param.AddMaxPower((int)returnedParam.Tuple[j + 1].Number);
                         j++;
                     }
                 }
@@ -485,6 +496,10 @@ namespace VanguardEngine
                 {
                     _costs[Property.SendToTop] = (int)activationRequirement.Tuple[i + 1].Number;
                     i++;
+                }
+                else if ((int)activationRequirement.Tuple[i].Number == Property.CostNotRequired)
+                {
+                    _costRequired = false;
                 }
             }
             if (_activations.Contains(Activation.OnACT) || _activations.Contains(Activation.OnOrder)
@@ -717,6 +732,13 @@ namespace VanguardEngine
 
         public bool PayCost()
         {
+            return PayCost(true);
+        }
+
+        public bool PayCost(bool required)
+        {
+            if (!_costRequired && required)
+                return true;
             _payingCost = true;
             //_script.Call(_abilityCost, _abilityNumber);
             if (_costs.ContainsKey(Property.Call))
@@ -792,13 +814,18 @@ namespace VanguardEngine
             }
             return true;
         }
+
+        public bool ChoosesToPayCost()
+        {
+            if (CanPayCost() && _cardFight.YesNo(_player1, "Pay cost?"))
+                return PayCost(false);
+            return false;
+        }
         
         public bool CheckCondition(int activation)
         {
             _currentActivation = activation;
-            if (!CanPayCost())
-                return false;
-            if (_oncePerTurn && _activated)
+            if (!CanActivate())
                 return false;
             if (_additionalProperties.Contains(Property.BlackWings) && !IsBlackWings())
                 return false;
@@ -813,9 +840,7 @@ namespace VanguardEngine
         public bool CheckConditionAsGiven(Card card, int activation)
         {
             _currentActivation = activation;
-            if (!CanPayCost())
-                return false;
-            if (_oncePerTurn && _activated)
+            if (!CanActivate())
                 return false;
             Card originalCard = _card;
             bool swapped = false;
@@ -847,6 +872,15 @@ namespace VanguardEngine
             bool condition = CheckCondition(Activation.OnOrder);
             _withAlchemagic = true;
             return condition;
+        }
+
+        public bool CanActivate()
+        {
+            if (_costRequired && !CanPayCost())
+                return false;
+            if (_oncePerTurn && _activated)
+                return false;
+            return true;
         }
 
         public bool CanFullyResolve()
@@ -1448,6 +1482,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.EvenGrade)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.grade % 2 == 0)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                     else if (other == Other.SameColumn)
                     {
                         int column = -1;
@@ -1539,6 +1584,17 @@ namespace VanguardEngine
                 for (int i = 0; i < currentPool.Count; i++)
                 {
                     if (param.Races.Contains(currentPool[i].race) && !newPool.Contains(currentPool[i]))
+                        newPool.Add(currentPool[i]);
+                }
+                currentPool.Clear();
+                currentPool.AddRange(newPool);
+                newPool.Clear();
+            }
+            if (param.MaxPowers.Count > 0)
+            {
+                for (int i = 0; i < currentPool.Count; i++)
+                {
+                    if (param.MaxPowers.Exists(power => power >= _player1.GetPower(currentPool[i].tempID)))
                         newPool.Add(currentPool[i]);
                 }
                 currentPool.Clear();
@@ -3366,18 +3422,19 @@ namespace VanguardEngine
 
         public bool IsBlackWings()
         {
-            if (_player1.MyStates.HasState(PlayerState.BlackAndWhiteWingsActive))
-                return true;
-            if (_player1.GetBind().Count > 0)
-            {
-                foreach (Card card in _player1.GetBind())
-                {
-                    if (card.grade % 2 != 0)
-                        return false;
-                }
-                return true;
-            }
-            return false;
+            return true;
+            //if (_player1.MyStates.HasState(PlayerState.BlackAndWhiteWingsActive))
+            //    return true;
+            //if (_player1.GetBind().Count > 0)
+            //{
+            //    foreach (Card card in _player1.GetBind())
+            //    {
+            //        if (card.grade % 2 != 0)
+            //            return false;
+            //    }
+            //    return true;
+            //}
+            //return false;
         }
 
         public void AddContinuousValue(int targetParamNum, int state, int valueParamNum)
@@ -3463,6 +3520,19 @@ namespace VanguardEngine
                 return true;
             return false;
         }
+
+        public bool PlayerHasState(int state)
+        {
+            return _player1.MyStates.HasState(state);
+        }
+
+        public int GetOriginalShieldOf(int paramNum)
+        {
+            List<Card> cards = ValidCards(paramNum);
+            if (cards.Count > 0)
+                return cards[0].shield;
+            return 0;
+        }
     }
 
     class Param
@@ -3479,6 +3549,7 @@ namespace VanguardEngine
         List<int> _min = new List<int>();
         List<string> _nameContains = new List<string>();
         List<int> _race = new List<int>();
+        List<int> _maxPower = new List<int>();
 
         public void AddLocation(int location)
         {
@@ -3564,6 +3635,11 @@ namespace VanguardEngine
             _race.Add(race);
         }
 
+        public void AddMaxPower(int maxPower)
+        {
+            _maxPower.Add(maxPower);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -3622,6 +3698,11 @@ namespace VanguardEngine
         public List<int> Races
         {
             get => _race;
+        }
+
+        public List<int> MaxPowers
+        {
+            get => _maxPower;
         }
     }
 
@@ -3742,6 +3823,7 @@ namespace VanguardEngine
         public const int Column = 10;
         public const int NameContains = 11;
         public const int Race = 12;
+        public const int MaxPower = 13;
     }
 
     class Other
@@ -3776,6 +3858,7 @@ namespace VanguardEngine
         public const int Revealed = 27;
         public const int Gem = 28;
         public const int Player = 29;
+        public const int EvenGrade = 30;
     }
 
     class Property
@@ -3805,5 +3888,6 @@ namespace VanguardEngine
         public const int WhiteWings = 22;
         public const int BlackWings = 23;
         public const int SendToTop = 24;
+        public const int CostNotRequired = 25;
     }
 }

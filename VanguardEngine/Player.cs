@@ -3194,6 +3194,14 @@ namespace VanguardEngine
             return list;
         }
 
+        public int GetPower(int tempID)
+        {
+            List<Card> cards = GetAllUnitsOnField();
+            if (cards.Exists(card => card.tempID == tempID))
+                return CalculatePowerOfUnit(GetCircle(cards.Find(card => card.tempID == tempID)));
+            return 0;
+        }
+
         public List<int> ConvertToTempIDs(List<Card> cards)
         {
             List<int> tempIDs = new List<int>();

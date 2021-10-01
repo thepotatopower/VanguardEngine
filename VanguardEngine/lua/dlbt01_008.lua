@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, p.HasPrompt
+		return a.OnDriveCheck, p.HasPrompt, p.CB, 1, p.CostNotRequired
 	end
 end
 
@@ -41,8 +41,7 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.SuperiorCall(1, FL.FrontRow)
-		if obj.CanCB(1) and obj.YesNo("Counter Blast 1?") then
-			obj.CounterBlast(1)
+		if obj.ChoosesToPayCost() then
 			obj.AddUntilEndOfBattleValue(2, cs.BonusDrive, 1)
 		end
 	end
