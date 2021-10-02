@@ -1185,7 +1185,7 @@ namespace VanguardEngine
                 {
                     foreach (int FL in param.FLs)
                     {
-                        if (_player1.GetUnitAt(FL, true) != null && _player1.GetUnitAt(FL, true).tempID == card.tempID)
+                        if (_player1.GetUnitAt(_player1.Convert(FL), true) != null && _player1.GetUnitAt(_player1.Convert(FL), true).tempID == card.tempID)
                         {
                             newPool.Add(card);
                             break;
@@ -1487,6 +1487,17 @@ namespace VanguardEngine
                         foreach (Card card in currentPool)
                         {
                             if (card.grade % 2 == 0)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
+                    else if (other == Other.OddGrade)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.grade % 2 != 0)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -3052,6 +3063,13 @@ namespace VanguardEngine
             _cardFight.Heal(_player1);
         }
 
+        public bool IsBattlePhase()
+        {
+            if (_cardFight.GetPhase() == Phase.Battle)
+                return true;
+            return false;
+        }
+
         public bool PlayerMainPhase()
         {
             return _cardFight.PlayerMainPhase(_player1._playerID);
@@ -3406,22 +3424,6 @@ namespace VanguardEngine
 
         public bool IsWhiteWings()
         {
-            if (_player1.MyStates.HasState(PlayerState.BlackAndWhiteWingsActive))
-                return true;
-            if (_player1.GetBind().Count > 0)
-            {
-                foreach (Card card in _player1.GetBind())
-                {
-                    if (card.grade % 2 == 0)
-                        return false;
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public bool IsBlackWings()
-        {
             return true;
             //if (_player1.MyStates.HasState(PlayerState.BlackAndWhiteWingsActive))
             //    return true;
@@ -3429,12 +3431,28 @@ namespace VanguardEngine
             //{
             //    foreach (Card card in _player1.GetBind())
             //    {
-            //        if (card.grade % 2 != 0)
+            //        if (card.grade % 2 == 0)
             //            return false;
             //    }
             //    return true;
             //}
             //return false;
+        }
+
+        public bool IsBlackWings()
+        {
+            if (_player1.MyStates.HasState(PlayerState.BlackAndWhiteWingsActive))
+                return true;
+            if (_player1.GetBind().Count > 0)
+            {
+                foreach (Card card in _player1.GetBind())
+                {
+                    if (card.grade % 2 != 0)
+                        return false;
+                }
+                return true;
+            }
+            return false;
         }
 
         public void AddContinuousValue(int targetParamNum, int state, int valueParamNum)
@@ -3859,6 +3877,7 @@ namespace VanguardEngine
         public const int Gem = 28;
         public const int Player = 29;
         public const int EvenGrade = 30;
+        public const int OddGrade = 31;
     }
 
     class Property

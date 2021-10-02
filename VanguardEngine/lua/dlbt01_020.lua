@@ -1,4 +1,4 @@
--- Joining Clasp, Ernesta
+-- Spirit Recharge! Luisa
 
 function NumberOfAbilities()
 	return 1
@@ -10,21 +10,21 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.BackRow, q.Other, o.This, q.Other, o.Resting, q.Count, 1
+		return q.Location, l.PlayerRC, q.Other, o.Boosting, q.Other, o.This, q.Count, 1
 	elseif n == 2 then
-		return q.Location, l.Applicable, q.Race, r.Ghost, q.Other, o.NotThis, q.Count, 1
+		return q.Location, l.PlayerRC, q.FL, FL.PlayerBackCenter, q.Other, o.This, q.Count, 1
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, p.HasPrompt, p.IsMandatory
+		return a.OnAttack, p.HasPrompt, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsPlayerTurn() and obj.IsBattlePhase() and obj.Exists(1) and obj.Exists(2) then
+		if obj.Exists(1) and obj.PlayerHasState(ps.VanguardHasSungSongThisTurn) then
 			return true
 		end
 	end
@@ -40,7 +40,10 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Stand(1)
+		obj.AddBattleOnlyPower(1, 5000)
+		if obj.Exists(2) then
+			obj.CounterCharge(1)
+		end
 	end
 	return 0
 end

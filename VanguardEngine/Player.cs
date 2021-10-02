@@ -2151,7 +2151,7 @@ namespace VanguardEngine
 
         public void AddCritical(int selection, int critical)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusCritical, critical);
             Log.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
             UpdateRecordedValues();
@@ -2159,7 +2159,7 @@ namespace VanguardEngine
 
         public void AddBattleOnlyCritical(int selection, int critical)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             _field.CardStates.AddUntilEndOfBattleValue(target.tempID, CardState.BonusCritical, critical);
             Log.WriteLine("----------\n+" + critical + " critical to " + target.name + "!");
             UpdateRecordedValues();
@@ -2184,7 +2184,7 @@ namespace VanguardEngine
 
         public void AddDrive(int selection, int drive)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusDrive, drive);
             Log.WriteLine("----------\n+" + drive + " drive to " + target.name + "!");
         }
@@ -2222,7 +2222,7 @@ namespace VanguardEngine
 
         public void Stand(int selection)
         {
-            Card target = FindActiveUnit(selection);
+            Card target = _field.CardCatalog[selection];
             _stoodByCardEffect.Clear();
             if (!IsUpRight(target))
             {

@@ -1670,6 +1670,11 @@ namespace VanguardEngine
             AddAbilityTiming(Activation.PutOnOrderZone, player._playerID, player.GetLastPutOnOrderZone());
         }
 
+        public int GetPhase()
+        {
+            return _phase;
+        }
+
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards)
         {
             _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), cards, false);
