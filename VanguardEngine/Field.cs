@@ -49,6 +49,7 @@ namespace VanguardEngine
         protected Card _player2World = null;
         protected PseudoZone _player1Prisoners;
         protected PseudoZone _player2Prisoners;
+        protected Zone _removed;
         protected List<Card> _unitsHit = new List<Card>();
         protected int[] _shuffleKey;
         protected int _turn = 1;
@@ -101,6 +102,13 @@ namespace VanguardEngine
             if (circle < 0 || circle >= FL.MaxFL() || _circles[circle] == null)
                 return null;
             return _circles[circle].Index(0);
+        }
+
+        public List<Card> GetOverloadedUnits(int circle)
+        {
+            if (circle < 0 || circle >= FL.MaxFL() || _circles[circle] == null)
+                new List<Card>();
+            return _circles[circle].OverloadedUnits;
         }
 
         public void SetUnit(int circle, Card card)
@@ -310,6 +318,11 @@ namespace VanguardEngine
             get => _player2Prisoners;
         }
 
+        public Zone Removed
+        {
+            get => _removed;
+        }
+
         public List<Card> UnitsHit
         {
             get => _unitsHit;
@@ -383,6 +396,7 @@ namespace VanguardEngine
             _player2Looking = new PseudoZone(this);
             _player1Prisoners = new PseudoZone(this);
             _player2Prisoners = new PseudoZone(this);
+            _removed = new Zone(this);
             _GC = new GuardianCircle(this);
             foreach (Card card in tokens)
                 _tokens.Add(card);
@@ -587,8 +601,7 @@ namespace VanguardEngine
 
         public void RemoveCard(Card card)
         {
-            Zone zone = new Zone(this);
-            zone.Add(card);
+            _removed.Add(card);
         }
     }
 
@@ -803,6 +816,7 @@ namespace VanguardEngine
         List<int> _untilEndOfNextTurn = new List<int>();
         List<int> _untilEndOfBattle = new List<int>();
         Dictionary<int, int> _untilEndOfBattleValues = new Dictionary<int, int>();
+        List<int> _permanent = new List<int>();
 
         public void AddContinuousState(int state)
         {
@@ -881,9 +895,14 @@ namespace VanguardEngine
             _untilEndOfBattleValues.Clear();
         }
 
+        public void AddPermanentState(int state)
+        {
+            _permanent.Add(state);
+        }
+
         public bool HasState(int state)
         {
-            if (_continuous.Contains(state) || _untilEndOfTurn.Contains(state) || _untilEndOfBattle.Contains(state) || _untilEndOfNextTurn.Contains(state))
+            if (_continuous.Contains(state) || _untilEndOfTurn.Contains(state) || _untilEndOfBattle.Contains(state) || _untilEndOfNextTurn.Contains(state) || _permanent.Contains(state))
                 return true;
             return false;
         }
@@ -1100,6 +1119,7 @@ namespace VanguardEngine
         public const int BlackAndWhiteWingsActive = 17;
         public const int AdditionalOrder = 18;
         public const int VanguardHasSungSongThisTurn = 19;
+        public const int RearguardPower10000 = 20;
     }
 
     public class CardState
@@ -1128,6 +1148,9 @@ namespace VanguardEngine
         public const int CanChooseThreeCirclesWhenAttacking = 22;
         public const int CannotAttackUnit = 23;
         public const int SendToBottomAtEndOfBattle = 24;
+        public const int BonusGrade = 25;
+        public const int CannotBeAttackedByRearguard = 26;
+        public const int GuardWithTwoOnAttack = 27;
     }
 
     public class Zone

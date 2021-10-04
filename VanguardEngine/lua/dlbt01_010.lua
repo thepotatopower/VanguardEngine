@@ -44,8 +44,8 @@ function Activate(n)
 	if n == 1 then
 		obj.ChooseReveal(1)
 		obj.Inject(3, q.Name, obj.GetName(2))
-		if not obj.Exists(3) and obj.CanSuperiorCall(2, FL.OpenCircle) then
-			obj.SuperiorCall(2, FL.OpenCircle)
+		if not obj.Exists(3) and obj.CanSuperiorCallToSpecificCircle(2, FL.OpenCircle) then
+			obj.SuperiorCallToSpecificCircle(2, FL.OpenCircle)
 		end
 		obj.Shuffle()
 	end

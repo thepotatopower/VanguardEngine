@@ -134,8 +134,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -561,7 +561,7 @@ namespace VanguardEngine
             player1.DoneCalling();
         }
 
-        public List<Card> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, List<int> circles, bool overDress, bool standing, bool free, bool differentRows)
+        public List<Card> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
         {
             List<int> selections;
             int selectedCircle = 0;
@@ -573,11 +573,7 @@ namespace VanguardEngine
             {
                 if (circles != null)
                 {
-                    foreach (int circle in circles)
-                    {
-                        if (player1.GetAvailableCircles(tempID).Contains(circle))
-                            canSelect.Add(circle);
-                    }
+                    canSelect.AddRange(player1.GetTotalAvailableCircles(player1.GetCard(tempID), circles));
                 }
                 else
                     canSelect.AddRange(player1.GetAvailableCircles(tempID));
@@ -926,7 +922,9 @@ namespace VanguardEngine
             {
                 if (drivecheck)
                 {
-                    AddAbilityTiming(Activation.OnOverTrigger, 0, null);
+                    List<Card> list = new List<Card>();
+                    list.Add(player1.GetTrigger(C.Player));
+                    AddAbilityTiming(Activation.OnOverTrigger, player1._playerID, list);
                 }
                 player1.RemoveTrigger();
                 Draw(player1, player2, 1);
@@ -985,6 +983,7 @@ namespace VanguardEngine
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetPlayerOrder(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetBind(), i));
+                    abilities.AddRange(_abilities.GetAbilities(activation, player1.GetRemoved(), i));
                     foreach (Ability ability in abilityTiming.GetActivatedAbilities(i))
                     {
                         while (abilities.Contains(ability))
@@ -1199,7 +1198,10 @@ namespace VanguardEngine
                 if (ability.Item1.CanActivate())
                     canActivate.Add(ability);
             }
-            selection = _inputManager.SelectAbility(player, canActivate);
+            if (canActivate.Count == 1 && canActivate[0].Item1.isMandatory)
+                selection = 0;
+            else
+                selection = _inputManager.SelectAbility(player, canActivate);
             if (selection == abilities.Count)
             {
                 foreach (Tuple<Ability, int> ability in canActivate)
@@ -1429,7 +1431,7 @@ namespace VanguardEngine
 
         public bool ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
         {
-            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "to bottom of deck.");
+            List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "to send to bottom of deck.");
             AddToChosen(cardsToSend);
             if (cost)
                 player1.Reveal(cardsToSend);
@@ -1516,7 +1518,12 @@ namespace VanguardEngine
 
         public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min, string query)
         {
-            List<int> selectedCards = _inputManager.SelectFromList(player1, cardsToSelect, max, min, query);
+            return SelectCards(player1, cardsToSelect, max, min, query, false);
+        }
+
+        public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min, string query, bool sameName)
+        {
+            List<int> selectedCards = _inputManager.SelectFromList(player1, cardsToSelect, max, min, query, sameName);
             AddToChosen(selectedCards);
             return selectedCards;
         }

@@ -24,7 +24,7 @@ end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.IsVanguard() and obj.CanSuperiorCall(1, FL.FrontRow) then
+		if obj.IsVanguard() and obj.CanSuperiorCallToSpecificCircle(1, FL.OpenCircle, FL.FrontRow) then
 			return true
 		end
 	end
@@ -40,7 +40,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(1, FL.FrontRow)
+		obj.SuperiorCallToSpecificCircle(1, FL.OpenCircle, FL.FrontRow)
 		if obj.ChoosesToPayCost() then
 			obj.AddUntilEndOfBattleValue(2, cs.BonusDrive, 1)
 		end

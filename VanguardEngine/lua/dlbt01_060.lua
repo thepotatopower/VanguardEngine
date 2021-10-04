@@ -1,4 +1,4 @@
--- Munching Girl, Seeya
+-- Relaxed Conversation, Philomena
 
 function NumberOfAbilities()
 	return 1
@@ -10,19 +10,19 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Looking, q.Count, 1
+		return q.Location, l.Applicable, q.Other, o.This
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.PlacedOnRC, p.HasPrompt, p.SB, 1
+		return a.PlacedOnRC, p.IsMandatory
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.LastPlacedOnRC() then
+		if obj.Exists(1) then
 			return true
 		end
 	end
@@ -38,11 +38,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.LookAtTopOfDeck(1)
-		if not (obj.CanSuperiorCallToSpecificCircle(1, FL.OpenCircle) and obj.SelectOption("Call to open RC", "Add to hand and discard 1") == 1 and obj.SuperiorCallToSpecificCircle(1, FL.OpenCircle)) then
-			obj.AddToHand(1)
-			obj.Discard(1)
-		end
+		obj.IncrementUntilEndOfTurnPlayerValue(ps.AdditionalOrder, 1)
 	end
 	return 0
 end

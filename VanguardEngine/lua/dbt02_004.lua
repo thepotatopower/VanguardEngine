@@ -55,7 +55,7 @@ function Activate(n)
 	elseif n == 2 then
 		obj.SoulCharge(1) 
 		if obj.VanguardIs("Diabolos, \"Violence\" Bruce") and obj.NumPlayerOpenCircles() > 0 then
-			obj.SuperiorCall(2, FL.OpenCircle)
+			obj.SuperiorCallToSpecificCircle(2, FL.OpenCircle)
 		end
 	end
 	return 0

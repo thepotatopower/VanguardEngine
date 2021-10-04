@@ -11,7 +11,7 @@ namespace VanguardEngine
         public int nation = -1;
         public int clan = -1;
         public int race = -1;
-        public int grade = -1;
+        protected int grade = -1;
         public int power = -1;
         public int shield = -1;
         public int critical = -1;
@@ -65,6 +65,11 @@ namespace VanguardEngine
             Console.WriteLine(skill);
             Console.WriteLine(effect);
             Console.WriteLine(id);
+        }
+
+        public int OriginalGrade()
+        {
+            return grade;
         }
     }
 

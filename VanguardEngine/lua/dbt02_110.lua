@@ -44,7 +44,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCall(2, FL.OpenCircle)
+		obj.SuperiorCallToSpecificCircle(2, FL.OpenCircle)
 	end
 	return 0
 end

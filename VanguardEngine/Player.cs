@@ -302,7 +302,7 @@ namespace VanguardEngine
             List<Card> orderableCards = new List<Card>();
             foreach (Card card in hand)
             {
-                if (card.orderType >= 0 && card.grade <= _field.GetUnit(PlayerVanguard).grade)
+                if (card.orderType >= 0 && Grade(card.tempID) <= Grade(_field.GetUnit(PlayerVanguard).tempID))
                     orderableCards.Add(card);
             }
             return orderableCards;
@@ -333,6 +333,15 @@ namespace VanguardEngine
                 backRow.Add(_field.GetUnit(PlayerBackRight));
             if (_field.GetUnit(PlayerBackCenter) != null)
                 backRow.Add(_field.GetUnit(PlayerBackCenter));
+            return backRow;
+        }
+
+        public List<Card> GetOverloadedBackRow()
+        {
+            List<Card> backRow = new List<Card>();
+            backRow.AddRange(_field.GetOverloadedUnits(PlayerBackLeft));
+            backRow.AddRange(_field.GetOverloadedUnits(PlayerBackCenter));
+            backRow.AddRange(_field.GetOverloadedUnits(PlayerBackRight));
             return backRow;
         }
 
@@ -670,9 +679,9 @@ namespace VanguardEngine
             output = "----------\nEnemy Hand: " + hand.Count + " Enemy Soul: " + _field.GetSoul(EnemyVanguard).Count + " Player Soul: " + _field.GetSoul(PlayerVanguard).Count + " Player Damage: " + PlayerDamage.Count() + " Enemy Damage: " + EnemyDamage.Count() + "\n" +
                 "Choose circle to examine.\n" +
                 "1. " + PrintRGData(EnemyBackRight) + " | " + "2. " + PrintRGData(EnemyBackCenter) + " | " + "3. " + PrintRGData(EnemyBackLeft) + "\n" +
-                "4. " + PrintRGData(EnemyFrontRight) + " | " + "5. " + CalculatePowerOfUnit(EnemyVanguard) + " G" + _field.GetUnit(EnemyVanguard).grade + " " + estand + " | 6. " + PrintRGData(EnemyFrontLeft) + "\n" +
+                "4. " + PrintRGData(EnemyFrontRight) + " | " + "5. " + CalculatePowerOfUnit(EnemyVanguard) + " G" + Grade(_field.GetUnit(EnemyVanguard).tempID) + " " + estand + " | 6. " + PrintRGData(EnemyFrontLeft) + "\n" +
                 "7.                 (to-do)\n" +
-                "8. " + PrintRGData(PlayerFrontLeft) + " | 9. " + CalculatePowerOfUnit(PlayerVanguard) + " G" + _field.GetUnit(PlayerVanguard).grade + " " + pstand + " | 10. " + PrintRGData(PlayerFrontRight) + "\n" +
+                "8. " + PrintRGData(PlayerFrontLeft) + " | 9. " + CalculatePowerOfUnit(PlayerVanguard) + " G" + Grade(_field.GetUnit(PlayerVanguard).tempID) + " " + pstand + " | 10. " + PrintRGData(PlayerFrontRight) + "\n" +
                 "11. " + PrintRGData(PlayerBackLeft) + " | 12. " + PrintRGData(PlayerBackCenter) + " | 13. " + PrintRGData(PlayerBackRight) + "\n" +
                 "14. Display Drop.\n" +
                 "15. Display Soul.\n" +
@@ -687,7 +696,7 @@ namespace VanguardEngine
             string output;
             if (_field.GetUnit(location) != null)
             {
-                output = CalculatePowerOfUnit(location) + " G" + _field.GetUnit(location).grade + " ";
+                output = CalculatePowerOfUnit(location) + " G" + Grade(_field.GetUnit(location).tempID) + " ";
                 if (_field.Orientation.IsUpRight(_field.GetUnit(location).tempID))
                     output += "S";
                 else
@@ -712,7 +721,7 @@ namespace VanguardEngine
                 return;
             }
             string output = card.name + "\n" +
-                "Grade: " + card.grade + " Power: " + card.power + " Shield: " + card.shield + " " + card.id + "\n" +
+                "Grade: " + Grade(card.tempID) + " Power: " + card.power + " Shield: " + card.shield + " " + card.id + "\n" +
                 card.effect;
             Log.WriteLine("----------" + output);
         }
@@ -801,7 +810,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerRideDeck.GetCards())
                 {
-                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1))
+                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (Grade(card.tempID) == Grade(_field.GetUnit(PlayerVanguard).tempID) || Grade(card.tempID) == Grade(_field.GetUnit(PlayerVanguard).tempID) + 1))
                         cards.Add(card);
                 }
             }
@@ -809,7 +818,7 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand.GetCards())
                 {
-                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (card.grade == _field.GetUnit(PlayerVanguard).grade || card.grade == _field.GetUnit(PlayerVanguard).grade + 1))
+                    if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden) && card.unitType >= 0 && (Grade(card.tempID) == Grade(_field.GetUnit(PlayerVanguard).tempID) || Grade(card.tempID) == Grade(_field.GetUnit(PlayerVanguard).tempID) + 1))
                         cards.Add(card);
                 }
             }
@@ -823,7 +832,7 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
             {
-                if (card.grade <= VG.grade && card.orderType < 0)
+                if (Grade(card.tempID) <= Grade(VG.tempID) && card.orderType < 0)
                     callableCards.Add(card);
             }
             return callableCards;
@@ -882,7 +891,8 @@ namespace VanguardEngine
                     continue;
                 if (_field.GetUnit(i) != null && 
                     !CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID) && 
-                    (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
+                    (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)) &&
+                    !(IsRearguard(Attacker.tempID) && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotBeAttackedByRearguard)))
                     cards.Add(_field.GetUnit(i));
             }
             return cards;
@@ -929,7 +939,7 @@ namespace VanguardEngine
                 foreach (Card card in PlayerHand.GetCards())
                 {
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
-                        (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || card.grade >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
+                        (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || Grade(card.tempID) >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
                         MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType)
                         cards.Add(card);
                 }
@@ -1037,7 +1047,7 @@ namespace VanguardEngine
             if (!_field.Attacked.Contains(attacked))
                 return 0;
             int shield = CalculatePowerOfUnit(GetCircle(_field.CardCatalog[tempID]));
-            if (_field.Sentinel.Contains(attacked) || (_field.GetUnit(_field.Attacker) != null && _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade)))
+            if (_field.Sentinel.Contains(attacked) || (_field.GetUnit(_field.Attacker) != null && _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(Grade(_field.GetUnit(_field.Attacker).tempID))))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
                 return shield;
@@ -1060,7 +1070,7 @@ namespace VanguardEngine
         {
             foreach (Card card in _field.Attacked)
             {
-                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || _field.CardStates.GetValues(card.tempID, CardState.CannotBeHitByGrade).Contains(_field.GetUnit(_field.Attacker).grade))
+                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || _field.CardStates.GetValues(card.tempID, CardState.CannotBeHitByGrade).Contains(Grade(_field.GetUnit(_field.Attacker).tempID)))
                 {
                     Log.WriteLine("[" + card.name + "] Hit immunity active.");
                     return;
@@ -1082,6 +1092,8 @@ namespace VanguardEngine
         public int CalculatePowerOfUnit(int location)
         {
             Card card = _field.GetUnit(location);
+            if (card == null)
+                return 0;
             int power = card.power;
             foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusPower))
                 power += value;
@@ -1097,6 +1109,9 @@ namespace VanguardEngine
                 else
                     power += CalculatePowerOfUnit(_field.Booster);
             }
+            if (IsRearguard(card.tempID) && (card.originalOwner == _playerID && MyStates.HasState(PlayerState.RearguardPower10000))
+                || (card.originalOwner != _playerID && EnemyStates.HasState(PlayerState.RearguardPower10000)))
+                power += 10000;
             return power;
         }
 
@@ -1127,7 +1142,7 @@ namespace VanguardEngine
                 return false;
             foreach (Card card in rideDeck)
             {
-                if (VG.grade + 1 == card.grade &&
+                if (Grade(VG.tempID) + 1 == Grade(card.tempID) &&
                     !_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden))
                     return true;
             }
@@ -1142,7 +1157,7 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
             {
-                if (card.unitType >= 0 && (card.grade == VG.grade || card.grade - 1 == VG.grade) &&
+                if (card.unitType >= 0 && (Grade(card.tempID) == Grade(VG.tempID)|| Grade(card.tempID) - 1 == Grade(VG.tempID)) &&
                     !_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden))
                     return true;
             }
@@ -1155,7 +1170,7 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
             {
-                if (card.grade <= VG.grade && card.orderType < 0)
+                if (Grade(card.tempID) <= Grade(VG.tempID) && card.orderType < 0)
                     return true;
             }
             return false;
@@ -1778,6 +1793,8 @@ namespace VanguardEngine
                     }
                 }
             }
+            if (_field.CardStates.HasState(Attacker.tempID, CardState.GuardWithTwoOnAttack))
+                EnemyStates.AddUntilEndOfBattleState(PlayerState.GuardWithTwo);
             Log.WriteLine("----------");
             foreach (Card card in _field.Attacked)
                 Log.WriteLine(Attacker.name + " attacks " + card.name + "!");
@@ -2249,6 +2266,17 @@ namespace VanguardEngine
         {
             if (PlayerTrigger.Count() > 0)
                 _field.RemoveCard(PlayerTrigger.Index(0));
+        }
+
+        public List<Card> GetRemoved()
+        {
+            List<Card> cards = new List<Card>();
+            foreach (Card card in _field.Removed.GetCards())
+            {
+                if (card.originalOwner == _playerID)
+                    cards.Add(card);
+            }
+            return cards;
         }
 
         public void AddToHand(List<int> selections)
@@ -3054,6 +3082,53 @@ namespace VanguardEngine
             return circles;
         }
 
+        public List<int> GetTotalAvailableCircles(Card card, params int[] circles)
+        {
+            List<int> availableCircles = GetAvailableCircles(card.tempID);
+            List<int> tempList = new List<int>();
+            if (circles != null)
+            {
+                foreach (int circle in circles)
+                {
+                    if (circle == FL.OpenCircle)
+                    {
+                        foreach (int c in availableCircles)
+                        {
+                            if (GetUnitAt(c, false) == null)
+                            {
+                                tempList.Add(c);
+                            }
+                        }
+                        availableCircles.Clear();
+                        availableCircles.AddRange(tempList);
+                        tempList.Clear();
+                    }
+                    else if (circle == FL.FrontRow)
+                    {
+                        foreach (int c in availableCircles)
+                        {
+                            if (_field.GetRow(c) == 0)
+                                tempList.Add(c);
+                        }
+                        availableCircles.Clear();
+                        availableCircles.AddRange(tempList);
+                        tempList.Clear();
+                    }
+                    else if (circle != -1)
+                    {
+                        if (availableCircles.Contains(circle))
+                        {
+                            availableCircles.Clear();
+                            availableCircles.Add(circle);
+                        }
+                        else
+                            availableCircles.Clear();
+                    }
+                }
+            }
+            return availableCircles;
+        }
+
         public Card GetCard(int tempID)
         {
             return _field.CardCatalog[tempID];
@@ -3200,6 +3275,14 @@ namespace VanguardEngine
             if (cards.Exists(card => card.tempID == tempID))
                 return CalculatePowerOfUnit(GetCircle(cards.Find(card => card.tempID == tempID)));
             return 0;
+        }
+
+        public int Grade(int tempID)
+        {
+            int grade = _field.CardCatalog[tempID].OriginalGrade();
+            if (_field.CardStates.GetValues(tempID, CardState.BonusGrade).Count > 0)
+                return grade += _field.CardStates.GetValues(tempID, CardState.BonusGrade)[0];
+            return _field.CardCatalog[tempID].OriginalGrade();
         }
 
         public List<int> ConvertToTempIDs(List<Card> cards)

@@ -1,47 +1,50 @@
--- Heavenly Staff of Kind Intention, Cortese
+-- Selfie Practice, Anneliese
 
 function NumberOfAbilities()
 	return 1
 end
 
 function NumberOfParams()
-	return 2
+	return 3
 end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.RevealedTrigger, q.Other, o.This, q.Count, 1
-	elseif n == 2 then
 		return q.Location, l.PlayerRC, q.Other, o.This
+	elseif n == 2 then
+		return q.Location, l.PlayerRC, q.Count, 1
+	elseif n == 3 then
+		return q.Location, l.PlayerRC, q.Count, 2
 	end
 end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnDriveCheck, p.HasPrompt
+		return a.OnBattleEnds, p.HasPrompt, p.AddToSoul, 1
 	end
 end
 
 function CheckCondition(n)
 	if n == 1 then
-		if obj.Exists(1) and obj.OpenCirclesExist(2) then
+		if obj.IsRearguard() and obj.IsBoosted() then
 			return true
 		end
 	end
 	return false
 end
 
-function CanFullyResolve(n)
+function CanFullyResolve(n) 
 	if n == 1 then
-		return true
+		if obj.Exists(3) then
+			return true
+		end
 	end
 	return false
 end
 
 function Activate(n)
 	if n == 1 then
-		obj.SuperiorCallToSpecificCircle(1, FL.OpenCircle)
-		obj.AddSkill(2, s.Boost)
+		obj.ChooseAddTempPower(2, 5000)
 	end
 	return 0
 end

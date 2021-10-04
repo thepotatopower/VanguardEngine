@@ -663,6 +663,11 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query)
         {
+            return SelectFromList(actingPlayer, cards, count, min, query, false);
+        }
+
+        public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
+        {
             bool swapped = false;
             int trueMin = min;
             List<int> temporaryList = new List<int>();
@@ -686,36 +691,64 @@ namespace VanguardEngine
                 intlist_input.Clear();
                 return new List<int>(intlist_input);
             }
-            while (count > 1 && _query.Contains("retire") && cards.Exists(card => _player1.CanCountAsTwoRetires(card.tempID) && !_player1.IsEnemy(card.tempID)))
+            if (_query.Contains("retire"))
             {
-                _query = "Choose " + count + " card(s) " + query + " min: (" + min + ")";
+                while (count > 1 && _query.Contains("retire") && cards.Exists(card => _player1.CanCountAsTwoRetires(card.tempID) && !_player1.IsEnemy(card.tempID)))
+                {
+                    _query = "Choose " + count + " card(s)";
+                    if (query == "")
+                        _query += ".";
+                    else
+                        _query += " " + query;
+                    _query += " min: (" + min + ")";
+                    int_value = 1;
+                    if (min > 0)
+                        int_value2 = 1;
+                    else
+                        int_value2 = 0;
+                    int_value3 = trueMin;
+                    SelectFromList_Input();
+                    if (intlist_input.Count == 0)
+                        break;
+                    else
+                    {
+                        if (_player1.CanCountAsTwoRetires(intlist_input[0]) && YesNo(actingPlayer, "Count as two retires?"))
+                        {
+                            count -= 2;
+                            min -= 2;
+                            trueMin -= 2;
+                        }
+                        else
+                        {
+                            count--;
+                            min--;
+                            trueMin--;
+                        }
+                        temporaryList.Add(intlist_input[0]);
+                        cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
+                        intlist_input.Clear();
+                    }
+                }
+            }
+            else if (sameName && count > 1)
+            {
                 int_value = 1;
                 if (min > 0)
                     int_value2 = 1;
                 else
                     int_value2 = 0;
-                int_value3 = trueMin;
                 SelectFromList_Input();
-                if (intlist_input.Count == 0)
-                    break;
-                else
+                cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
+                temporaryList.Add(intlist_input[0]);
+                List<Card> currentList = new List<Card>(cardsToSelect);
+                foreach (Card card in currentList)
                 {
-                    if (_player1.CanCountAsTwoRetires(intlist_input[0]) && YesNo(actingPlayer, "Count as two retires?"))
-                    {
-                        count -= 2;
-                        min -= 2;
-                        trueMin -= 2;
-                    }
-                    else
-                    {
-                        count--;
-                        min--;
-                        trueMin--;
-                    }
-                    temporaryList.Add(intlist_input[0]);
-                    cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
-                    intlist_input.Clear();
+                    if (card.name != _player1.GetCard(intlist_input[0]).name)
+                        cardsToSelect.Remove(card);
                 }
+                count--;
+                min--;
+                intlist_input.Clear();
             }
             if (count > 0 || min > 0)
             {
