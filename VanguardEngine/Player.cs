@@ -36,6 +36,7 @@ namespace VanguardEngine
         protected List<int> _stoodByCardEffectThisTurn = new List<int>();
         protected List<Card> _retiredForPlayerCost = new List<Card>();
         protected Card _playedOrder;
+        protected List<Card> _playedOrdersThisTurn = new List<Card>();
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
         protected bool _enemyRetired = false;
@@ -123,6 +124,8 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnReveal;
         public event EventHandler<CardEventArgs> OnSetPrison;
         public event EventHandler<CardEventArgs> OnImprison;
+        public event EventHandler<CardEventArgs> OnAbilityTiming;
+        public event EventHandler<CardEventArgs> OnMarkedForRetire;
 
         public void Initialize(int playerID, Field field)
         {
@@ -637,7 +640,7 @@ namespace VanguardEngine
         {
             for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
             {
-                if (_field.GetUnit(i) != null)
+                if (_field.GetUnit(i) != null && !_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.Paralyze))
                     _field.Orientation.Rotate(_field.GetUnit(i).tempID, true);
             }
         }
@@ -1453,6 +1456,8 @@ namespace VanguardEngine
             }
             if (_field.UnitsHit.Count > 0)
                 return true;
+            if (_field.UnitsHit.Exists(card => Vanguard().tempID == card.tempID))
+                MyStates.AddUntilEndOfTurnState(PlayerState.PlayerVanguardHitThisTurn);
             return false;
         }
 
@@ -1757,7 +1762,7 @@ namespace VanguardEngine
                 foreach (int target in targets)
                     _field.Attacked.Add(_field.CardCatalog[target]);
             }
-            else
+            else if (targets.Length == 1)
             {
                 Attacked = _field.CardCatalog[targets[0]];
                 int circle = GetCircle(Attacked);
@@ -1971,9 +1976,16 @@ namespace VanguardEngine
                 {
                     if (_field.GetUnit(i) != null && _field.GetUnit(i).tempID == tempID)
                     {
-                        _field.RemoveUnit(i, EnemyDrop);
+                        //_field.RemoveUnit(i, EnemyDrop);
                         _enemyRetired = true;
                         _enemyRetiredThisTurn = true;
+                        if (OnMarkedForRetire != null)
+                        {
+                            CardEventArgs args = new CardEventArgs();
+                            args.playerID = _playerID;
+                            args.card = _field.CardCatalog[tempID];
+                            OnMarkedForRetire(this, args);
+                        }
                         break;
                     }
                 }
@@ -1984,13 +1996,46 @@ namespace VanguardEngine
                         _lastPlayerRetired.Add(_field.GetUnit(i));
                         if (i != PlayerVanguard)
                             _lastPlayerRCRetired.Add(_field.GetUnit(i));
-                        _field.RemoveUnit(i, PlayerDrop);
+                        //_field.RemoveUnit(i, PlayerDrop);
                         _playerRetired = true;
                         _playerRetiredThisTurn = true;
+                        if (OnMarkedForRetire != null)
+                        {
+                            CardEventArgs args = new CardEventArgs();
+                            args.playerID = _playerID;
+                            args.card = _field.CardCatalog[tempID];
+                            OnMarkedForRetire(this, args);
+                        }
                         break;
                     }
                 }
             }
+        }
+
+        public void FinalizeRetire(int tempID, bool toSoul)
+        {
+            Card card = _field.CardCatalog[tempID];
+            int Vanguard;
+            if (card.originalOwner == _playerID)
+                Vanguard = PlayerVanguard;
+            else
+                Vanguard = EnemyVanguard;
+            if (toSoul)
+            {
+                if (GetAllUnitsOnField().Contains(card))
+                {
+                    _field.RemoveUnit(GetCircle(card), _field.GetSoulZone(Vanguard));
+                }
+                else
+                    _field.GetSoulZone(Vanguard).Add(card);
+            }
+            else
+            {
+                if (GetAllUnitsOnField().Contains(card))
+                    _field.RemoveUnit(GetCircle(card), PlayerDrop);
+                else
+                    PlayerDrop.Add(card);
+            }    
         }
 
         public void RetireAttackedUnit()
@@ -2031,7 +2076,14 @@ namespace VanguardEngine
             foreach (Card card in _field.GC.GetCards())
             {
                 retired = true;
-                PlayerDrop.Add(card);
+                if (OnMarkedForRetire != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = card;
+                    args.playerID = _playerID;
+                    OnMarkedForRetire(this, args);
+                }
+                //PlayerDrop.Add(card);
             }
             if (retired)
                 return 1;
@@ -2282,12 +2334,26 @@ namespace VanguardEngine
         public void AddToHand(List<int> selections)
         {
             Card cardToAdd;
+            List<Card> rearguardsReturnedToHand = new List<Card>();
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
+                if (GetActiveUnits().Contains(cardToAdd) && IsRearguard(tempID))
+                    rearguardsReturnedToHand.Add(cardToAdd);
                 PlayerHand.Add(cardToAdd);
             }
             Log.WriteLine(selections.Count + " card(s) added to hand.");
+            foreach (Card card in rearguardsReturnedToHand)
+            {
+                if (OnAbilityTiming != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.cardList.Add(card);
+                    args.i = Activation.OnRearguardReturnedToHand;
+                    args.playerID = _playerID;
+                    OnAbilityTiming(this, args);
+                }
+            }
         }
 
         public void AddToSoul(List<int> selections)
@@ -2353,6 +2419,7 @@ namespace VanguardEngine
             else if (PlayerHand.Contains(card))
             {
                 _playedOrder = card;
+                _playedOrdersThisTurn.Add(card);
                 _lastOrderPlayed = card;
                 if (_orderPlayed)
                     MyStates.DecrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, 1);
@@ -2899,13 +2966,14 @@ namespace VanguardEngine
         {
             RetireCardsMarkedForRetire();
             MyStates.EndTurn();
-            _field.CardStates.EndTurn();
+            //_field.CardStates.EndTurn();
             _alchemagicFreeSB = false;
             _alchemagicFreeCBAvailable = 0;
             _alchemagicUsed = false;
             _field.SetPersonaRide(false, _playerID);
             _stoodByCardEffect.Clear();
             _stoodByCardEffectThisTurn.Clear();
+            _playedOrdersThisTurn.Clear();
             _orderPlayed = false;
             _soulChargedThisTurn = false;
             _playerRetiredThisTurn = false;
@@ -3283,6 +3351,11 @@ namespace VanguardEngine
             if (_field.CardStates.GetValues(tempID, CardState.BonusGrade).Count > 0)
                 return grade += _field.CardStates.GetValues(tempID, CardState.BonusGrade)[0];
             return _field.CardCatalog[tempID].OriginalGrade();
+        }
+
+        public List<Card> GetPlayedOrdersThisTurn()
+        {
+            return new List<Card>(_playedOrdersThisTurn);
         }
 
         public List<int> ConvertToTempIDs(List<Card> cards)

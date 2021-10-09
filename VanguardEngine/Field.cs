@@ -1120,6 +1120,8 @@ namespace VanguardEngine
         public const int AdditionalOrder = 18;
         public const int VanguardHasSungSongThisTurn = 19;
         public const int RearguardPower10000 = 20;
+        public const int PlayerVanguardHitThisTurn = 21;
+        public const int RetiredEvenGradeUnitsCanBeAddedToSoul = 22;
     }
 
     public class CardState
@@ -1151,6 +1153,7 @@ namespace VanguardEngine
         public const int BonusGrade = 25;
         public const int CannotBeAttackedByRearguard = 26;
         public const int GuardWithTwoOnAttack = 27;
+        public const int Paralyze = 28;
     }
 
     public class Zone

@@ -10,7 +10,7 @@ namespace VanguardEngine
     {
         public Player _player1;
         public Player _player2;
-        public Player actingPlayer;
+        public Player _actingPlayer;
         public int _turn;
         protected int _phase = Phase.Stand;
         public bool _gameOver = false;
@@ -57,6 +57,10 @@ namespace VanguardEngine
                 card.tempID += deck1.Count;
             _player1 = new Player();
             _player2 = new Player();
+            _player1.OnAbilityTiming += OnAbilityTiming;
+            _player2.OnAbilityTiming += OnAbilityTiming;
+            _player1.OnMarkedForRetire += MarkedForRetire;
+            _player2.OnMarkedForRetire += MarkedForRetire;
             _abilities = new Abilities();
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
@@ -127,7 +131,7 @@ namespace VanguardEngine
             player2.StandUpVanguard();
             _turn = 1;
             _phase = 0;
-            actingPlayer = player1;
+            _actingPlayer = player1;
             TriggerCheck(player1, player2, false);
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
@@ -142,7 +146,7 @@ namespace VanguardEngine
             //player2.Mill(10);
             while (true)
             {
-                actingPlayer = player1;
+                _actingPlayer = player1;
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
                 _phase = Phase.Stand;
@@ -190,6 +194,7 @@ namespace VanguardEngine
                 PerformCheckTiming(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
+                player1.CardStates.EndTurn();
                 player1.IncrementTurn();
                 _abilities.EndTurn();
                 _activatedOrder = false;
@@ -678,7 +683,7 @@ namespace VanguardEngine
                                 List<int> availableCircles = player2.PlayerRCCircles();
                                 foreach (int circle in selectedCircles)
                                     availableCircles.Remove(circle);
-                                int selectedCircle = _inputManager.SelectCircle(actingPlayer, availableCircles);
+                                int selectedCircle = _inputManager.SelectCircle(_actingPlayer, availableCircles);
                                 selectedCircles.Add(selectedCircle);
                             }
                             List<int> targets = new List<int>();
@@ -846,10 +851,9 @@ namespace VanguardEngine
                         AddAbilityTiming(Activation.OnPlayerRCRetired, player2._playerID, player2.GetLastPlayerRCRetired());
                     for (int i = 0; i < player2.NumberOfTimesHit(); i++)
                         AddAbilityTiming(Activation.OnAttackHits, 0, null);
-                    _inputManager.SwapPlayers();
                     PerformCheckTiming(player1, player2);
                     player2.RetireAttackedUnit();
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
             }
             AddAbilityTiming(Activation.OnBattleEnds, 0, null);
@@ -980,7 +984,13 @@ namespace VanguardEngine
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), i));
-                    abilities.AddRange(_abilities.GetAbilities(activation, player1.GetGC(), i));
+                    cards.Clear();
+                    foreach (Card card in player1.GetGC())
+                    {
+                        if (card.originalOwner == player1._playerID)
+                            cards.Add(card);
+                    }
+                    abilities.AddRange(_abilities.GetAbilities(activation, cards, i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetPlayerOrder(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetBind(), i));
                     abilities.AddRange(_abilities.GetAbilities(activation, player1.GetRemoved(), i));
@@ -1243,6 +1253,16 @@ namespace VanguardEngine
                 //}
             }
             return abilityActivated;
+        }
+
+        public void MarkedForRetire(object sender, CardEventArgs e)
+        {
+            if (e.playerID == 1 && e.card.OriginalGrade() % 2 == 0 && _player1.MyStates.HasState(PlayerState.RetiredEvenGradeUnitsCanBeAddedToSoul) && _inputManager.YesNo(_player1, "Add " + e.card.name + " to soul?"))
+                _player1.FinalizeRetire(e.card.tempID, true);
+            else if (e.playerID == 2 && e.card.OriginalGrade() % 2 == 0 && _player1.MyStates.HasState(PlayerState.RetiredEvenGradeUnitsCanBeAddedToSoul) && _inputManager.YesNo(_player2, "Add " + e.card.name + " to soul?"))
+                _player2.FinalizeRetire(e.card.tempID, true);
+            else
+                _player1.FinalizeRetire(e.card.tempID, false);
         }
 
         public void AllAbilitiesResolved()
@@ -1591,7 +1611,7 @@ namespace VanguardEngine
 
         public bool PlayerMainPhase(int playerID)
         {
-            if (_phase == Phase.Main && playerID == actingPlayer._playerID)
+            if (_phase == Phase.Main && playerID == _actingPlayer._playerID)
                 return true;
             return false;
         }
@@ -1682,6 +1702,12 @@ namespace VanguardEngine
             return _phase;
         }
 
+        public void OnAbilityTiming(object sender, CardEventArgs e)
+        {
+            Player player = sender as Player;
+            AddAbilityTiming(e.i, e.playerID, e.cardList);
+        }
+
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards)
         {
             _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), cards, false);
@@ -1715,8 +1741,8 @@ namespace VanguardEngine
 
             ruleActionPerformed += _player1.ClearOverloadedCards();
             ruleActionPerformed += _player2.ClearOverloadedCards();
-            ruleActionPerformed += _player1.RetireGC();
-            ruleActionPerformed += _player2.RetireGC();
+            //ruleActionPerformed += _player1.RetireGC();
+            //ruleActionPerformed += _player2.RetireGC();
             //rule action for riding from soul onto empty VC
 
             if (_player1.GetDamageZone().Count >= 6 || _player2.GetDamageZone().Count >= 6)

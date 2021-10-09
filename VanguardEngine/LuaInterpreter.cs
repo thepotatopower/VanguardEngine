@@ -1156,9 +1156,11 @@ namespace VanguardEngine
                     foreach (int activation in _activations)
                     {
                         currentPool.AddRange(_cardFight.GetList(activation, _player1._playerID, _timingCount));
-                        currentPool.AddRange(_cardFight.GetList(activation, _player2._playerID, _timingCount));
+                        //currentPool.AddRange(_cardFight.GetList(activation, _player2._playerID, _timingCount));
                     }
                 }
+                else if (location == Location.PlayedOrdersThisTurn)
+                    currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
             }
             if (currentPool.Count == 0)
             {
@@ -1353,6 +1355,17 @@ namespace VanguardEngine
                         foreach (Card card in currentPool)
                         {
                             if (!_player1.AttackedUnits().Contains(card))
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
+                    else if (other == Other.Attacked)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (_player1.AttackedUnits().Contains(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -3425,6 +3438,12 @@ namespace VanguardEngine
             }
         }
 
+        public void AddUntilEndOfNextTurnState(int paramNum, int state)
+        {
+            foreach (Card card in ValidCards(paramNum))
+                _player1.CardStates.AddUntilEndOfNextTurnState(card.tempID, state);
+        }
+
         public void AddUntilEndOfBattleValue(int paramNum, int state, int value)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -3802,6 +3821,7 @@ namespace VanguardEngine
         public const int OnSing = -34;
         public const int OnBind = -35;
         public const int PlacedOnRCOtherThanFromHand = -36;
+        public const int OnRearguardReturnedToHand = -37;
     }
 
     public class Location
@@ -3865,6 +3885,7 @@ namespace VanguardEngine
         public const int LastOrderPlayed = 58;
         public const int Applicable = 59;
         public const int SameColumn = 60;
+        public const int PlayedOrdersThisTurn = 61;
     }
 
     class Query
@@ -3921,6 +3942,7 @@ namespace VanguardEngine
         public const int OddGrade = 31;
         public const int Selected = 32;
         public const int SameName = 33;
+        public const int Attacked = 34;
     }
 
     class Property
