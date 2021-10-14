@@ -123,7 +123,7 @@ namespace VanguardEngine
             else
             {
                 Log.WriteLine("----------\nPLAYER 2 GOES FIRST.");
-                _inputManager.SwapPlayers();
+                //_inputManager.SwapPlayers();
             }
             Mulligan(player1, player2);
             Log.WriteLine("----------\nSTAND UP! VANGUARD!");
@@ -206,14 +206,14 @@ namespace VanguardEngine
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     player1 = _player2;
                     player2 = _player1;
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
                 else
                 {
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                     player1 = _player1;
                     player2 = _player2;
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
             }
         }
@@ -242,7 +242,7 @@ namespace VanguardEngine
             List<int> selection;
             for (int i = 0; i < 2; i++)
             {
-                selection = _inputManager.SelectCardsToMulligan();
+                selection = _inputManager.SelectCardsToMulligan(player1);
                 player1.MulliganCards(selection);
                 Log.WriteLine("----------\nNew hand: ");
                 player1.PrintHand();
@@ -251,14 +251,14 @@ namespace VanguardEngine
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     player1 = _player2;
                     player2 = _player1;
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
                 else
                 {
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                     player1 = _player1;
                     player2 = _player2;
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
             }
         }
@@ -317,7 +317,7 @@ namespace VanguardEngine
             PerformCheckTiming(player1, player2);
             while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
-                selection = _inputManager.SelectRidePhaseAction();
+                selection = _inputManager.SelectRidePhaseAction(player1);
                 if (selection == RidePhaseAction.RideFromRideDeck)
                 {
                     if (player1.CanRideFromRideDeck())
@@ -390,7 +390,7 @@ namespace VanguardEngine
                 _inputManager._abilities.AddRange(GetACTAbilities(player1));
                 if (!player1.OrderPlayed())
                     _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
-                selection = _inputManager.SelectMainPhaseAction();
+                selection = _inputManager.SelectMainPhaseAction(player1);
                 if (selection == 1)
                     BrowseHand(player1);
                 else if (selection == 2)
@@ -399,7 +399,7 @@ namespace VanguardEngine
                 {
                     if (player1.CanCallRearguard())
                     {
-                        input = _inputManager.SelectRearguardToCall();
+                        input = _inputManager.SelectRearguardToCall(player1);
                         canSelect.AddRange(player1.GetAvailableCircles(input));
                         location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
                         Log.WriteLine("input: " + input + " location: " + location);
@@ -427,12 +427,12 @@ namespace VanguardEngine
                     {
                         if (player1.CanFreeSwap())
                         {
-                            selections = _inputManager.MoveRearguards();
+                            selections = _inputManager.MoveRearguards(player1);
                             MoveRearguard(player1, player2, selections.Item1, selections.Item2);
                         }
                         else
                         {
-                            selection = _inputManager.SelectRearguardColumn();
+                            selection = _inputManager.SelectRearguardColumn(player1);
                             MoveRearguard(player1, player2, selection);
                         }
                     }
@@ -478,7 +478,7 @@ namespace VanguardEngine
                         List<int> availableCircles = player1.GetCirclesForFreeSwap(_inputManager.int_input2);
                         if (availableCircles.Count > 0)
                         {
-                            int newCircle = _inputManager.SelectCircle(player1, availableCircles);
+                            int newCircle = _inputManager.SelectCircle(player1, availableCircles, 1)[0];
                             player1.MoveRearguardFreeSwap(selectedID, newCircle);
                         }
                     }
@@ -649,7 +649,7 @@ namespace VanguardEngine
                 if (player1.CanAttack())
                 {
                     booster = -1;
-                    selection = _inputManager.SelectBattlePhaseAction();
+                    selection = _inputManager.SelectBattlePhaseAction(player1);
                     if (selection == 1)
                         BrowseHand(player1);
                     else if (selection == 2)
@@ -659,7 +659,7 @@ namespace VanguardEngine
                     else if (selection == 3 || selection == BattlePhaseAction.Attack) //for use outside of console only
                     {
                         if (selection == 3)
-                            attacker = _inputManager.SelectAttackingUnit();
+                            attacker = _inputManager.SelectAttackingUnit(player1);
                         else
                             attacker = _inputManager.int_input2;
                         player1.SetAttacker(attacker);
@@ -677,15 +677,10 @@ namespace VanguardEngine
                         }    
                         else if (player1.CanChooseThreeCirclesWhenAttacking(attacker))
                         {
-                            List<int> selectedCircles = new List<int>();
-                            for (int i = 0; i < 3; i++)
-                            {
-                                List<int> availableCircles = player2.PlayerRCCircles();
-                                foreach (int circle in selectedCircles)
-                                    availableCircles.Remove(circle);
-                                int selectedCircle = _inputManager.SelectCircle(_actingPlayer, availableCircles);
-                                selectedCircles.Add(selectedCircle);
-                            }
+                            List<int> selectedCircles;
+                            List<int> availableCircles = player2.PlayerRCCircles();
+                            availableCircles.Add(player1.Convert(FL.EnemyVanguard));
+                            selectedCircles = _inputManager.SelectCircle(_actingPlayer, availableCircles, 3);
                             List<int> targets = new List<int>();
                             foreach (int circle in selectedCircles)
                             {
@@ -696,7 +691,7 @@ namespace VanguardEngine
                         }
                         else
                         {
-                            target = _inputManager.SelectUnitToAttack();
+                            target = _inputManager.SelectUnitToAttack(player1);
                             if (target >= 0)
                                 Attack(player1, player2, booster, target);
                         }
@@ -728,7 +723,7 @@ namespace VanguardEngine
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                 else
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
-                _inputManager.SwapPlayers();
+                //_inputManager.SwapPlayers();
                 while (player1.GetAttacker() != null && player2.GetAttackedCards().Count > 0)
                 {
                     _inputManager._abilities.Clear();
@@ -737,7 +732,7 @@ namespace VanguardEngine
                     player2.PrintEnemyAttack();
                     if (player2.GetAttackedCards().Count > 0)
                     {
-                        selection = _inputManager.SelectGuardPhaseAction();
+                        selection = _inputManager.SelectGuardPhaseAction(player2);
                         if (selection == 1)
                             BrowseHand(player2);
                         else if (selection == 2)
@@ -747,7 +742,7 @@ namespace VanguardEngine
                         else if (selection == GuardStepAction.Guard)
                         {
                             if (player2.GetAttackedCards().Count > 1)
-                                selection2 = _inputManager.SelectCardToGuard();
+                                selection2 = _inputManager.SelectCardToGuard(player2);
                             else
                                 selection2 = -1;
                             if (player2.MustGuardWithTwo())
@@ -766,7 +761,7 @@ namespace VanguardEngine
                             {
                                 selections = _inputManager.SelectFromList(player2, player2.GetInterceptableCards(), 1, 1, "Select card to intercept with.");
                                 if (player2.GetAttackedCards().Count > 1)
-                                    selection2 = _inputManager.SelectCardToGuard();
+                                    selection2 = _inputManager.SelectCardToGuard(player2);
                                 else
                                     selection2 = -1;
                                 player2.Guard(selections, selection2);
@@ -793,7 +788,7 @@ namespace VanguardEngine
                             selections = new List<int>();
                             selections.Add(_inputManager.int_input2);
                             if (player2.GetAttackedCards().Count > 1)
-                                selection2 = _inputManager.SelectCardToGuard();
+                                selection2 = _inputManager.SelectCardToGuard(player2);
                             else
                                 selection2 = -1;
                             player2.Guard(selections, selection2);
@@ -819,7 +814,7 @@ namespace VanguardEngine
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
                     else
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                     for (int i = 0; i < player1.Drive(); i++)
                     {
                         TriggerCheck(player1, player2, true);
@@ -829,7 +824,7 @@ namespace VanguardEngine
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
                     else
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
-                    _inputManager.SwapPlayers();
+                    //_inputManager.SwapPlayers();
                 }
                 if (player1.GetAttacker() != null && player2.GetAttackedCards().Count > 0 && player2.AttackHits())
                     attackHits = true;
@@ -853,8 +848,9 @@ namespace VanguardEngine
                         AddAbilityTiming(Activation.OnAttackHits, 0, null);
                     PerformCheckTiming(player1, player2);
                     player2.RetireAttackedUnit();
-                    //_inputManager.SwapPlayers();
+                    ////_inputManager.SwapPlayers();
                 }
+                //_inputManager.SwapPlayers();
             }
             AddAbilityTiming(Activation.OnBattleEnds, 0, null);
             PerformCheckTiming(player1, player2);
@@ -862,7 +858,6 @@ namespace VanguardEngine
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             else
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
-            _inputManager.SwapPlayers();
             player1.EndAttack();
             player2.EndAttack();
             player1.UpdateRecordedValues();
@@ -887,7 +882,7 @@ namespace VanguardEngine
             if (check != Trigger.NotTrigger && check != Trigger.Over && check != Trigger.Front) 
             {
                 Log.WriteLine("----------\nChoose unit to give +10000 power to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 10000 + power);
+                selection = _inputManager.SelectActiveUnit(player1, PromptType.AddPower, 10000 + power);
                 player1.AddTempPower(selection, 10000 + power, false);
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
@@ -895,7 +890,7 @@ namespace VanguardEngine
             if (check == Trigger.Critical) 
             {
                 Log.WriteLine("----------\nChoose unit to give Critical to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddCritical, 1);
+                selection = _inputManager.SelectActiveUnit(player1, PromptType.AddCritical, 1);
                 player1.AddCritical(selection, 1);
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
@@ -903,7 +898,7 @@ namespace VanguardEngine
             else if (check == Trigger.Stand) //STAND TRIGGER (no stand triggers rn, will fix later if needed)
             {
                 Log.WriteLine("----------\nChoose unit to Stand.");
-                selection = _inputManager.SelectActiveUnit(PromptType.Stand, 0);
+                selection = _inputManager.SelectActiveUnit(player1, PromptType.Stand, 0);
                 player1.Stand(selection);
             }
             else if (check == Trigger.Draw) //DRAW TRIGGER
@@ -933,7 +928,7 @@ namespace VanguardEngine
                 player1.RemoveTrigger();
                 Draw(player1, player2, 1);
                 Log.WriteLine("Choose unit to give 1000000000 power to.");
-                selection = _inputManager.SelectActiveUnit(PromptType.AddPower, 100000000 + power);
+                selection = _inputManager.SelectActiveUnit(player1, PromptType.AddPower, 100000000 + power);
                 player1.AddTempPower(selection, 100000000 + power, false);
                 player1.UpdateRecordedValues();
                 player2.UpdateRecordedValues();
@@ -1513,17 +1508,9 @@ namespace VanguardEngine
 
         public void ChooseMoveEnemyRearguard(Player player1, List<Card> cardsToSelect, List<int> availableCircles)
         {
-            bool swapped = false;
-            if (_inputManager._player1._playerID != player1._playerID)
-            {
-                _inputManager.SwapPlayers();
-                swapped = true;
-            }
             int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "to switch places.")[0];
-            int selection2 = _inputManager.SelectCircle(player1, availableCircles);
+            int selection2 = _inputManager.SelectCircle(player1, availableCircles, 1)[0];
             player1.MoveRearguardSpecific(selection, selection2);
-            if (swapped)
-                _inputManager.SwapPlayers();
         }
 
         public void Heal(Player player1)
@@ -1565,30 +1552,14 @@ namespace VanguardEngine
 
         public void RearrangeOnTop(Player player1, List<Card> cardsToRearrange)
         {
-            bool swapped = false;
-            if (_inputManager._player1._playerID != player1._playerID)
-            {
-                _inputManager.SwapPlayers();
-                swapped = true;
-            }
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
             player1.RearrangeOnTop(newOrder);
-            if (swapped)
-                _inputManager.SwapPlayers();
         }
 
         public void RearrangeOnBottom(Player player1, List<Card> cardsToRearrange)
         {
-            bool swapped = false;
-            if (_inputManager._player1._playerID != player1._playerID)
-            {
-                _inputManager.SwapPlayers();
-                swapped = true;
-            }
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
             player1.RearrangeOnBottom(newOrder);
-            if (swapped)
-                _inputManager.SwapPlayers();
         }
 
         public void ChooseBind(Player player1, List<Card> cards, int max, int min)
@@ -1606,7 +1577,7 @@ namespace VanguardEngine
 
         public void DisplayCards(Player player1, List<Card> cardsToDisplay)
         {
-            _inputManager.DisplayCards(cardsToDisplay);
+            _inputManager.DisplayCards(player1, cardsToDisplay);
         }
 
         public bool PlayerMainPhase(int playerID)

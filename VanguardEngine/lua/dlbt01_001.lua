@@ -50,7 +50,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.ChooseAddToHand(1)
+		obj.Search(1)
 		obj.Shuffle()
 	elseif n == 2 then
 		obj.Draw(1)

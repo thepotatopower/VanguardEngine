@@ -50,8 +50,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Store(obj.Search(2))
-		obj.Reveal(obj.Stored())
+		obj.Search(2)
 	elseif n == 2 then
 		obj.AddTempPower(3, 5000)
 	end

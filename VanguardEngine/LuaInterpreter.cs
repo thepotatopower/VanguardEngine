@@ -1162,7 +1162,7 @@ namespace VanguardEngine
                 else if (location == Location.PlayedOrdersThisTurn)
                     currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
             }
-            if (currentPool.Count == 0)
+            if (param.Locations.Count == 0)
             {
                 if (param.Others.Contains(Other.This))
                     currentPool.Add(_player1.GetCard(_card.tempID));

@@ -13,6 +13,7 @@ namespace VanguardEngine
         public int currentShield { get; set; }
         public int currentCritical { get; set; }
         public int currentSoul { get; set; }
+        public int currentGrade { get; set; }
         public int guardTarget { get; set; }
         public int circle { get; set; }
         public List<Card> cardList { get; set; }

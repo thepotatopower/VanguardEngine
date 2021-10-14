@@ -50,8 +50,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		obj.Store(obj.Search(1))
-		obj.Reveal(obj.Stored())
+		obj.Search(1)
 		obj.Shuffle()
 	elseif n == 2 then
 		obj.AddTempPower(2, 5000)

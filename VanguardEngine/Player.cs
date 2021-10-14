@@ -10,8 +10,9 @@ namespace VanguardEngine
         protected int _damage = 0;
         public int _startingTurn = -1;
         protected bool _guarding = false;
-        protected Dictionary<int, RecordedCardValue> _recordedCardValues = new Dictionary<int, RecordedCardValue>();
+        protected Dictionary<int, RecordedUnitValue> _recordedUnitValues = new Dictionary<int, RecordedUnitValue>();
         protected Dictionary<int, int> _recordedShieldValues = new Dictionary<int, int>();
+        protected Dictionary<int, RecordedCardValue> _recordedCardValues = new Dictionary<int, RecordedCardValue>();
         protected List<Card> _lastRidden = new List<Card>();
         //protected Dictionary<int, Tuple<int, string>> _cardRiddenBy = new Dictionary<int, Tuple<int, string>>();
         protected List<Card> _lastPlacedOnGC = new List<Card>();
@@ -118,8 +119,9 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnZoneSwapped;
         public event EventHandler<CardEventArgs> OnFaceUpChanged;
         public event EventHandler<CardEventArgs> OnUpRightChanged;
-        public event EventHandler<CardEventArgs> OnCardValueChanged;
+        public event EventHandler<CardEventArgs> OnUnitValueChanged;
         public event EventHandler<CardEventArgs> OnShieldValueChanged;
+        public event EventHandler<CardEventArgs> OnCardValueChanged;
         public event EventHandler<CardEventArgs> OnAttackEnds;
         public event EventHandler<CardEventArgs> OnReveal;
         public event EventHandler<CardEventArgs> OnSetPrison;
@@ -220,17 +222,17 @@ namespace VanguardEngine
             {
                 if (_field.GetUnit(i) != null)
                 {
-                    if (!_recordedCardValues.ContainsKey(i) || 
-                        CardValueChanged(_recordedCardValues[i], CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID)))
+                    if (!_recordedUnitValues.ContainsKey(i) || 
+                        UnitValueChanged(_recordedUnitValues[i], CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID)))
                     {
-                        if (!_recordedCardValues.ContainsKey(i))
-                            _recordedCardValues[i] = new RecordedCardValue(CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID));
+                        if (!_recordedUnitValues.ContainsKey(i))
+                            _recordedUnitValues[i] = new RecordedUnitValue(CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID));
                         CardEventArgs args = new CardEventArgs();
                         args.circle = i;
-                        args.currentPower = _recordedCardValues[i].currentPower;
-                        args.currentCritical = _recordedCardValues[i].currentCritical;
-                        if (OnCardValueChanged != null)
-                            OnCardValueChanged(this, args);
+                        args.currentPower = _recordedUnitValues[i].currentPower;
+                        args.currentCritical = _recordedUnitValues[i].currentCritical;
+                        if (OnUnitValueChanged != null)
+                            OnUnitValueChanged(this, args);
                     }
                 }
             }
@@ -249,6 +251,19 @@ namespace VanguardEngine
                         args.currentShield = _recordedShieldValues[GetCircle(attacked)];
                         OnShieldValueChanged(this, args);
                     }
+                }
+            }
+            foreach (Card card in PlayerBind.GetCards())
+            {
+                if (!_recordedCardValues.ContainsKey(card.tempID) || CardValueChanged(_recordedCardValues[card.tempID], Grade(card.tempID)))
+                {
+                    if (!_recordedCardValues.ContainsKey(card.tempID))
+                        _recordedCardValues[card.tempID] = new RecordedCardValue(Grade(card.tempID));
+                    CardEventArgs args = new CardEventArgs();
+                    args.i = card.tempID;
+                    args.currentGrade = _recordedCardValues[card.tempID].currentGrade;
+                    if (OnCardValueChanged != null)
+                        OnCardValueChanged(this, args);
                 }
             }
         }
@@ -1112,8 +1127,8 @@ namespace VanguardEngine
                 else
                     power += CalculatePowerOfUnit(_field.Booster);
             }
-            if (IsRearguard(card.tempID) && (card.originalOwner == _playerID && MyStates.HasState(PlayerState.RearguardPower10000))
-                || (card.originalOwner != _playerID && EnemyStates.HasState(PlayerState.RearguardPower10000)))
+            if (IsRearguard(card.tempID) && ((card.originalOwner == _playerID && MyStates.HasState(PlayerState.RearguardPower10000))
+                || (card.originalOwner != _playerID && EnemyStates.HasState(PlayerState.RearguardPower10000))))
                 power += 10000;
             return power;
         }
@@ -2779,13 +2794,14 @@ namespace VanguardEngine
 
         public void Search(List<int> cardsToSearch)
         {
+            List<int> list = new List<int>();
             foreach (int tempID in cardsToSearch)
             {
                 if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
                     PlayerHand.Add(_field.CardCatalog[tempID]);
-                List<int> list = new List<int>();
                 list.Add(tempID);
             }
+            Reveal(list);
         }
 
         public void Stand(List<int> cardsToStand)
@@ -3247,12 +3263,22 @@ namespace VanguardEngine
                 return -1;
         }
 
-        public bool CardValueChanged(RecordedCardValue previousValues, int currentPower, int currentCritical)
+        public bool UnitValueChanged(RecordedUnitValue previousValues, int currentPower, int currentCritical)
         {
             if (previousValues.currentPower != currentPower || previousValues.currentCritical != currentCritical)
             {
                 previousValues.currentPower = currentPower;
                 previousValues.currentCritical = currentCritical;
+                return true;
+            }
+            return false;
+        }
+
+        public bool CardValueChanged(RecordedCardValue previousValues, int currentGrade)
+        {
+            if (previousValues.currentGrade != currentGrade)
+            {
+                previousValues.currentGrade = currentGrade;
                 return true;
             }
             return false;
@@ -3396,15 +3422,25 @@ namespace VanguardEngine
         public const int Left = 4;
     }
 
-    public class RecordedCardValue
+    public class RecordedUnitValue
     {
         public int currentPower = 0;
         public int currentCritical = 0;
 
-        public RecordedCardValue(int power, int critical)
+        public RecordedUnitValue(int power, int critical)
         {
             currentPower = power;
             currentCritical = critical;
+        }
+    }
+
+    public class RecordedCardValue
+    {
+        public int currentGrade = 0;
+
+        public RecordedCardValue(int grade)
+        {
+            currentGrade = grade;
         }
     }
 }

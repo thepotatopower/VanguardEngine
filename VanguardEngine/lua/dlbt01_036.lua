@@ -52,7 +52,7 @@ function Activate(n)
 	if n == 1 then
 		obj.LookAtTopOfDeck(7)
 		obj.DisplayCards(2)
-		obj.ChooseAddToHand(1)
+		obj.Search(1)
 		obj.SendToBottom(2)
 	elseif n == 2 then
 		if obj.IsPlayerTurn() and not obj.Exists(3) then

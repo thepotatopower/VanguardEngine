@@ -39,6 +39,7 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.LookAtTopOfDeck(1)
+		obj.DisplayCards(1)
 		if not (obj.CanSuperiorCallToSpecificCircle(1, FL.OpenCircle) and obj.SelectOption("Call to open RC", "Add to hand and discard 1") == 1 and obj.SuperiorCallToSpecificCircle(1, FL.OpenCircle)) then
 			obj.AddToHand(1)
 			obj.Discard(1)
