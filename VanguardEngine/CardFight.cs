@@ -132,10 +132,10 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             _actingPlayer = player1;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
             //player1.SoulCharge(10);
@@ -322,7 +322,7 @@ namespace VanguardEngine
                 {
                     if (player1.CanRideFromRideDeck())
                     {
-                        if (player1.MyStates.HasState(PlayerState.SoulBlastForRideDeck) && _inputManager.YesNo(player1, "Soul Blast 1 instead of discarding card?"))
+                        if (player1.MyStates.HasState(PlayerState.SoulBlastForRideDeck) && player1.GetSoul().Count > 0 && _inputManager.YesNo(player1, "Soul Blast 1 instead of discarding card?"))
                             SoulBlast(player1, player2, player1.GetSoul(), 1);
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
@@ -1571,7 +1571,7 @@ namespace VanguardEngine
 
         public void Bind(Player player, List<int> tempIDs)
         {
-            _player1.Bind(tempIDs);
+            player.Bind(tempIDs);
             AddAbilityTiming(Activation.OnBind, player._playerID, player.ConvertToCards(tempIDs));
         }
 

@@ -373,6 +373,11 @@ namespace VanguardEngine
             return PlayerOrder.GetCards();
         }
 
+        public List<Card> GetOrderArea()
+        {
+            return PlayerOrderArea.GetCards();
+        }
+
         public List<Card> GetBind()
         {
             return PlayerBind.GetCards();
@@ -421,6 +426,11 @@ namespace VanguardEngine
         public List<Card> GetDeck()
         {
             return PlayerDeck.GetCards();
+        }
+
+        public List<Card> GetRideDeck()
+        {
+            return PlayerRideDeck.GetCards();
         }
 
         public List<Card> GetLastRidden()
@@ -1469,10 +1479,10 @@ namespace VanguardEngine
                     }
                 }
             }
-            if (_field.UnitsHit.Count > 0)
-                return true;
             if (_field.UnitsHit.Exists(card => Vanguard().tempID == card.tempID))
                 MyStates.AddUntilEndOfTurnState(PlayerState.PlayerVanguardHitThisTurn);
+            if (_field.UnitsHit.Count > 0)
+                return true;
             return false;
         }
 
@@ -2440,7 +2450,7 @@ namespace VanguardEngine
                     MyStates.DecrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, 1);
                 else
                     _orderPlayed = true;
-                if (card.orderType == OrderType.Normal || card.orderType == OrderType.Blitz)
+                if (!OrderType.IsSetOrder(card.orderType))
                 {
                     PlayerOrderArea.Add(card);
                     return 0;

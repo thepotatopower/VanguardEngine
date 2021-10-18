@@ -1109,6 +1109,8 @@ namespace VanguardEngine
                     currentPool.AddRange(_lastCalled);
                 else if (location == Location.PlayerOrder)
                     currentPool.AddRange(_player1.GetPlayerOrder());
+                else if (location == Location.OrderArea)
+                    currentPool.AddRange(_player1.GetOrderArea());
                 else if (location == Location.PlayerUnits)
                 {
                     currentPool.AddRange(_player1.GetRearguards(C.Player));
@@ -1174,7 +1176,7 @@ namespace VanguardEngine
                 {
                     foreach (int FL in param.FLs)
                     {
-                        if (_player1.GetUnitAt(_player1.Convert(FL), true) != null && _player1.GetUnitAt(_player1.Convert(FL), true).tempID == card.tempID)
+                        if (_player1.GetUnitAt(FL, true) != null && _player1.GetUnitAt(FL, true).tempID == card.tempID)
                         {
                             newPool.Add(card);
                             break;
@@ -1222,7 +1224,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (UnitType.IsNormal(card.unitType))
+                            if (card.unitType >= 0)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -1420,7 +1422,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (card.tempID == _player1.Booster().tempID)
+                            if (_player1.Booster() != null && card.tempID == _player1.Booster().tempID)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -2103,7 +2105,7 @@ namespace VanguardEngine
 
         public bool IsBoosted()
         {
-            if (_player1.Booster() != null && _player1.GetAttacker().tempID == _card.tempID)
+            if (_player1.Booster() != null && _player1.GetAttacker() != null && _player1.GetAttacker().tempID == _card.tempID)
                 return true;
             return false;
         }

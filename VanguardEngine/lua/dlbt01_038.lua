@@ -54,7 +54,7 @@ end
 
 function Activate(n)
 	if n == 1 then
-		if obj.Exists(4) then
+		if obj.IsPlayerTurn() and obj.Exists(4) then
 			obj.SetAbilityPower(5, 5000)
 		end
 	elseif n == 2 then
