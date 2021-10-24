@@ -18,7 +18,7 @@ end
 
 function ActivationRequirement(n)
 	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.CB, 1
+		return a.OnOrder, p.HasPrompt
 	end
 end
 

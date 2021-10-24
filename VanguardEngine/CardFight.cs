@@ -38,8 +38,9 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnAbilityActivated;
         public EventHandler<CardEventArgs> OnFree;
         public EventHandler<CardEventArgs> OnAlchemagic;
+        int _clientNumber = 0;
 
-        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath)
+        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, int clientNumber)
         {
             if (File.Exists("enginelog.txt"))
             {
@@ -48,6 +49,7 @@ namespace VanguardEngine
                     writer.Write(string.Empty);
                 }
             }
+            _clientNumber = clientNumber;
             List<Card> deck1;
             List<Card> deck2;
             Field field = new Field();
@@ -91,8 +93,8 @@ namespace VanguardEngine
             string input;
             while (RPS1 == RPS2)
             {
-                RPS1 = _inputManager.RPS();
-                RPS2 = _inputManager.RPS();
+                RPS1 = _inputManager.RPS(_player1);
+                RPS2 = _inputManager.RPS(_player2);
                 if (RPS1 < 0 || RPS1 > 2)
                     RPS1 = 0;
                 if (RPS2 < 0 || RPS2 > 2)
@@ -388,7 +390,7 @@ namespace VanguardEngine
                 canSelect.Clear();
                 _inputManager._abilities.Clear();
                 _inputManager._abilities.AddRange(GetACTAbilities(player1));
-                if (!player1.OrderPlayed())
+                if (player1.CanPlayOrder())
                     _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
                 selection = _inputManager.SelectMainPhaseAction(player1);
                 if (selection == 1)
@@ -1704,6 +1706,8 @@ namespace VanguardEngine
             } while (actionPerformed > 0);
             ActivateContAbilities(turnPlayer, nonTurnPlayer);
             AllAbilitiesResolved();
+            turnPlayer.UpdateRecordedValues();
+            nonTurnPlayer.UpdateRecordedValues();
         }
 
         public int ResolveRuleActions()

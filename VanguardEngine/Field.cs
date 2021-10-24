@@ -852,16 +852,8 @@ namespace VanguardEngine
                 _untilEndOfTurnValues[state] += value;
             else
                 _untilEndOfTurnValues[state] = value;
-        }
-
-        public void DecrementUntilEndOfTurnValue(int state, int value)
-        {
-            if (_untilEndOfTurnValues.ContainsKey(state))
-            {
-                _untilEndOfTurnValues[state] -= value;
-                if (_untilEndOfTurnValues[state] < 0)
-                    _untilEndOfTurnValues[state] = 0;
-            }
+            if (_untilEndOfTurnValues[state] < 0)
+                _untilEndOfTurnValues[state] = 0;
         }
 
         public void AddUntilEndOfNextTurnState(int state)

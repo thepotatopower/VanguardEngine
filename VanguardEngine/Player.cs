@@ -2447,7 +2447,7 @@ namespace VanguardEngine
                 _playedOrdersThisTurn.Add(card);
                 _lastOrderPlayed = card;
                 if (_orderPlayed)
-                    MyStates.DecrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, 1);
+                    MyStates.IncrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, -1);
                 else
                     _orderPlayed = true;
                 if (!OrderType.IsSetOrder(card.orderType))

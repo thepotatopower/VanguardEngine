@@ -113,8 +113,9 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int RPS()
+        public virtual int RPS(Player actingPlayer)
         {
+            _actingPlayer = actingPlayer;
             RPS_Input();
             return int_input;
         }

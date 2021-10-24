@@ -10,9 +10,9 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerRC, q.Count, 2, q.Min, 1
+		return q.Location, l.PlayerRC, q.Count, 2, q.Min, 0
 	elseif n == 2 then
-		return q.Location, l.PlayerHand, q.Count, 2, q.Min, 1
+		return q.Location, l.PlayerHand, q.Count, 2, q.Min, 0
 	end
 end
 
@@ -20,7 +20,7 @@ function ActivationRequirement(n)
 	if n == 1 then
 		return a.OnAttack, p.HasPrompt, p.SB, 1
 	elseif n == 2 then
-		return a.OnBattleEnds, p.HasPrompt
+		return a.OnBattleEnds, p.HasPrompt, p.IsMandatory
 	end
 end
 
@@ -30,7 +30,7 @@ function CheckCondition(n)
 			return true
 		end
 	elseif n == 2 then
-		if obj.IsVanguard() and obj.PersonaRode() and obj.Exists(2) then
+		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.PersonaRode() and obj.Exists(2) then
 			return true
 		end
 	end
