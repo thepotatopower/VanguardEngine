@@ -51,14 +51,18 @@ namespace VanguardEngine
         protected PseudoZone _player2Prisoners;
         protected Zone _removed;
         protected List<Card> _unitsHit = new List<Card>();
-        protected int[] _shuffleKey;
+        //protected int[] _shuffleKey;
+        protected Queue<int> _seedsToBeRead = new Queue<int>();
+        protected int _seedToBeSent = -1;
         protected int _turn = 1;
         protected CardStates _cardStates = new CardStates();
         protected PlayerStates _player1States = new PlayerStates();
         protected PlayerStates _player2States = new PlayerStates();
         protected Orientation _orientation = new Orientation();
+        protected int _clientNumber = 0;
         public event EventHandler<CardEventArgs> OnZoneChanged;
         public event EventHandler<CardEventArgs> OnZoneSwapped;
+        public event EventHandler<CardEventArgs> OnShuffle;
 
         public Deck Player1Deck
         {
@@ -82,10 +86,21 @@ namespace VanguardEngine
             get => _cardLocations;
         }
 
-        public int[] ShuffleKey
+        //public int[] ShuffleKey
+        //{
+        //    get => _shuffleKey;
+        //    set => _shuffleKey = value;
+        //}
+
+        public Queue<int> SeedsToBeRead
         {
-            get => _shuffleKey;
-            set => _shuffleKey = value;
+            get => _seedsToBeRead;
+        }
+
+        public int SeedToBeSent
+        {
+            get => _seedToBeSent;
+            set => _seedToBeSent = value;
         }
         public Zone Player1Hand
         {
@@ -368,10 +383,11 @@ namespace VanguardEngine
             _turn++;
         }
 
-        public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens)
+        public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens, int clientNumber)
         {
             List<Card> cards = new List<Card>();
             List<Card> cards2 = new List<Card>();
+            _clientNumber = clientNumber;
             _player1Hand = new Hand(this);
             _player2Hand = new Hand(this);
             _player1Deck = new Deck(this);
@@ -485,8 +501,6 @@ namespace VanguardEngine
             }
             _cardCatalog[_circles[FL.PlayerVanguard].Index(0).tempID] = _circles[FL.PlayerVanguard].Index(0);
             _cardCatalog[_circles[FL.EnemyVanguard].Index(0).tempID] = _circles[FL.EnemyVanguard].Index(0);
-            _player1Deck.Shuffle();
-            _player2Deck.Shuffle();
         }
 
         public void ActivateEvent(CardEventArgs args)
@@ -501,17 +515,6 @@ namespace VanguardEngine
         //{
         //    int[] key = FisherYates.Shuffle(list);
         //    _player2Player.GiveShuffleKey(key);
-        //}
-
-        //public void readShuffleKey(List<Card> list)
-        //{
-        //    Card temp;
-        //    for (int n = list.Count - 1; n > 0; --n)
-        //    {
-        //        temp = list[n];
-        //        list[n] = list[_shuffleKey[n]];
-        //        list[_shuffleKey[n]] = temp;
-        //    }
         //}
 
         public bool GetPersonaRide(int playerID)
@@ -597,6 +600,43 @@ namespace VanguardEngine
                     _player2Drop.Add(rc.OverloadedUnits[0]);
             }
             return retired;
+        }
+
+        public void Shuffle(int playerID)
+        {
+            Deck deck;
+            if (playerID == 1)
+                deck = Player1Deck;
+            else
+                deck = Player2Deck;
+            if (_clientNumber != 0)
+            {
+                if (playerID == _clientNumber)
+                {
+                    int seed = FisherYates.Shuffle(deck.GetCards());
+                    deck.readSeed(seed);
+                    _seedToBeSent = seed;
+                    if (OnShuffle != null)
+                    {
+                        CardEventArgs args = new CardEventArgs();
+                        args.i = seed;
+                        args.playerID = playerID;
+                        OnShuffle(this, args);
+                    }
+                }
+                else
+                {
+                    Log.WriteLine("waiting for seed");
+                    while (_seedsToBeRead.Count == 0) ;
+                    Log.WriteLine("reading seed");
+                    deck.readSeed(_seedsToBeRead.Dequeue());
+                    Log.WriteLine("seed read");
+                }
+            }
+            else
+            {
+                deck.readSeed(FisherYates.Shuffle(deck.GetCards()));
+            }
         }
 
         public void RemoveCard(Card card)
@@ -1296,10 +1336,22 @@ namespace VanguardEngine
             return null;
         }
 
-        public void Shuffle()
+        public void readSeed(int seed)
         {
-            FisherYates.Shuffle(_cards);
+            //Card temp;
+            //for (int n = _cards.Count - 1; n > 0; --n)
+            //{
+            //    temp = _cards[n];
+            //    _cards[n] = _cards[_shuffleKey[n]];
+            //    _cards[_shuffleKey[n]] = temp;
+            //}
+            FisherYates.Shuffle(_cards, seed);
         }
+
+        //public void Shuffle()
+        //{
+        //    FisherYates.Shuffle(_cards);
+        //}
 
         public int GetLocation()
         {
@@ -1610,11 +1662,20 @@ namespace VanguardEngine
 
     static public class FisherYates
     {
-        static Random r = new Random();
+        static Random rand = new Random();
         //  Based on Java code from wikipedia:
         //  http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
-        static public int[] Shuffle(List<Card> list)
+        static public int Shuffle(List<Card> list, int seed)
         {
+            Random r;
+            int newSeed = -1;
+            if (seed == -1)
+            {
+                newSeed = rand.Next();
+                r = new Random(newSeed);
+            }
+            else
+                r = new Random(seed);
             Card temp;
             int k;
             int[] key = new int[list.Count];
@@ -1626,7 +1687,12 @@ namespace VanguardEngine
                 list[n] = list[k];
                 list[k] = temp;
             }
-            return key;
+            return newSeed;
+        }
+
+        static public int Shuffle(List<Card> list)
+        {
+            return Shuffle(list, -1);
         }
     }
 

@@ -128,6 +128,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnImprison;
         public event EventHandler<CardEventArgs> OnAbilityTiming;
         public event EventHandler<CardEventArgs> OnMarkedForRetire;
+        public event EventHandler<CardEventArgs> OnShuffle;
 
         public void Initialize(int playerID, Field field)
         {
@@ -214,6 +215,7 @@ namespace VanguardEngine
             _field.OnZoneSwapped += _fieldOnZoneSwapped;
             _field.Orientation.FaceUpChanged += _fieldOnFaceUpChanged;
             _field.Orientation.UpRightChanged += _fieldOnUpRightChanged;
+            _field.OnShuffle += _fieldOnShuffle;
         }
 
         public void UpdateRecordedValues()
@@ -265,6 +267,14 @@ namespace VanguardEngine
                     if (OnCardValueChanged != null)
                         OnCardValueChanged(this, args);
                 }
+            }
+        }
+
+        void _fieldOnShuffle(object sender, CardEventArgs e)
+        {
+            if (OnShuffle != null)
+            {
+                OnShuffle(this, e);
             }
         }
 
@@ -622,7 +632,7 @@ namespace VanguardEngine
                 ReturnCardFromHandToDeck(tempID);
             }
             Draw(selection.Count);
-            PlayerDeck.Shuffle();
+            _field.Shuffle(_playerID);
         }
 
         public void ReturnCardFromHandToDeck(int selection)
@@ -656,9 +666,34 @@ namespace VanguardEngine
             }
         }
 
+        //public int[] GetShuffleKey()
+        //{
+        //    return _field.ShuffleKey;
+        //}
+
+        //public void ReadShuffleKey(int[] key)
+        //{
+        //    _field.ShuffleKey = key;
+        //}
+
+        public int GetSeedToBeSent()
+        {
+            return _field.SeedToBeSent;
+        }
+
+        public Queue<int> GetSeedsToBeRead()
+        {
+            return _field.SeedsToBeRead;
+        }
+
+        public void ReadSeed(int seed)
+        {
+            _field.SeedsToBeRead.Enqueue(seed);
+        }
+
         public void Shuffle()
         {
-            PlayerDeck.Shuffle();
+            _field.Shuffle(_playerID);
         }
 
         public void StandAll()

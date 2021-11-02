@@ -42,13 +42,13 @@ namespace VanguardEngine
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, int clientNumber)
         {
-            if (File.Exists("enginelog.txt"))
-            {
-                using (StreamWriter writer = new StreamWriter("enginelog.txt", false))
-                {
-                    writer.Write(string.Empty);
-                }
-            }
+            //if (File.Exists("enginelog.txt"))
+            //{
+            //    using (StreamWriter writer = new StreamWriter("enginelog.txt", false))
+            //    {
+            //        writer.Write(string.Empty);
+            //    }
+            //}
             _clientNumber = clientNumber;
             List<Card> deck1;
             List<Card> deck2;
@@ -67,7 +67,7 @@ namespace VanguardEngine
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
             luaInterpreter = new LuaInterpreter(luaPath, this);
-            field.Initialize(deck1, deck2, tokens);
+            field.Initialize(deck1, deck2, tokens, clientNumber);
             _player1.Initialize(1, field);
             _player2.Initialize(2, field);
             for (int i = 0; i < deck1.Count; i++)
@@ -91,6 +91,8 @@ namespace VanguardEngine
             int RPS1 = 0, RPS2 = 0;
             int first = 0;
             string input;
+            _player1.Shuffle();
+            _player2.Shuffle();
             while (RPS1 == RPS2)
             {
                 RPS1 = _inputManager.RPS(_player1);
@@ -1918,10 +1920,10 @@ namespace VanguardEngine
         public static void WriteLine(string output)
         {
             Console.WriteLine(output);
-            using (StreamWriter writer = new StreamWriter("enginelog.txt", true))
-            {
-                writer.WriteLine(output);
-            }
+            //using (StreamWriter writer = new StreamWriter("enginelog.txt", true))
+            //{
+            //    writer.WriteLine(output);
+            //}
         }
     }
 }

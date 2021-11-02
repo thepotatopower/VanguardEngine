@@ -19,6 +19,7 @@ namespace VanguardEngine
         public List<Card> cardList { get; set; }
         public int playerID { get; set; }
         public List<int> intList { get; set; }
+        public int[] intArray { get; set; }
         public bool faceup { get; set; }
         public bool upright { get; set; }
         public int i { get; set; }
