@@ -2439,6 +2439,11 @@ namespace VanguardEngine
             }
         }
 
+        public void AddToDrop(int tempID)
+        {
+            PlayerDrop.Add(_field.CardCatalog[tempID]);
+        }
+
         public void AddToDamageZone(List<int> tempIDs)
         {
             Card card;
@@ -3007,6 +3012,11 @@ namespace VanguardEngine
             {
                 if (CardStates.HasState(card.tempID, CardState.SendToBottomAtEndOfBattle))
                     sendToDeck.Add(card.tempID);
+                if (CardStates.HasState(card.tempID, CardState.DiscardAllOriginalDressAtEndOfBattle))
+                {
+                    foreach (Card originalDress in GetOriginalDress(card.tempID))
+                        PlayerDrop.Add(originalDress);
+                }
             }
             SendToDeck(sendToDeck, true);
             MyStates.EndAttack();
@@ -3427,6 +3437,14 @@ namespace VanguardEngine
         public List<Card> GetPlayedOrdersThisTurn()
         {
             return new List<Card>(_playedOrdersThisTurn);
+        }
+
+        public List<Card> GetOriginalDress(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (GetAllUnitsOnField().Contains(card))
+                return _field.GetSoul(GetCircle(card));
+            return new List<Card>();
         }
 
         public List<int> ConvertToTempIDs(List<Card> cards)

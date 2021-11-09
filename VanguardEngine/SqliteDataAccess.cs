@@ -17,7 +17,22 @@ namespace VanguardEngine
             using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
             {
                 var output = cnn.Query<Card>("select * from data WHERE id='" + id + "'", new DynamicParameters()).ToList();
-                return output[0];
+                Card card = null;
+                if (output.Count > 0)
+                    card = output[0];
+                output = cnn.Query<Card>("select * from text WHERE id='" + id + "'", new DynamicParameters()).ToList();
+                if (output.Count > 0 && card != null)
+                {
+                    card.name = output[0].name;
+                    card.effect = output[0].text;
+                    card.str1 = output[0].str1;
+                    card.str2 = output[0].str2;
+                    card.str3 = output[0].str3;
+                    card.str4 = output[0].str4;
+                    card.str5 = output[0].str5;
+                    card.str6 = output[0].str6;
+                }
+                return card;
             }
         }
 

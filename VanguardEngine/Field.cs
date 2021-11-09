@@ -1186,6 +1186,7 @@ namespace VanguardEngine
         public const int CannotBeAttackedByRearguard = 26;
         public const int GuardWithTwoOnAttack = 27;
         public const int Paralyze = 28;
+        public const int DiscardAllOriginalDressAtEndOfBattle = 29;
     }
 
     public class Zone

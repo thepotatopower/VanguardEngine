@@ -63,6 +63,7 @@ namespace VanguardEngine
             _player2.OnAbilityTiming += OnAbilityTiming;
             _player1.OnMarkedForRetire += MarkedForRetire;
             _player2.OnMarkedForRetire += MarkedForRetire;
+            _player1.OnZoneChanged += UpdateTracking;
             _abilities = new Abilities();
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
@@ -73,14 +74,21 @@ namespace VanguardEngine
             for (int i = 0; i < deck1.Count; i++)
             {
                 _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2, true));
-                _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player2, _player1, false));
+                //_abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player2, _player1, false));
             }
             for (int i = 0; i < deck2.Count; i++)
             {
                 _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player2, _player1, true));
-                _abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player1, _player2, false));
+                //_abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player1, _player2, false));
             }
             return true;
+        }
+
+        public void AddAbility(Ability ability)
+        {
+            List<Ability> abilities = new List<Ability>();
+            abilities.Add(ability);
+            _abilities.AddAbilities(ability.GetID(), abilities);
         }
 
         public void StartFight()
@@ -136,10 +144,10 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             _actingPlayer = player1;
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player2, player1, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
+            TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
             //player1.SoulCharge(10);
@@ -858,6 +866,7 @@ namespace VanguardEngine
             }
             AddAbilityTiming(Activation.OnBattleEnds, 0, null);
             PerformCheckTiming(player1, player2);
+            _abilities.EndOfBattle();
             if (player1 == _player1)
                 Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
             else
@@ -1133,6 +1142,13 @@ namespace VanguardEngine
             abilities.AddRange(_abilities.GetAbilities(Activation.OnACT, player.GetSoul(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.OnACT, player.GetDrop(), 0));
             abilities.AddRange(_abilities.GetAbilities(Activation.OnACT, player.GetOrderZone(), 0));
+            //List<Ability> canActivate = new List<Ability>();
+            //foreach (Ability ability in abilities)
+            //{
+            //    if (ability.CanPayCost())
+            //        canActivate.Add(ability);
+            //}
+            //return canActivate;
             return abilities;
         }
 
@@ -1160,7 +1176,7 @@ namespace VanguardEngine
             ability.Activate();
             player1.UpdateRecordedValues();
         }
-
+        
         public void CallFromPrison(Player player1, Player player2)
         {
             List<Card> cards = new List<Card>();
@@ -1204,14 +1220,14 @@ namespace VanguardEngine
             List<Tuple<Ability, int>> canActivate = new List<Tuple<Ability, int>>();
             foreach (Tuple<Ability, int> ability in abilities)
             {
-                if (ability.Item1.CanActivate())
+                if (ability.Item1.CanActivate() && ability.Item1.CanPayCost())
                     canActivate.Add(ability);
             }
             if (canActivate.Count == 1 && canActivate[0].Item1.isMandatory)
                 selection = 0;
             else
                 selection = _inputManager.SelectAbility(player, canActivate);
-            if (selection == abilities.Count)
+            if (selection == canActivate.Count)
             {
                 foreach (Tuple<Ability, int> ability in canActivate)
                     _skippedAbilities.Add(ability);
@@ -1446,6 +1462,11 @@ namespace VanguardEngine
             player1.Retire(toRetire);
             if (player1.EnemyRetired())
                 AddAbilityTiming(Activation.OnEnemyRetired, 0, null);
+        }
+
+        public void AddToDrop(int tempID)
+        {
+            _player1.AddToDrop(tempID);
         }
 
         public bool ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
@@ -1730,6 +1751,13 @@ namespace VanguardEngine
                 throw new ArgumentException("no vanguard");
 
             return ruleActionPerformed;
+        }
+
+        public void UpdateTracking(object sender, CardEventArgs e)
+        {
+            if (!(e.currentLocation.Item1 == Location.GC || e.currentLocation.Item1 == Location.RC || e.currentLocation.Item1 == Location.VC)
+                && !(e.previousLocation.Item1 == Location.GC || e.currentLocation.Item1 == Location.RC || e.currentLocation.Item1 == Location.VC))
+                _abilities.OnZoneChange(e.card.tempID);
         }
     }
 

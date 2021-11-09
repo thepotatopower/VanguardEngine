@@ -26,9 +26,16 @@ namespace VanguardEngine
         public int no = -1;
         public int personaRide = -1;
         public string effect = "";
+        public string text = "";
         public bool alchemagic = false;
         public int originalOwner = 0;
         public bool fromRideDeck = false;
+        public string str1 = "";
+        public string str2 = "";
+        public string str3 = "";
+        public string str4 = "";
+        public string str5 = "";
+        public string str6 = "";
 
         public Card Clone()
         {
@@ -168,5 +175,10 @@ namespace VanguardEngine
         public const int P = 0;
         public const int V = 1;
         public const int D = 2;
+    }
+
+    public class Names
+    {
+        public const string Eugene = "Heavy Artillery of Dust Storm, Eugene";
     }
 }
