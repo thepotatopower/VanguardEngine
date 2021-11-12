@@ -314,6 +314,13 @@ namespace VanguardEngine
             UpdateRecordedValues();
         }
 
+        public int GetFieldID(int tempID)
+        {
+            if (_field.CardLocations.ContainsKey(tempID))
+                return _field.CardLocations[tempID].Item2;
+            return -1;
+        }
+
         public int Turn
         {
             get => _field.Turn;
@@ -1571,7 +1578,7 @@ namespace VanguardEngine
             Card ToBeCalled = _field.CardCatalog[tempID];
             if (EnemyPrisoners.Contains(_field.CardCatalog[tempID]))
                 fromPrison = true;
-            if (_field.CardLocations[tempID] == PlayerHand)
+            if (_field.CardLocations[tempID].Item1 == PlayerHand)
                 fromHand = true;
             if (ToBeCalled.orderType >= 0)
             {
@@ -2895,7 +2902,7 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = card;
-                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[card.tempID].GetLocation(), -1);
+                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[card.tempID].Item1.GetLocation(), -1);
                     OnReveal(this, args);
                 }
             }
@@ -2911,7 +2918,7 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = PlayerDeck.Index(i);
-                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[PlayerDeck.Index(i).tempID].GetLocation(), -1);
+                    args.currentLocation = new Tuple<int, int>(_field.CardLocations[PlayerDeck.Index(i).tempID].Item1.GetLocation(), -1);
                     OnReveal(this, args);
                 }
             }
@@ -3313,7 +3320,7 @@ namespace VanguardEngine
         public int GetLocation(Card card)
         {
             if (_field.CardLocations[card.tempID] != null)
-                return _field.CardLocations[card.tempID].GetLocation();
+                return _field.CardLocations[card.tempID].Item1.GetLocation();
             else
                 return -1;
         }
@@ -3474,6 +3481,15 @@ namespace VanguardEngine
         public FieldSnapShot GenerateSnapShot()
         {
             return new FieldSnapShot(_field);
+        }
+
+        public bool DamageThresholdReached()
+        {
+            if (MyStates.HasState(PlayerState.DamageNeededToLose) || PlayerDamage.Count() >= MyStates.GetValue(PlayerState.DamageNeededToLose))
+                return true;
+            if (PlayerDamage.Count() >= 6)
+                return true;
+            return false;
         }
     }
 

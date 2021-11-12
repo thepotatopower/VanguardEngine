@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.IO;
+using System.Configuration;
+using System.Collections.Specialized;
+
 
 namespace VanguardEngine
 {
@@ -84,6 +87,19 @@ namespace VanguardEngine
             return true;
         }
 
+        public void LoadConfigFile(string filename)
+        {
+            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.File = filename;
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+            Console.WriteLine(ConfigurationManager.AppSettings.AllKeys.Length);
+            foreach (string s in ConfigurationManager.AppSettings.AllKeys)
+            {
+                Console.WriteLine("key: " + s + " value: " + ConfigurationManager.AppSettings.Get(s));
+            }
+        }
+
         public void AddAbility(Ability ability)
         {
             List<Ability> abilities = new List<Ability>();
@@ -150,8 +166,8 @@ namespace VanguardEngine
             TriggerCheck(player2, player1, false);
             //TriggerCheck(player1, player2, false);
             //TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(10);
@@ -1645,6 +1661,14 @@ namespace VanguardEngine
 
         public List<Card> GetList(int abilityTiming, int playerID, int timingCount)
         {
+            List<Card> cards = new List<Card>();
+            foreach (Tuple<Card, int> tuple in _abilityTimings.GetList(abilityTiming, playerID, timingCount))
+                cards.Add(tuple.Item1);
+            return cards;
+        }
+
+        public List<Tuple<Card, int>> GetListWithFieldIDs(int abilityTiming, int playerID, int timingCount)
+        {
             return _abilityTimings.GetList(abilityTiming, playerID, timingCount);
         }
 
@@ -1706,7 +1730,10 @@ namespace VanguardEngine
 
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards)
         {
-            _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), cards, false);
+            List<Tuple<Card, int>> tuples = new List<Tuple<Card, int>>();
+            foreach (Card card in cards)
+                tuples.Add(new Tuple<Card, int>(card, _player1.GetFieldID(card.tempID)));
+            _abilityTimings.AddAbilityTiming(activation, playerID, _player1.GenerateSnapShot(), tuples, false);
         }
 
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards, bool append)
@@ -1742,9 +1769,8 @@ namespace VanguardEngine
             //ruleActionPerformed += _player1.RetireGC();
             //ruleActionPerformed += _player2.RetireGC();
             //rule action for riding from soul onto empty VC
-
-            if (_player1.GetDamageZone().Count >= 6 || _player2.GetDamageZone().Count >= 6)
-                throw new ArgumentException("damage zone reached 6");
+            if (_player1.DamageThresholdReached() || _player2.DamageThresholdReached())
+                throw new ArgumentException("damage threshold reached");
             if (_player1.GetDeck().Count == 0 || _player2.GetDeck().Count == 0)
                 throw new ArgumentException("deck out");
             if (_player1.Vanguard() == null || _player2.Vanguard() == null)
@@ -1784,7 +1810,7 @@ namespace VanguardEngine
         TimingCountLists _player1TimingCountLists = new TimingCountLists();
         TimingCountLists _player2TimingCountLists = new TimingCountLists();
 
-        public void AddAbilityTiming(int activation, int playerID, FieldSnapShot snapShot, List<Card> cards, bool append)
+        public void AddAbilityTiming(int activation, int playerID, FieldSnapShot snapShot, List<Tuple<Card, int>> cards, bool append)
         {
             if (!_abilityTimings.ContainsKey(activation))
                 _abilityTimings[activation] = new AbilityTiming(activation);
@@ -1836,7 +1862,7 @@ namespace VanguardEngine
             return 0;
         }
 
-        public List<Card> GetList(int abilityTiming, int playerID, int timingCount)
+        public List<Tuple<Card, int>> GetList(int abilityTiming, int playerID, int timingCount)
         {
             if (playerID == 1)
                 return _player1TimingCountLists.GetList(abilityTiming, timingCount);
@@ -1903,18 +1929,18 @@ namespace VanguardEngine
 
     public class TimingCountLists
     {
-        Dictionary<int, Dictionary<int, List<Card>>> timingCountLists = new Dictionary<int, Dictionary<int, List<Card>>>();
+        Dictionary<int, Dictionary<int, List<Tuple<Card, int>>>> timingCountLists = new Dictionary<int, Dictionary<int, List<Tuple<Card, int>>>>();
 
-        public void AddList(int abilityTiming, int timingCount, List<Card> cards)
+        public void AddList(int abilityTiming, int timingCount, List<Tuple<Card, int>> cards)
         {
             if (!timingCountLists.ContainsKey(abilityTiming))
-                timingCountLists[abilityTiming] = new Dictionary<int, List<Card>>();
+                timingCountLists[abilityTiming] = new Dictionary<int, List<Tuple<Card, int>>>();
             if (!timingCountLists[abilityTiming].ContainsKey(timingCount))
-                timingCountLists[abilityTiming][timingCount] = new List<Card>();
+                timingCountLists[abilityTiming][timingCount] = new List<Tuple<Card, int>>();
             timingCountLists[abilityTiming][timingCount].AddRange(cards);
         }
 
-        public List<Card> GetList(int abilityTiming, int timingCount)
+        public List<Tuple<Card, int>> GetList(int abilityTiming, int timingCount)
         {
             if (timingCountLists.ContainsKey(abilityTiming) && timingCountLists[abilityTiming].Keys.Count > 0)
             {
@@ -1923,7 +1949,7 @@ namespace VanguardEngine
                 if (timingCountLists[abilityTiming].ContainsKey(timingCount))
                     return timingCountLists[abilityTiming][timingCount];
             }
-            return new List<Card>();
+            return new List<Tuple<Card, int>>();
         }
 
         public void Reset()

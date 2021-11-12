@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using MoonSharp.Interpreter;
 using System.IO;
 using MoonSharp.Interpreter.Interop.LuaStateInterop;
+using System.Configuration;
+using System.Collections.Specialized;
 
 namespace VanguardEngine
 {
@@ -411,11 +413,6 @@ namespace VanguardEngine
                 _locations.Add(location);
         }
 
-        public void SetActivation(string function)
-        {
-            _activationFunction = function;
-        }
-
         public void SetTriggerCondition(string function)
         {
             _triggerCondition = function;
@@ -461,6 +458,11 @@ namespace VanguardEngine
         public void SetTimingCount(int timingCount)
         {
             _timingCount = timingCount;
+        }
+
+        public void SetActivation(int activation)
+        {
+            _currentActivation = activation;
         }
 
         public int GetCurrentTimingCount()
@@ -4059,6 +4061,16 @@ namespace VanguardEngine
             }
         }
 
+        public void AddPlayerValue(int state, int value, int duration)
+        {
+            if (duration == Property.Continuous)
+                _player1.MyStates.AddContinuousValue(state, value);
+            else if (duration == Property.UntilEndOfBattle)
+                _player1.MyStates.AddUntilEndOfBattleValue(state, value);
+            else if (duration == Property.UntilEndOfTurn)
+                _player1.MyStates.AddUntilEndOfTurnValue(state, value);
+        }
+
         public int GradeOf(int tempID)
         {
             return _player1.Grade(tempID);
@@ -4072,7 +4084,23 @@ namespace VanguardEngine
 
         public bool IsSameZone(int tempID)
         {
-            return _tracking.Contains(tempID);
+            if (_tracking.Contains(tempID))
+            {
+                List<Tuple<Card, int>> fieldIDs = _cardFight.GetListWithFieldIDs(_currentActivation, _player1._playerID, _timingCount);
+                foreach (Tuple<Card, int> tuple in fieldIDs)
+                {
+                    if (tuple.Item1.tempID == tempID && tuple.Item2 == _player1.GetFieldID(tempID))
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            return false;
+        }
+
+        public string GetName(string name)
+        {
+            return ConfigurationManager.AppSettings.Get(name);
         }
     }
 

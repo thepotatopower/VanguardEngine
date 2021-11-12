@@ -24,7 +24,7 @@ function PlacedOnRCTrigger()
 end
 
 function PlacedOnRCCondition()
-	return obj.Exists({q.Location, l.PlayerVC, q.Name, n.Eugene})
+	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetName("Eugene")})
 end
 
 function PlacedOnRCCost(check)
@@ -51,7 +51,7 @@ function OnAttackCost(check)
 end
 
 function OnAttack()
-	if obj.IsSameZone() then
-		obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.This}, cs.BonusPower, obj.NumEnemyOpenCircles(), p.UntilEndOfBattle)
+	if obj.IsSameZone(GetID()) then
+		obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.This}, cs.BonusPower, obj.NumEnemyOpenCircles() * 2000, p.UntilEndOfBattle)
 	end
 end

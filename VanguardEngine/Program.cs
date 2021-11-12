@@ -26,8 +26,8 @@ namespace VanguardEngine
             //Console.WriteLine(r.Next(48));
             //Console.ReadLine();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("nirvana.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("nirvana.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("eugene.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("eugene.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
             start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", 0);
@@ -38,6 +38,7 @@ namespace VanguardEngine
             }
             else
             {
+                cardFight.LoadConfigFile("Names.config");
                 cardFight.StartFight();
             }
         }
