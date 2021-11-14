@@ -24,7 +24,7 @@ function PlacedOnRCTrigger()
 end
 
 function PlacedOnRCCondition()
-	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetName("Eugene")})
+	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dbt01_002")})
 end
 
 function PlacedOnRCCost(check)

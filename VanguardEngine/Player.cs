@@ -321,6 +321,14 @@ namespace VanguardEngine
             return -1;
         }
 
+        public SnapShot GetSnapShot(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (card != null)
+                return new SnapShot(card.tempID, GetLocation(card), GetCircle(card), card.name, GetFieldID(tempID));
+            return null;
+        }
+
         public int Turn
         {
             get => _field.Turn;
@@ -1947,6 +1955,15 @@ namespace VanguardEngine
             return MyStates.HasState(PlayerState.GuardWithTwo);
         }
 
+        public int GuardRestrict()
+        {
+            if (MyStates.HasState(PlayerState.GuardWithTwo))
+                return 2;
+            if (MyStates.GetValue(PlayerState.GuardRestrict) != -1)
+                return MyStates.GetValue(PlayerState.GuardRestrict);
+            return 1;
+        }
+
         public void CannotGuardFromHand()
         {
             MyStates.AddUntilEndOfBattleState(PlayerState.CannotGuardFromHand);
@@ -2426,13 +2443,25 @@ namespace VanguardEngine
         public void AddToSoul(List<int> selections)
         {
             Card cardToAdd;
+            List<Card> rcToSoul = new List<Card>();
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
+                if (GetLocation(cardToAdd) == Location.RC)
+                    rcToSoul.Add(cardToAdd);
                 if (cardToAdd.originalOwner == _playerID)
                     _field.GetSoulZone(PlayerVanguard).Add(cardToAdd);
                 else
                     _field.GetSoulZone(EnemyVanguard).Add(cardToAdd);
+                if (rcToSoul.Count > 0 && OnAbilityTiming != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    foreach (Card card in rcToSoul)
+                        args.cardList.Add(card);
+                    args.i = Activation.OnPutIntoSoulFromRC;
+                    args.playerID = _playerID;
+                    OnAbilityTiming(this, args);
+                }
             }
         }
 

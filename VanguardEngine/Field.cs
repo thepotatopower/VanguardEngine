@@ -1163,6 +1163,7 @@ namespace VanguardEngine
         public const int PlayerVanguardHitThisTurn = 21;
         public const int RetiredEvenGradeUnitsCanBeAddedToSoul = 22;
         public const int DamageNeededToLose = 23;
+        public const int GuardRestrict = 24;
     }
 
     public class CardState
@@ -1716,28 +1717,46 @@ namespace VanguardEngine
         }
     }
 
-    public class FieldSnapShot
+    public class SnapShot
     {
-        Card[] _snapShot = new Card[FL.MaxFL() + 1];
-        Field _field;
+        public readonly int location;
+        public readonly int circle;
+        public readonly string name;
+        public readonly int fieldID;
+        public readonly int tempID;
 
-        public FieldSnapShot(Field field)
+        public SnapShot(int _tempID, int _location, int _circle, string _name, int _fieldID)
         {
-            _field = field;
-            for (int i = 0; i < FL.MaxFL(); i++)
-            {
-                _snapShot[i] = _field.GetUnit(i);
-            }
-        }
-
-        public int GetColumn(int tempID)
-        {
-            for (int i = 0; i < _snapShot.Length; i++)
-            {
-                if (_snapShot[i] != null && _snapShot[i].tempID == tempID)
-                    return _field.GetColumn(i);
-            }
-            return -1;
+            tempID = _tempID;
+            location = _location;
+            circle = _circle;
+            name = _name;
+            fieldID = _fieldID;
         }
     }
+
+    //public class FieldSnapShot
+    //{
+    //    Card[] _snapShot = new Card[FL.MaxFL() + 1];
+    //    Field _field;
+
+    //    public FieldSnapShot(Field field)
+    //    {
+    //        _field = field;
+    //        for (int i = 0; i < FL.MaxFL(); i++)
+    //        {
+    //            _snapShot[i] = _field.GetUnit(i);
+    //        }
+    //    }
+
+    //    public int GetColumn(int tempID)
+    //    {
+    //        for (int i = 0; i < _snapShot.Length; i++)
+    //        {
+    //            if (_snapShot[i] != null && _snapShot[i].tempID == tempID)
+    //                return _field.GetColumn(i);
+    //        }
+    //        return -1;
+    //    }
+    //}
 }

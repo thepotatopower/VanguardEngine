@@ -18,7 +18,7 @@ function RegisterAbilities()
 end
 
 function Continuous()
-	if obj.Exists({q.Location, l.Soul, q.Name, obj.GetName()}) then
+	if obj.Exists({q.Location, l.Soul, q.Name, obj.GetNameFromCardID("dbt03_003")}) then
 		obj.AddPlayerValue(ps.DamageNeededToLose, 7)
 	end
 end
