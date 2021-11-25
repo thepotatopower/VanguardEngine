@@ -14,6 +14,7 @@ namespace VanguardEngine
     public class LuaInterpreter
     {
         public string luaPath;
+        public string currentFilePath;
         public CardFight cardFight;
         int _abilityID = 0;
         Card currentCard = null;
@@ -82,6 +83,7 @@ namespace VanguardEngine
             bool success;
             string filePath = card.id;
             filePath = luaPath + Path.DirectorySeparatorChar + filePath + ".lua";
+            currentFilePath = filePath;
             if (!File.Exists(filePath))
             {
                 Log.WriteLine("no lua script for " + filePath);
@@ -148,7 +150,14 @@ namespace VanguardEngine
                 tempScript.Globals.Set("n", n);
                 tempScript.DoFile(filePath);
                 tempScript.Call(tempScript.Globals["RegisterAbilities"]);
+                if (OrderType.IsSetOrder(card.orderType) && !abilities.Exists(a => a.GetActivations.Exists(activation => activation == Activation.OnOrder)))
+                {
+                    currentFilePath = luaPath + Path.DirectorySeparatorChar + "set_order.lua";
+                    tempScript.DoFile(currentFilePath);
+                    tempScript.Call(tempScript.Globals["RegisterAbilities"]);
+                }
             }
+            currentFilePath = "";
             return abilities;
         }
 
@@ -169,7 +178,10 @@ namespace VanguardEngine
             script.Globals.Set("cs", cs);
             script.Globals.Set("r", r);
             script.Globals.Set("n", n);
-            script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
+            if (currentFilePath == "")
+                script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
+            else
+                script.DoFile(currentFilePath);
             script.Globals["NewAbility"] = (Func<int, Ability>)NewAbility;
             Card card = cardFight._player1.GetCard(tempID);
             Ability ability;
@@ -215,7 +227,7 @@ namespace VanguardEngine
             return _abilities[tempID][activationNumber - 1];
         }
 
-        public List<Ability> GetAbilities(int activation, List<Card> cards, int timingCount)
+        public List<Ability> GetAbilities(int activation, List<Card> cards, Tuple<int, int> timingCount)
         {
             List<Ability> abilities = new List<Ability>();
             foreach (Card card in cards)
@@ -224,8 +236,7 @@ namespace VanguardEngine
                     continue;
                 foreach (Ability ability in _abilities[card.tempID])
                 {
-                    ability.SetTimingCount(timingCount);
-                    if (!ability.isGiven && ability.IsActivation(activation) && ability.IsTriggered(activation))
+                    if (!ability.isGiven && ability.IsActivation(activation) && ability.IsTriggered(activation, timingCount))
                     {
                         abilities.Add(ability);
                     }
@@ -333,7 +344,7 @@ namespace VanguardEngine
         Player _player2;
         CardFight _cardFight;
         Card _card;
-        bool _isMandatory = false;
+        bool _isMandatory = true;
         bool _hasPrompt = false;
         bool _hardOncePerTurn = false;
         bool _oncePerTurn = false;
@@ -352,8 +363,8 @@ namespace VanguardEngine
         List<Card> _lastCalled = new List<Card>();
         int _abilityType;
         int _abilityNumber;
-        int _abilityID;
-        int _timingCount = 0;
+        public int _abilityID;
+        TimingCount _timingCount = new TimingCount();
         int _currentActivation = 0;
         int _resultOf = 0;
         List<int> _overDressParams = new List<int>();
@@ -369,12 +380,19 @@ namespace VanguardEngine
         string _activationFunction = "";
         string _triggerCondition = "";
         string _activationCondition = "";
+        string _canFullyResolveFunction = "";
         string _cost = "";
         string _overDress = "";
         public bool newFormat = false;
         List<int> _tracking = new List<int>();
         int _resetTarget = -1;
         int _resetTiming = -1;
+        bool _sourceIsRelevant = false;
+        bool _sourceIsPlayer = false;
+        int _sourceLocation = -1;
+        int _movedTo = -1;
+        int _movedFrom = -1;
+        bool _repeatable = false;
 
         public Ability(Player player1, Player player2, CardFight cardFight, Card card, int abilityID)
         {
@@ -401,6 +419,32 @@ namespace VanguardEngine
                 _description = _card.str6;
         }
 
+        public string GetDescription(int number)
+        {
+            string description = "";
+            if (number == 1)
+                description = _card.str1;
+            else if (number == 2)
+                description = _card.str2;
+            else if (number == 3)
+                description = _card.str3;
+            else if (number == 4)
+                description = _card.str4;
+            else if (number == 5)
+                description = _card.str5;
+            else if (number == 6)
+                description = _card.str6;
+            return description;
+        }
+
+        public void SetProperty(int property)
+        {
+            if (property == Property.OncePerTurn)
+                _oncePerTurn = true;
+            if (property == Property.Repeatable)
+                _repeatable = true;
+        }
+
         public void SetTiming(int activation)
         {
             if (!_activations.Contains(activation))
@@ -423,11 +467,20 @@ namespace VanguardEngine
             _triggerCondition = function;
         }
 
+        public void SetCanFullyResolve(string function)
+        {
+            _canFullyResolveFunction = function;
+        }
+
         public void SetCost(string function)
         {
             _cost = function;
             _isMandatory = false;
-            _hasPrompt = true;
+        }
+
+        public void SetCondition(string function)
+        {
+            SetActivationCondition(function);
         }
 
         public void SetActivationCondition(string function)
@@ -450,6 +503,28 @@ namespace VanguardEngine
             _resetTiming = timing;
         }
 
+        public void SetSourceIsPlayer(bool player)
+        {
+            _sourceIsRelevant = true;
+            _sourceIsPlayer = player;
+        }
+
+        public void SetSourceLocation(int location)
+        {
+            _sourceIsRelevant = true;
+            _sourceLocation = location;
+        }
+
+        public void SetMovedFrom(int location)
+        {
+            _movedFrom = location;
+        }
+
+        public void SetMovedTo(int location)
+        {
+            _movedTo = location;
+        }
+
         public void SetParam(List<object> param, int position)
         {
             _params[position] = CreateParam(param);
@@ -460,19 +535,14 @@ namespace VanguardEngine
             return _card;
         }
 
-        public void SetTimingCount(int timingCount)
+        public void SetTimingCount(Tuple<int, int> timingCount)
         {
-            _timingCount = timingCount;
+            _timingCount.SetTimingCount(timingCount);
         }
 
-        public void SetActivation(int activation)
+        public void SetActivation(string activation)
         {
-            _currentActivation = activation;
-        }
-
-        public int GetCurrentTimingCount()
-        {
-            return _timingCount;
+            _activationFunction = activation;
         }
 
         public bool CostRequired()
@@ -480,11 +550,17 @@ namespace VanguardEngine
             return _costRequired;
         }
 
+        public bool IsRepeatable()
+        {
+            return _repeatable;
+        }
+
         public void StoreAbility(Script script)
         {
             _script = script;
             script.Globals["GetID"] = (Func<int>)GetID;
             newFormat = true;
+            _hasPrompt = true;
         }
 
         public bool StoreAbility(Script script, int num, bool player)
@@ -817,6 +893,11 @@ namespace VanguardEngine
                     param.AddPower((int)(double)newParam[j + 1]);
                     j++;
                 }
+                else if (newParam[j] is System.Double && (double)newParam[j] == Query.SnapshotIndex)
+                {
+                    param.AddSnapshotIndex((int)(double)newParam[j + 1]);
+                    j++;
+                }
             }
             return param;
         }
@@ -1051,6 +1132,8 @@ namespace VanguardEngine
         public void ResetActivation()
         {
             _activated = false;
+            _currentActivation = 0;
+            _stored.Clear();
         }
 
         public void Test()
@@ -1058,8 +1141,11 @@ namespace VanguardEngine
             Log.WriteLine("test");
         }
 
-        public int Activate()
+        public int Activate(int activation, Tuple<int, int> timingCount)
         {
+            _currentActivation = activation;
+            _timingCount.EndConditionalMode();
+            _timingCount.SetTimingCount(timingCount);
             _lastCalled.Clear();
             _payingCost = false;
             if (_activationFunction != "")
@@ -1068,9 +1154,20 @@ namespace VanguardEngine
                 _activated = true;
                 return 0;
             }
-            DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
+            //DynValue Then = _script.Call(_abilityActivate, _abilityNumber);
+            if (_currentActivation == Activation.OnOverTrigger)
+            {
+                int times = 1;
+                if (_player1.MyStates.HasState(PlayerState.DoubleTriggerEffects))
+                    times++;
+                for (int i = 0; i < times; i++)
+                    _script.Call(_abilityActivate, _abilityNumber);
+            }
+            else
+                _script.Call(_abilityActivate, _abilityNumber);
             _activated = true;
-            return (int)Then.Number;
+            //return (int)Then.Number;
+            return 0;
         }
 
         public int ActivateAsGiven(Card card)
@@ -1209,14 +1306,19 @@ namespace VanguardEngine
             return false;
         }
 
-        public bool IsTriggered(int activation)
+        public bool IsTriggered(int activation, Tuple<int, int> timingCount)
         {
+            _timingCount.SetConditionalMode();
+            _timingCount.SetTimingCount(timingCount);
+            _currentActivation = activation;
             foreach (int location in _locations)
             {
                 bool validLocation = false;
                 if (location == Location.PlayerRC && IsRearguard())
                     validLocation = true;
                 else if (location == Location.PlayerVC && IsVanguard())
+                    validLocation = true;
+                else if (location == Location.Soul && _player1.GetSoul().Contains(_player1.GetCard(_card.tempID)))
                     validLocation = true;
                 if (!validLocation)
                     return false;
@@ -1294,7 +1396,12 @@ namespace VanguardEngine
         public bool CanFullyResolve()
         {
             if (newFormat)
-                return true;
+            {
+                if (_canFullyResolveFunction != "")
+                    return _script.Call(_script.Globals[_canFullyResolveFunction]).Boolean;
+                else
+                    return true;
+            }
             DynValue check = _script.Call(_canFullyResolve, _abilityNumber);
             if (check.Boolean)
                 return true;
@@ -1331,52 +1438,43 @@ namespace VanguardEngine
         }
         public bool IsRodeUponThisTurn()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _abilityTimingData.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool WasRodeUponBy(string name)
         {
-            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount, _player1._playerID);
-            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID);
-            if (lastRiddenOn.relevantSnapShots.Count > 0 && lastRiddenOn.relevantSnapShots[0].Count > 0 && lastRiddenOn.relevantSnapShots[0][0].tempID == _card.tempID &&
-                lastPlacedOnVC.relevantSnapShots.Count > 0 && lastPlacedOnVC.relevantSnapShots[0].Count > 0 && lastPlacedOnVC.relevantSnapShots[0][0].name == name)
-                return true;
-            return false;
+            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
+            //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
+            return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID) &&
+                lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name);
         }
 
         public bool WasRodeUponByNameContains(string name)
         {
-            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount, _player1._playerID);
-            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID);
-            if (lastRiddenOn.relevantSnapShots.Count > 0 && lastRiddenOn.relevantSnapShots[0].Count > 0 && lastRiddenOn.relevantSnapShots[0][0].tempID == _card.tempID &&
-                lastPlacedOnVC.relevantSnapShots.Count > 0 && lastPlacedOnVC.relevantSnapShots[0].Count > 0 && lastPlacedOnVC.relevantSnapShots[0][0].name.Contains(name))
-                return true;
-            return false;
+            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
+            //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
+            return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID) &&
+                lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name.Contains(name));
         }
 
         public bool PlacedByRidingOn(string name)
         {
-            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount, _player1._playerID);
-            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID);
-            if (lastRiddenOn.relevantSnapShots.Count > 0 && lastRiddenOn.relevantSnapShots[0].Count > 0 && lastRiddenOn.relevantSnapShots[0][0].name == name &&
-                lastPlacedOnVC.relevantSnapShots.Count > 0 && lastPlacedOnVC.relevantSnapShots[0].Count > 0 && lastPlacedOnVC.relevantSnapShots[0][0].tempID == _card.tempID)
-                return true;
-            return false;
+            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2];
+            //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
+            //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
+            return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == _card.name) &&
+                lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID);
         }
 
         public bool MyVanguardWasPlaced()
         {
-            AbilityTimingData placedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID);
-            return placedOnVC.relevantSnapShots.Count > 0 && placedOnVC.relevantSnapShots[0].Count > 0;
+            return _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.GetTimingCount().Item1, _player1._playerID)[_timingCount.GetTimingCount().Item2].GetRelevantSnapshots(0).Count > 0;
         }
 
         public bool HasCardInDeck(string name)
@@ -1429,6 +1527,12 @@ namespace VanguardEngine
             return false;
         }
 
+        public List<int> ValidIDs(List<object> param)
+        {
+            SetParam(param, 1);
+            return ConvertToTempIDs(ValidCards(1));
+        }
+
         public List<Card> ValidCards(int paramNum)
         {
             Param param = _params[paramNum];
@@ -1439,11 +1543,13 @@ namespace VanguardEngine
             {
                 if (location == Location.Deck)
                     currentPool.AddRange(_player1.GetDeck());
+                else if (location == Location.RideDeck)
+                    currentPool.AddRange(_player1.GetRideDeck());
                 else if (location == Location.Drop || location == Location.PlayerDrop)
                     currentPool.AddRange(_player1.GetDrop());
                 else if (location == Location.EnemyDrop)
                     currentPool.AddRange(_player2.GetDrop());
-                else if (location == Location.PlayerHand)
+                else if (location == Location.PlayerHand || location == Location.Hand)
                     currentPool.AddRange(_player1.GetHand());
                 else if (location == Location.EnemyHand)
                     currentPool.AddRange(_player2.GetHand());
@@ -1502,6 +1608,8 @@ namespace VanguardEngine
                     currentPool.AddRange(_player1.GetPlayerOrder());
                 else if (location == Location.OrderArea)
                     currentPool.AddRange(_player1.GetOrderArea());
+                else if (location == Location.Order)
+                    currentPool.AddRange(_player1.GetOrderZone());
                 else if (location == Location.PlayerUnits)
                 {
                     currentPool.AddRange(_player1.GetRearguards(C.Player));
@@ -1525,19 +1633,19 @@ namespace VanguardEngine
                 }
                 else if (location == Location.LastCalledFromPrison)
                 {
-                    if (_cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromPrison, _timingCount, _player2._playerID).relevantSnapShots.Count > 0)
-                    {
-                        foreach (SnapShot snapShot in _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromPrison, _timingCount, _player2._playerID).relevantSnapShots[0])
-                            currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    }
+                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromPrison, _timingCount, _player2._playerID))
+                    //{
+                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                    //}
                 }
                 else if (location == Location.LastStood)
                 {
-                    if (_cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID).relevantSnapShots.Count > 0)
-                    {
-                        foreach (SnapShot snapShot in _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID).relevantSnapShots[0])
-                            currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    }
+                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID))
+                    //{
+                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                    //}
                 }
                 else if (location == Location.InFront)
                     currentPool.AddRange(_player1.GetInFront(_card.tempID));
@@ -1554,34 +1662,63 @@ namespace VanguardEngine
                 }
                 else if (location == Location.PlayerRCRetired)
                 {
-                    if (_cardFight.GetAbilityTimingData(Activation.OnPlayerRCRetired, _timingCount, _player1._playerID).relevantSnapShots.Count > 0)
-                    {
-                        foreach (SnapShot snapShot in _cardFight.GetAbilityTimingData(Activation.OnPlayerRCRetired, _timingCount, _player1._playerID).relevantSnapShots[0])
-                            currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    }
+                    currentPool.AddRange(GetSnapshottedCards(0));
+                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnPlayerRCRetired, _timingCount, _player1._playerID))
+                    //{
+                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                    //}
                 }
                 else if (location == Location.LastOrderPlayed)
                 {
-                    if (_cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID).relevantSnapShots.Count > 0)
-                    {
-                        foreach (SnapShot snapShot in _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID).relevantSnapShots[0])
-                            currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    }
+                    currentPool.AddRange(GetSnapshottedCards(0));
+                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID))
+                    //{
+                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                    //}
                 }
                 else if (location == Location.Applicable)
                 {
-                    if (_cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID).relevantSnapShots.Count > 0)
+                    foreach (Card card in GetSnapshottedCards(0))
                     {
-                        foreach (SnapShot snapShot in _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID).relevantSnapShots[0])
-                            currentPool.Add(_player1.GetCard(snapShot.tempID));
+                        if (card.tempID == _card.tempID)
+                            currentPool.Add(card);
                     }
                 }
                 else if (location == Location.PlayedOrdersThisTurn)
                     currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
                 else if (location == Location.MyOriginalDress)
                     currentPool.AddRange(_player1.GetOriginalDress(_card.tempID));
+                else if (location == Location.Stored)
+                {
+                    foreach (int tempID in _stored)
+                        currentPool.Add(_player1.GetCard(tempID));
+                }
             }
-            if (param.Locations.Count == 0)
+            if (param.SnapshotIndexes.Count > 0)
+            {
+                if (currentPool.Count > 0)
+                {
+                    foreach (Card card in currentPool)
+                    {
+                        foreach (int index in param.SnapshotIndexes)
+                        {
+                            if (GetSnapshottedCards(index).Contains(card))
+                                newPool.Add(card);
+                        }
+                    }
+                    currentPool.Clear();
+                    currentPool.AddRange(newPool);
+                    newPool.Clear();
+                }
+                else
+                {
+                    foreach (int index in param.SnapshotIndexes)
+                        currentPool.AddRange(GetSnapshottedCards(index));
+                }
+            }
+            if (param.Locations.Count == 0 && param.SnapshotIndexes.Count == 0)
             {
                 if (param.Others.Contains(Other.This))
                     currentPool.Add(_player1.GetCard(_card.tempID));
@@ -1951,6 +2088,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.Meteorite)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.orderType == OrderType.Meteorite)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                 }
             }
             if (param.Names.Count > 0)
@@ -2113,30 +2261,14 @@ namespace VanguardEngine
 
         public bool LastPlacedOnGC()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PlacedOnGC, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PlacedOnGC, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool LastPutOnGC()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PutOnGC, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PutOnGC, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool IsIntercepting()
@@ -2146,58 +2278,26 @@ namespace VanguardEngine
 
         public bool LastPlacedOnRC()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PlacedOnRC, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PlacedOnRC, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool LastPlacedOnRCFromHand()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromHand, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromHand, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool LastPlacedOnVC()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool LastDiscarded()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.OnDiscard, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.OnDiscard, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool OnTriggerZone()
@@ -2389,6 +2489,12 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanSpecificSB(List<object> param)
+        {
+            SetParam(param, 1);
+            return CanSpecificSB(1);
+        }
+
         public bool CanSpecificSB(int paramNum)
         {
             if (_player1.IsAlchemagic() && _player1.AlchemagicFreeSBAvailable())
@@ -2442,6 +2548,12 @@ namespace VanguardEngine
             if (canAddToSoul != null && canAddToSoul.Count >= GetCount(paramNum))
                 return true;
             return false;
+        }
+
+        public bool CanAddToDrop(List<object> param)
+        {
+            SetParam(param, 1);
+            return CanAddToDrop(1);
         }
 
         public bool CanAddToDrop(int paramNum)
@@ -2714,16 +2826,8 @@ namespace VanguardEngine
 
         public bool StoodByCardEffect()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public bool StoodByCardEffectThisTurn()
@@ -2754,6 +2858,12 @@ namespace VanguardEngine
         public void Mill(int count)
         {
             _player1.Mill(count);
+        }
+
+        public bool SuperiorCall(List<object> param)
+        {
+            SetParam(param, 1);
+            return SuperiorCall(1);
         }
 
         public bool SuperiorCall(int paramNum)
@@ -2860,6 +2970,12 @@ namespace VanguardEngine
             _cardFight.SoulBlast(_player1, _player2, canSB, count);
         }
 
+        public void SpecificSoulBlast(List<object> param)
+        {
+            SetParam(param, 1);
+            SpecificSoulBlast(1);
+        }
+
         public void SpecificSoulBlast(int paramNum)
         {
             List<Card> canSB = new List<Card>();
@@ -2894,17 +3010,28 @@ namespace VanguardEngine
             return _player1.SoulChargedThisTurn();
         }
 
+        public List<int> Search(List<object> param)
+        {
+            SetParam(param, 1);
+            return Search(1);
+        }
+
         public List<int> Search(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             return _cardFight.Search(_player1, _player2, cardsToSelect);
         }
 
-        public bool ChooseAddToHand(int paramNum)
+        public List<int> ChooseAddToHand(List<object> param)
+        {
+            SetParam(param, 1);
+            return ChooseAddToHand(1);
+        }
+
+        public List<int> ChooseAddToHand(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            _cardFight.AddToHand(_player1, _player2, cardsToSelect, _params[paramNum].Counts[0], _params[paramNum].Counts[0]);
-            return true;
+            return _cardFight.AddToHand(_player1, _player2, cardsToSelect, GetCount(1), GetMin(1));
         }
 
         public void AddToHand(int paramNum)
@@ -2929,6 +3056,12 @@ namespace VanguardEngine
                 AddToSoul(paramNum);
             else
                 _cardFight.AddToSoul(_player1, _player2, cardsToSelect, _params[paramNum].Counts[0], _params[paramNum].Counts[0]);
+        }
+
+        public void AddToSoul(List<object> param)
+        {
+            SetParam(param, 1);
+            AddToSoul(1);
         }
 
         public void AddToSoul(int paramNum)
@@ -2964,13 +3097,20 @@ namespace VanguardEngine
             _player1.AddToDrop(cardsToDrop);
         }
 
-        public void ChooseAddToDrop(int paramNum)
+        public List<int> ChooseAddToDrop(List<object> param)
+        {
+            SetParam(param, 1);
+            return ChooseAddToDrop(1);
+        }
+
+        public List<int> ChooseAddToDrop(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             if (!HasCount(paramNum) && !HasMin(paramNum))
                 AddToSoul(paramNum);
             List<int> cardsToDrop = _cardFight.SelectCards(_player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum), " to send to drop.");
             _player1.AddToDrop(cardsToDrop);
+            return cardsToDrop;
         }
 
         public void AddToDamageZone(int paramNum)
@@ -3003,16 +3143,8 @@ namespace VanguardEngine
 
         public bool WasRetiredForPlayerCost()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.OnRetiredForPlayerCost, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.OnRetiredForPlayerCost, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public void CountsAsTwoRetires(int paramNum)
@@ -3161,6 +3293,12 @@ namespace VanguardEngine
             return _player1.ConvertToTempIDs(_cardFight.Stand(_player1, _player2, canStand, _params[paramNum].Counts[0], true));
         }
 
+        public void Stand(List<object> param)
+        {
+            SetParam(param, 1);
+            Stand(1);
+        }
+
         public void Stand(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
@@ -3173,7 +3311,13 @@ namespace VanguardEngine
             _cardFight.Stand(_player1, _player2, canStand);
         }
 
-        public void ChooseRest(int paramNum)
+        public List<int> ChooseRest(List<object> param)
+        {
+            SetParam(param, 1);
+            return ChooseRest(1);
+        }
+
+        public List<int> ChooseRest(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<Card> canRest = new List<Card>();
@@ -3183,9 +3327,9 @@ namespace VanguardEngine
                     canRest.Add(card);
             }
             if (!HasCount(paramNum) && !HasMin(paramNum))
-                _player1.Rest(_player1.ConvertToTempIDs(canRest));
+                return _player1.Rest(_player1.ConvertToTempIDs(canRest));
             else
-                _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
+                return _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
         }
 
         public void Rest(int paramNum)
@@ -3221,6 +3365,12 @@ namespace VanguardEngine
             _cardFight.ChooseReveal(_player1, _player2, cardsToSelect, GetCount(1), GetMin(1));
         }
 
+        public void Reveal(List<object> param)
+        {
+            SetParam(param, 1);
+            Reveal(1);
+        }
+
         public void Reveal(int paramNum)
         {
             _player1.Reveal(_player1.ConvertToTempIDs(ValidCards(paramNum)));
@@ -3252,6 +3402,12 @@ namespace VanguardEngine
         public void LookAtTopOfDeck(int count)
         {
             _player1.LookAtTopOfDeck(count);
+        }
+
+        public void RearrangeOnTop(List<object> param)
+        {
+            SetParam(param, 1);
+            RearrangeOnTop(1);
         }
 
         public void RearrangeOnTop(int paramNum)
@@ -3295,16 +3451,8 @@ namespace VanguardEngine
 
         public bool LastRevealedTrigger()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public void FinalRush()
@@ -3745,26 +3893,14 @@ namespace VanguardEngine
 
         public bool LastPutOnOrderZoneIsWorld()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PutOnOrderZone, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                return data.relevantSnapShots[0].Exists(snapShot => _player1.GetCard(snapShot.tempID).orderType == OrderType.World);
-            }
             return false;
+            //return _cardFight.GetAbilityTimingData(Activation.PutOnOrderZone, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => _player1.GetCard(snapshot.tempID).orderType == OrderType.World));
         }
 
         public bool LastPutOnOrderZone()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.PutOnOrderZone, _timingCount, _player1._playerID);
-            if (data.relevantSnapShots.Count > 0)
-            {
-                foreach (SnapShot snapShot in data.relevantSnapShots[0])
-                {
-                    if (snapShot.tempID == _card.tempID)
-                        return true;
-                }
-            }
-            return false;
+            return IsApplicable();
+            //return _cardFight.GetAbilityTimingData(Activation.PutOnOrderZone, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID));
         }
 
         public void CallToken(string tokenID)
@@ -3816,10 +3952,22 @@ namespace VanguardEngine
             return _player1.AlchemagicUsedThisTurn();
         }
 
+        public int GetNumberOf(List<object> param)
+        {
+            SetParam(param, 1);
+            return GetNumberOf(1);
+        }
+
         public int GetNumberOf(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
             return cards.Count;
+        }
+
+        public string GetName(List<object> param)
+        {
+            SetParam(param, 1);
+            return GetName(1);
         }
 
         public string GetName(int paramNum)
@@ -4045,6 +4193,14 @@ namespace VanguardEngine
             }
         }
 
+        public List<int> ChoosePutIntoOrderZone(List<object> param)
+        {
+            SetParam(param, 1);
+            List<int> selected = _cardFight.SelectCards(_player1, ValidCards(1), GetCount(1), GetMin(1), "to put into Order Zone");
+            _player1.PutIntoOrderZone(selected);
+            return selected;
+        }
+
         public bool PutIntoOrderZone(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -4094,22 +4250,18 @@ namespace VanguardEngine
 
         public bool PlayerPlayedOrder()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID);
-            return data.relevantSnapShots.Count > 0;
+            return GetSnapshottedCards(0).Count > 0;
+            //return _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID).Exists(data => data.GetRelevantSnapshots(0).Count > 0);
         }
 
         public bool IsApplicable()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID);
-            return data.relevantSnapShots.Count > 0 && data.relevantSnapShots[0].Exists(snapShot => snapShot.tempID == _card.tempID);
+            return GetSnapshottedCards(0).Exists(card => card.tempID == _card.tempID);
         }
 
-        public int GetLocationOfAbilitySource()
+        public int GetCurrentActivation()
         {
-            AbilityTimingData data = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID);
-            if (data.abilitySource != null)
-                return data.abilitySource.location;
-            return -1;
+            return _currentActivation;
         }
 
         public bool CurrentActivationIs(int activation)
@@ -4147,6 +4299,21 @@ namespace VanguardEngine
             return power;
         }
 
+        public void AddCardState(List<object> param, int state, int duration)
+        {
+            SetParam(param, 1);
+            foreach (Card card in ValidCards(1))
+            {
+                int tempID = card.tempID;
+                if (duration == Property.Continuous)
+                    _player1.CardStates.AddContinuousState(tempID, state);
+                else if (duration == Property.UntilEndOfBattle)
+                    _player1.CardStates.AddUntilEndOfBattleState(tempID, state);
+                else if (duration == Property.UntilEndOfTurn)
+                    _player1.CardStates.AddUntilEndOfTurnState(tempID, state);
+            }
+        }
+
         public void AddCardValue(List<object> param, int state, int value, int duration)
         {
             SetParam(param, 1);
@@ -4160,6 +4327,27 @@ namespace VanguardEngine
                 else if (duration == Property.UntilEndOfTurn)
                     _player1.CardStates.AddUntilEndOfTurnValue(tempID, state, value);
             }
+        }
+
+        public void AddEnemyState(int state, int duration)
+        {
+            AddPlayerState(state, duration, false);
+        }
+
+        public void AddPlayerState(int state, int duration)
+        {
+            AddPlayerState(state, duration, true);
+        }
+
+        public void AddPlayerState(int state, int duration, bool player)
+        {
+            Player targetPlayer = null;
+            if (player)
+                targetPlayer = _player1;
+            else
+                targetPlayer = _player2;
+            if (duration == Property.UntilEndOfBattle)
+                targetPlayer.MyStates.AddUntilEndOfBattleState(state);
         }
 
         public void AddPlayerValue(int state, int value, int duration)
@@ -4182,6 +4370,11 @@ namespace VanguardEngine
                 targetPlayer.MyStates.AddUntilEndOfTurnValue(state, value);
         }
 
+        public int NumOfAttacks()
+        {
+            return _player1.NumOfAttacks();
+        }
+
         public int GradeOf(int tempID)
         {
             return _player1.Grade(tempID);
@@ -4193,19 +4386,157 @@ namespace VanguardEngine
                 _tracking.Add(tempID);
         }
 
+        public bool IsSameZone()
+        {
+            return IsSameZone(_card.tempID);
+        }
+
         public bool IsSameZone(int tempID)
         {
-            if (_tracking.Contains(tempID))
-            {
-                AbilityTimingData abilityTimingData = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID);
-                return abilityTimingData.allSnapShots[tempID] != null && abilityTimingData.allSnapShots[tempID].fieldID == _player1.GetFieldID(tempID);
-            }
+            //if (_tracking.Contains(tempID))
+            //{
+            //    List<AbilityTimingData> abilityTimingData = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount, _player1._playerID);
+            //    return abilityTimingData.Exists(data => data.allSnapshots[tempID].fieldID == _player1.GetFieldID(tempID));
+            //}
+            //return false;
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.GetTimingCount().Item1, _player1._playerID);
+            if (list.Count >= _timingCount.GetTimingCount().Item2 + 1)
+                return list.Exists(data => data.allSnapshots[tempID].fieldID == _player1.GetFieldID(tempID));
             return false;
         }
 
         public string GetName(string name)
         {
             return ConfigurationManager.AppSettings.Get(name);
+        }
+
+        List<Card> GetSnapshottedCards(int index)
+        {
+            List<Card> cards = new List<Card>();
+            AbilityTimingData data = null;
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.GetTimingCount().Item1, _player1._playerID);
+            if (list.Count >= _timingCount.GetTimingCount().Item2 + 1)
+                data = list[_timingCount.GetTimingCount().Item2];
+            else
+                return cards;
+            //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.Item1, _player1._playerID))
+            //{
+            //    if (_sourceIsRelevant && data.abilitySource != null)
+            //    {
+            //        if ((_sourceIsPlayer && _player1.GetCard(data.abilitySource.tempID).originalOwner != _player1._playerID) ||
+            //                (!_sourceIsPlayer && _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID))
+            //            continue;
+            //        if (_sourceLocation != -1 && _sourceLocation != data.abilitySource.location)
+            //            continue;
+            //    }
+            //    foreach (Snapshot snapshot in data.GetRelevantSnapshots(index))
+            //    {
+            //        if (_movedTo == -1 && _movedFrom == -1)
+            //            cards.Add(_player1.GetCard(snapshot.tempID));
+            //        else if (_movedTo != -1 && _movedFrom != -1)
+            //        {
+            //            if (_movedTo == snapshot.location && _movedFrom == snapshot.previousLocation)
+            //                cards.Add(_player1.GetCard(snapshot.tempID));
+            //            else
+            //                continue;
+            //        }
+            //        else if (_movedTo != -1 && _movedTo == snapshot.location)
+            //            cards.Add(_player1.GetCard(snapshot.tempID));
+            //        else if (_movedFrom != -1 && _movedFrom == snapshot.previousLocation)
+            //            cards.Add(_player1.GetCard(snapshot.tempID));
+            //    }
+            //}
+            if (_sourceIsRelevant && data.abilitySource != null)
+            {
+                if ((_sourceIsPlayer && _player1.GetCard(data.abilitySource.tempID).originalOwner != _player1._playerID) ||
+                        (!_sourceIsPlayer && _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID))
+                    return cards;
+                if (_sourceLocation != -1 && _sourceLocation != data.abilitySource.location)
+                    return cards;
+            }
+            foreach (Snapshot snapshot in data.GetRelevantSnapshots(index))
+            {
+                if (_movedTo == -1 && _movedFrom == -1)
+                    cards.Add(_player1.GetCard(snapshot.tempID));
+                else if (_movedTo != -1 && _movedFrom != -1)
+                {
+                    if (_movedTo == snapshot.location && _movedFrom == snapshot.previousLocation)
+                        cards.Add(_player1.GetCard(snapshot.tempID));
+                    else
+                        continue;
+                }
+                else if (_movedTo != -1 && _movedTo == snapshot.location)
+                    cards.Add(_player1.GetCard(snapshot.tempID));
+                else if (_movedFrom != -1 && _movedFrom == snapshot.previousLocation)
+                    cards.Add(_player1.GetCard(snapshot.tempID));
+            }
+            return cards;
+        }
+
+        public int GetPlayerDamage()
+        {
+            return _player1.GetDamageZone().Count;
+        }
+
+        public bool SourceIsVanguardAbility()
+        {
+            AbilityTimingData data = null;
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.GetTimingCount().Item1, _player1._playerID);
+            if (list.Count >= _timingCount.GetTimingCount().Item2)
+                data = list[_timingCount.GetTimingCount().Item2];
+            else
+                return false;
+            if (data.abilitySource != null && data.abilitySource.location == Location.VC &&
+                    _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID &&
+                    data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID))
+                return true;
+            else
+                return false;
+        }
+
+        public List<int> ConvertToTempIDs(List<Card> cards)
+        {
+            List<int> tempIDs = new List<int>();
+            foreach (Card card in cards)
+                tempIDs.Add(card.tempID);
+            return tempIDs;
+        }
+    }
+
+    public class TimingCount
+    {
+        Tuple<int, int> _timingCount = new Tuple<int, int>(0, 0);
+        Tuple<int, int> _conditionalTimingCount = new Tuple<int, int>(0, 0);
+        bool _conditionalMode = false;
+
+        public void SetTimingCount(Tuple<int, int> timingCount)
+        {
+            if (timingCount == null)
+                timingCount = new Tuple<int, int>(0, 0);
+            else
+                timingCount = new Tuple<int, int>(timingCount.Item1, timingCount.Item2 - 1);
+            if (_conditionalMode)
+                _conditionalTimingCount = timingCount;
+            else
+                _timingCount = timingCount;
+        }
+
+        public void SetConditionalMode()
+        {
+            _conditionalMode = true;
+        }
+
+        public void EndConditionalMode()
+        {
+            _conditionalMode = false;
+        }
+
+        public Tuple<int, int> GetTimingCount()
+        {
+            if (_conditionalMode)
+                return _conditionalTimingCount;
+            else
+                return _timingCount;
         }
     }
 
@@ -4225,6 +4556,7 @@ namespace VanguardEngine
         List<int> _race = new List<int>();
         List<int> _maxPower = new List<int>();
         List<int> _power = new List<int>();
+        List<int> _snapshotIndex = new List<int>();
 
         public void AddLocation(int location)
         {
@@ -4320,6 +4652,11 @@ namespace VanguardEngine
             _power.Add(power);
         }
 
+        public void AddSnapshotIndex(int index)
+        {
+            _snapshotIndex.Add(index);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -4389,6 +4726,11 @@ namespace VanguardEngine
         {
             get => _power;  
         }
+
+        public List<int> SnapshotIndexes
+        {
+            get => _snapshotIndex;
+        }
     }
 
     class Activation
@@ -4431,6 +4773,7 @@ namespace VanguardEngine
         public const int PlacedOnRCOtherThanFromHand = -36;
         public const int OnRearguardReturnedToHand = -37;
         public const int OnPutIntoSoulFromRC = -38;
+        public const int OnPut = -39;
     }
 
     public class Location
@@ -4496,6 +4839,7 @@ namespace VanguardEngine
         public const int SameColumn = 60;
         public const int PlayedOrdersThisTurn = 61;
         public const int MyOriginalDress = 62;
+        public const int Stored = 63;
     }
 
     class Query
@@ -4514,6 +4858,7 @@ namespace VanguardEngine
         public const int Race = 12;
         public const int MaxPower = 13;
         public const int Power = 14;
+        public const int SnapshotIndex = 15;
     }
 
     class Other
@@ -4553,6 +4898,7 @@ namespace VanguardEngine
         public const int Selected = 32;
         public const int SameName = 33;
         public const int Attacked = 34;
+        public const int Meteorite = 35;
     }
 
     class Property
@@ -4588,5 +4934,6 @@ namespace VanguardEngine
         public const int Continuous = 28;
         public const int UntilEndOfBattle = 29;
         public const int UntilEndOfTurn = 30;
+        public const int Repeatable = 31;
     }
 }

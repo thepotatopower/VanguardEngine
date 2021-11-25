@@ -1,4 +1,4 @@
--- デザイアデビル タイーダ
+-- グラビディア・デレン
 
 function RegisterAbilities()
 	-- on ride

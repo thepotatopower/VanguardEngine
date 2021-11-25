@@ -1,4 +1,4 @@
--- デザイアデビル タイーダ
+-- 士官候補生 カリクレス
 
 function RegisterAbilities()
 	-- on ride

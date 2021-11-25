@@ -14,6 +14,7 @@ namespace VanguardEngine
         protected Card[] _cardCatalog = new Card[200];
         protected List<int> _removedTokens = new List<int>();
         protected Dictionary<int, Tuple<Zone, int>> _cardLocations = new Dictionary<int, Tuple<Zone, int>>();
+        protected Dictionary<int, Tuple<Zone, int>> _previousCardLocations = new Dictionary<int, Tuple<Zone, int>>();
         protected readonly Circle[] _circles = new Circle[14];
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
@@ -85,6 +86,11 @@ namespace VanguardEngine
         public Dictionary<int, Tuple<Zone, int>> CardLocations
         {
             get => _cardLocations;
+        }
+
+        public Dictionary<int, Tuple<Zone, int>> PreviousCardLocations
+        {
+            get => _previousCardLocations;
         }
 
         //public int[] ShuffleKey
@@ -553,6 +559,7 @@ namespace VanguardEngine
                 token.tempID = newID;
                 _cardCatalog[newID] = token;
                 _cardLocations[newID] = null;
+                _previousCardLocations[newID] = null;
                 return newID;
             }
             for (int i = 0; i < _cardCatalog.Length; i++)
@@ -561,7 +568,8 @@ namespace VanguardEngine
                 {
                     token.tempID = i;
                     _cardCatalog[i] = token;
-                    _cardLocations[i] = null;
+                    _cardLocations[i] = new Tuple<Zone, int>(new Zone(this), -1);
+                    _previousCardLocations[i] = new Tuple<Zone, int>(new Zone(this), -1);
                     return i;
                 }
             }
@@ -670,6 +678,7 @@ namespace VanguardEngine
 
         protected override void UpdateLocation(Zone zone, int tempID)
         {
+            _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
             _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.CardLocations[tempID].Item2);
         }
 
@@ -787,9 +796,15 @@ namespace VanguardEngine
             circle._cards = tempCards;
             circle._overloadedUnits = tempOverloaded;
             if (circle._cards.Count > 0)
+            {
+                _field.PreviousCardLocations[circle._cards[0].tempID] = _field.CardLocations[circle._cards[0].tempID];
                 _field.CardLocations[circle._cards[0].tempID] = new Tuple<Zone, int>(circle, _field.CardLocations[circle._cards[0].tempID].Item2);
+            }
             if (_cards.Count > 0)
+            {
+                _field.PreviousCardLocations[circle._cards[0].tempID] = _field.CardLocations[circle._cards[0].tempID];
                 _field.CardLocations[_cards[0].tempID] = new Tuple<Zone, int>(this, _field.CardLocations[circle._cards[0].tempID].Item2);
+            }
         }
     }
 
@@ -1164,6 +1179,8 @@ namespace VanguardEngine
         public const int RetiredEvenGradeUnitsCanBeAddedToSoul = 22;
         public const int DamageNeededToLose = 23;
         public const int GuardRestrict = 24;
+        public const int DoubleTriggerEffects = 25;
+        public const int NumOfAttacks = 26;
     }
 
     public class CardState
@@ -1197,6 +1214,7 @@ namespace VanguardEngine
         public const int GuardWithTwoOnAttack = 27;
         public const int Paralyze = 28;
         public const int DiscardAllOriginalDressAtEndOfBattle = 29;
+        public const int CanDriveCheck = 30;
     }
 
     public class Zone
@@ -1219,6 +1237,7 @@ namespace VanguardEngine
             {
                 _cards.Add(card);
                 _field.CardLocations[card.tempID] = new Tuple<Zone, int>(this, _field.rand.Next());
+                _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
             }
         }
 
@@ -1246,6 +1265,7 @@ namespace VanguardEngine
 
         protected virtual void UpdateLocation(Zone zone, int tempID)
         {
+            _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
             _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.rand.Next());
         }
 
@@ -1259,6 +1279,7 @@ namespace VanguardEngine
             if (_field.Attacked.Exists(c => c.tempID == card.tempID))
                 _field.Attacked.Remove(_field.Attacked.Find(c => c.tempID == card.tempID));
             previousZone = _field.CardLocations[card.tempID].Item1;
+            _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
             List<Card> associatedCards = new List<Card>();
             bool tokenRemoved = false;
             if (previousZone != null)
@@ -1480,6 +1501,7 @@ namespace VanguardEngine
 
         protected override void UpdateLocation(Zone zone, int tempID)
         {
+            _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
             _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.CardLocations[tempID].Item2);
         }
 
@@ -1717,30 +1739,32 @@ namespace VanguardEngine
         }
     }
 
-    public class SnapShot
+    public class Snapshot
     {
         public readonly int location;
+        public readonly int previousLocation;
         public readonly int circle;
         public readonly string name;
         public readonly int fieldID;
         public readonly int tempID;
 
-        public SnapShot(int _tempID, int _location, int _circle, string _name, int _fieldID)
+        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID)
         {
             tempID = _tempID;
             location = _location;
+            previousLocation = _previousLocation;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
         }
     }
 
-    //public class FieldSnapShot
+    //public class FieldSnapshot
     //{
     //    Card[] _snapShot = new Card[FL.MaxFL() + 1];
     //    Field _field;
 
-    //    public FieldSnapShot(Field field)
+    //    public FieldSnapshot(Field field)
     //    {
     //        _field = field;
     //        for (int i = 0; i < FL.MaxFL(); i++)

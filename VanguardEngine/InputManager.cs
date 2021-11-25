@@ -535,12 +535,12 @@ namespace VanguardEngine
             return int_input;
         }
 
-        public virtual int SelectAbility(Player actingPlayer, List<Tuple<Ability, int>> abilities)
+        public virtual int SelectAbility(Player actingPlayer, List<AbilityTimingCount> abilities)
         {
             _actingPlayer = actingPlayer;
             _abilities.Clear();
-            foreach (Tuple<Ability, int> ability in abilities)
-                _abilities.Add(ability.Item1);
+            foreach (AbilityTimingCount ability in abilities)
+                _abilities.Add(ability.ability);
             SelectAbility_Input();
             return int_input;
         }

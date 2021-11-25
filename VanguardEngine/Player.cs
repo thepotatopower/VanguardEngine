@@ -321,11 +321,11 @@ namespace VanguardEngine
             return -1;
         }
 
-        public SnapShot GetSnapShot(int tempID)
+        public Snapshot GetSnapshot(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
             if (card != null)
-                return new SnapShot(card.tempID, GetLocation(card), GetCircle(card), card.name, GetFieldID(tempID));
+                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID));
             return null;
         }
 
@@ -1586,7 +1586,7 @@ namespace VanguardEngine
             Card ToBeCalled = _field.CardCatalog[tempID];
             if (EnemyPrisoners.Contains(_field.CardCatalog[tempID]))
                 fromPrison = true;
-            if (_field.CardLocations[tempID].Item1 == PlayerHand)
+            if (_field.CardLocations[tempID] != null && _field.CardLocations[tempID].Item1 == PlayerHand)
                 fromHand = true;
             if (ToBeCalled.orderType >= 0)
             {
@@ -1878,6 +1878,11 @@ namespace VanguardEngine
             Log.WriteLine("----------");
             foreach (Card card in _field.Attacked)
                 Log.WriteLine(Attacker.name + " attacks " + card.name + "!");
+            int numOfAttacks = MyStates.GetValue(PlayerState.NumOfAttacks);
+            if (numOfAttacks == -1)
+                MyStates.AddUntilEndOfTurnValue(PlayerState.NumOfAttacks, 1);
+            else
+                MyStates.AddUntilEndOfTurnValue(PlayerState.NumOfAttacks, numOfAttacks + 1);
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
@@ -1906,6 +1911,14 @@ namespace VanguardEngine
             if (_field.Attacker == -1)
                 return null;
             return _field.GetUnit(_field.Attacker);
+        }
+
+        public int NumOfAttacks()
+        {
+            int numOfAttacks = MyStates.GetValue(PlayerState.NumOfAttacks);
+            if (numOfAttacks == -1)
+                return 0;
+            return numOfAttacks;
         }
 
         public bool Guard(List<int> selections, int target)
@@ -2884,10 +2897,13 @@ namespace VanguardEngine
             foreach (int tempID in cardsToSearch)
             {
                 if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
+                {
                     PlayerHand.Add(_field.CardCatalog[tempID]);
-                list.Add(tempID);
+                    list.Add(_field.CardCatalog[tempID].tempID);
+                    Reveal(list);
+                }
             }
-            Reveal(list);
+            Shuffle();
         }
 
         public void Stand(List<int> cardsToStand)
@@ -2904,12 +2920,13 @@ namespace VanguardEngine
             }
         }
 
-        public void Rest(List<int> cardsToRest)
+        public List<int> Rest(List<int> cardsToRest)
         {
             foreach (int tempID in cardsToRest)
             {
                 _field.Orientation.Rotate(tempID, false);
             }
+            return cardsToRest;
         }
 
         public void Reveal(List<int> cardsToReveal)
@@ -3354,6 +3371,14 @@ namespace VanguardEngine
                 return -1;
         }
 
+        public int GetPreviousLocation(Card card)
+        {
+            if (_field.PreviousCardLocations[card.tempID] != null)
+                return _field.PreviousCardLocations[card.tempID].Item1.GetLocation();
+            else
+                return -1;
+        }
+
         public bool UnitValueChanged(RecordedUnitValue previousValues, int currentPower, int currentCritical)
         {
             if (previousValues.currentPower != currentPower || previousValues.currentCritical != currentCritical)
@@ -3507,15 +3532,15 @@ namespace VanguardEngine
             return cards;
         }
 
-        public FieldSnapShot GenerateSnapShot()
-        {
-            return new FieldSnapShot(_field);
-        }
-
         public bool DamageThresholdReached()
         {
-            if (MyStates.HasState(PlayerState.DamageNeededToLose) || PlayerDamage.Count() >= MyStates.GetValue(PlayerState.DamageNeededToLose))
-                return true;
+            if (MyStates.HasState(PlayerState.DamageNeededToLose))
+            {
+                if (PlayerDamage.Count() >= MyStates.GetValue(PlayerState.DamageNeededToLose))
+                    return true;
+                else
+                    return false;
+            }
             if (PlayerDamage.Count() >= 6)
                 return true;
             return false;

@@ -57,6 +57,13 @@ namespace VanguardEngine
             card.triggerPower = triggerPower;
             card.unitType = unitType;
             card.tempID = tempID;
+            card.text = text;
+            card.str1 = str1;
+            card.str2 = str2;
+            card.str3 = str3;
+            card.str4 = str4;
+            card.str5 = str5;
+            card.str6 = str6;
             return card;
         }
         public void PrintCardInfo()
@@ -138,9 +145,10 @@ namespace VanguardEngine
         public const int World = 5;
         public const int Song = 6;
         public const int Gem = 7;
+        public const int Meteorite = 8;
         public static bool IsSetOrder(int type)
         {
-            if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song)
+            if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song || type == OrderType.Meteorite)
                 return true;
             return false;
         }

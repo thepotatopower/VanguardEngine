@@ -7,11 +7,15 @@ function RegisterAbilities()
 	ability1.SetCost("Cost")
 	ability1.SetTiming(a.OnRide)
 	ability1.SetTriggerCondition("Trigger")
-	ability2.SetActivation("OnRide")
+	ability1.SetActivation("OnRide")
 	-- put into soul from RC
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
-	ability2.SetActivation(a.OnPutIntoSoulFromRC)
+	ability2.SetTiming(a.OnPut)
+	ability2.SetSourceIsPlayer(true)
+	ability2.SetSourceLocation(l.VC)
+	ability2.SetMovedFrom(l.RC)
+	ability2.SetMovedTo(l.Soul)
 	ability2.SetTrigger("PutIntoSoulTrigger")
 	ability2.SetCondition("PutIntoSoulCondition")
 	ability2.SetCost("PutIntoSoulCost")
@@ -19,7 +23,7 @@ function RegisterAbilities()
 end
 
 function Trigger()
-	return obj.WasRodeUponBy(obj.GetNameFromCardID("dbt03_034"))
+	return obj.Exists({q.SnapshotIndex, 0, q.Other, o.This}) and obj.Exists({q.SnapshotIndex, 1, q.Name, obj.GetNameFromCardID("dbt03_034")})
 end
 
 function Cost(check)
@@ -32,7 +36,7 @@ function OnRide()
 end
 
 function PutIntoSoulTrigger()
-	return obj.IsApplicable() and obj.GetLocationOfAbilitySource() == l.VC
+	return obj.Exists({q.SnapshotIndex, 0, q.Other, o.This, q.Count, 1}) 
 end
 
 function PutIntoSoulCondition()

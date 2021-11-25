@@ -19,16 +19,12 @@ end
 
 function Continuous()
 	if obj.Exists({q.Location, l.Soul, q.Name, obj.GetNameFromCardID("dbt03_003")}) then
-		obj.AddPlayerValue(ps.DamageNeededToLose, 7)
+		obj.AddPlayerValue(ps.DamageNeededToLose, 7, p.Continuous)
 	end
 end
 
 function OnBattleEndsTrigger()
-	if obj.IsAttackingUnit() then
-		obj.Track(GetID())
-		return true
-	end
-	return false
+	return obj.IsAttackingUnit()
 end
 
 function Cost(check)
@@ -38,7 +34,7 @@ function Cost(check)
 end
 
 function OnBattleEnds()
-	if obj.IsSameZone(GetID()) then
+	if obj.IsSameZone() then
 		obj.Stand({q.Location, l.PlayerVC, q.Other, o.This})
 		if obj.SoulCount() >= 10 then
 			obj.AddCardValue({q.Location, l.PlayerVC, q.Other, o.This}, cs.BonusPower, 15000, p.UntilEndOfTurn)
