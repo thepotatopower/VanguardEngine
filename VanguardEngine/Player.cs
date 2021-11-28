@@ -527,12 +527,12 @@ namespace VanguardEngine
         public int GetColumn(int tempID)
         {
             Card card = _field.CardCatalog[tempID];
-            if (GetUnitsAtColumn(1).Contains(card))
-                return 1;
-            else if (GetUnitsAtColumn(0).Contains(card))
-                return 0;
-            else if (GetUnitsAtColumn(-1).Contains(card))
-                return -1;
+            if (GetUnitsAtColumn(FL.RightColumn).Contains(card))
+                return FL.RightColumn;
+            else if (GetUnitsAtColumn(FL.MiddleColumn).Contains(card))
+                return FL.MiddleColumn;
+            else if (GetUnitsAtColumn(FL.LeftColumn).Contains(card))
+                return FL.LeftColumn;
             return 0;
         }
 
@@ -1018,7 +1018,8 @@ namespace VanguardEngine
                 {
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
                         (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || Grade(card.tempID) >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
-                        MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType)
+                        MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType &&
+                        !MyStates.GetValues(PlayerState.CannotCallGradeToGC).Contains(Grade(card.tempID)))
                         cards.Add(card);
                 }
             }
@@ -2132,7 +2133,15 @@ namespace VanguardEngine
                     _field.RemoveUnit(GetCircle(card), PlayerDrop);
                 else
                     PlayerDrop.Add(card);
-            }    
+            }
+            if (OnAbilityTiming != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.cardList.Add(card);
+                args.i = Activation.OnPlayerRetired;
+                args.playerID = _playerID;
+                OnAbilityTiming(this, args);
+            }
         }
 
         public void RetireAttackedUnit()
@@ -3274,6 +3283,28 @@ namespace VanguardEngine
             return circles;
         }
 
+        public List<int> GetMyCircles()
+        {
+            List<int> circles = new List<int>();
+            circles.Add(Convert(FL.PlayerFrontLeft));
+            circles.Add(Convert(FL.PlayerFrontRight));
+            circles.Add(Convert(FL.PlayerBackLeft));
+            circles.Add(Convert(FL.PlayerBackCenter));
+            circles.Add(Convert(FL.PlayerBackRight));
+            return circles;
+        }
+
+        public List<int> GetEnemyCircles()
+        {
+            List<int> circles = new List<int>();
+            circles.Add(Convert(FL.EnemyFrontLeft));
+            circles.Add(Convert(FL.EnemyFrontRight));
+            circles.Add(Convert(FL.EnemyBackRight));
+            circles.Add(Convert(FL.EnemyBackCenter));
+            circles.Add(Convert(FL.EnemyBackLeft));
+            return circles;
+        }
+
         public List<int> GetTotalAvailableCircles(Card card, params int[] circles)
         {
             List<int> availableCircles = GetAvailableCircles(card.tempID);
@@ -3282,7 +3313,15 @@ namespace VanguardEngine
             {
                 foreach (int circle in circles)
                 {
-                    if (circle == FL.OpenCircle)
+                    if (circle == FL.EnemyCircle)
+                    {
+                        List<int> newCircles = new List<int>();
+                        foreach (int c in availableCircles)
+                            newCircles.Add(FL.SwitchSides(c));
+                        availableCircles.Clear();
+                        availableCircles.AddRange(newCircles);
+                    }
+                    else if (circle == FL.OpenCircle)
                     {
                         foreach (int c in availableCircles)
                         {
@@ -3290,6 +3329,17 @@ namespace VanguardEngine
                             {
                                 tempList.Add(c);
                             }
+                        }
+                        availableCircles.Clear();
+                        availableCircles.AddRange(tempList);
+                        tempList.Clear();
+                    }
+                    else if (circle == FL.LeftColumn || circle == FL.RightColumn || circle == FL.MiddleColumn)
+                    {
+                        foreach (int c in availableCircles)
+                        {
+                            if (GetCirclesAtColumn(circle).Contains(c))
+                                tempList.Add(c);
                         }
                         availableCircles.Clear();
                         availableCircles.AddRange(tempList);
@@ -3319,6 +3369,17 @@ namespace VanguardEngine
                 }
             }
             return availableCircles;
+        }
+
+        public List<int> GetCirclesAtColumn(int column)
+        {
+            List<int> circles = new List<int>();
+            for (int i = 0; i <= FL.PlayerVanguard; i++)
+            {
+                if (_field.GetColumn(i) == column && _field.GetColumn(i) != 0)
+                    circles.Add(i);
+            }
+            return circles;
         }
 
         public Card GetCard(int tempID)

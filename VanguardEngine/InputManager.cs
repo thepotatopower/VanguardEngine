@@ -239,6 +239,9 @@ namespace VanguardEngine
         protected virtual void SelectCallLocation_Input()
         {
             bool proceed = false;
+            bool isEnemy = false;
+            if (_ints2.Count > 0 && !_actingPlayer.GetMyCircles().Contains(_ints2[0]))
+                isEnemy = true;
             while (!proceed)
             {
                 Log.WriteLine("----------\nChoose location.\n" +
@@ -266,6 +269,8 @@ namespace VanguardEngine
                         int_input = _actingPlayer.Convert(FL.PlayerBackRight);
                         break;
                 }
+                if (isEnemy)
+                    int_input = FL.SwitchSides(int_input);
                 if (!_ints.Contains(int_input) && ((_ints2.Count > 0 && _ints2.Contains(int_input)) || _ints2.Count == 0))
                 {
                     proceed = true;

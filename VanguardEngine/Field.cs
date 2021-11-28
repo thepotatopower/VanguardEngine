@@ -165,7 +165,7 @@ namespace VanguardEngine
 
         public int GetRow(int circle)
         {
-            if (_circles[circle] != null)
+            if (circle >= 0 && circle < _circles.Length && _circles[circle] != null)
                 return _circles[circle].Row;
             else
                 return -1;
@@ -173,9 +173,9 @@ namespace VanguardEngine
 
         public int GetColumn(int circle)
         {
-            if (_circles[circle] != null)
+            if (circle >= 0 && circle < _circles.Length && _circles[circle] != null)
                 return _circles[circle].Column;
-            return -1;
+            return 0;
         }
 
         public List<Card> GetSoul(int circle)
@@ -426,29 +426,29 @@ namespace VanguardEngine
             for (int i = 1; i < 14; i++)
             {
                 if (i == FL.PlayerFrontLeft)
-                    _circles[i] = new RearguardCircle(0, -1, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this);
                 else if (i == FL.PlayerBackLeft)
-                    _circles[i] = new RearguardCircle(1, -1, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this);
                 else if (i == FL.PlayerVanguard)
-                    _circles[i] = new VanguardCircle(0, 0, i, this);
+                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this);
                 else if (i == FL.PlayerBackCenter)
-                    _circles[i] = new RearguardCircle(1, 0, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this);
                 else if (i == FL.PlayerFrontRight)
-                    _circles[i] = new RearguardCircle(0, 1, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this);
                 else if (i == FL.PlayerBackRight)
-                    _circles[i] = new RearguardCircle(1, 1, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this);
                 else if (i == FL.EnemyFrontLeft)
-                    _circles[i] = new RearguardCircle(0, 1, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this);
                 else if (i == FL.EnemyBackLeft)
-                    _circles[i] = new RearguardCircle(1, 1, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this);
                 else if (i == FL.EnemyVanguard)
-                    _circles[i] = new VanguardCircle(0, 0, i, this);
+                    _circles[i] = new VanguardCircle(0, 0, FL.MiddleColumn, this);
                 else if (i == FL.EnemyBackCenter)
-                    _circles[i] = new RearguardCircle(1, 0, i, this);
+                    _circles[i] = new RearguardCircle(1, 0, FL.MiddleColumn, this);
                 else if (i == FL.EnemyFrontRight)
-                    _circles[i] = new RearguardCircle(0, -1, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this);
                 else if (i == FL.EnemyBackRight)
-                    _circles[i] = new RearguardCircle(1, -1, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this);
                 else if (i == 7)
                     _circles[i] = new RearguardCircle(100, 100, i, this);
             }
@@ -853,6 +853,10 @@ namespace VanguardEngine
         public const int OpenCircle = 100;
         public const int BackRow = 101;
         public const int FrontRow = 102;
+        public const int EnemyCircle = 103;
+        public const int LeftColumn = 200;
+        public const int MiddleColumn = 201;
+        public const int RightColumn = 202;
 
         public static int SwitchSides(int location)
         {
@@ -871,12 +875,12 @@ namespace VanguardEngine
     public class PlayerStates
     {
         List<int> _continuous = new List<int>();
-        Dictionary<int, int> _continuousValues = new Dictionary<int, int>();
+        Dictionary<int, List<int>> _continuousValues = new Dictionary<int, List<int>>();
         List<int> _untilEndOfTurn = new List<int>();
-        Dictionary<int, int> _untilEndOfTurnValues = new Dictionary<int, int>();
+        Dictionary<int, List<int>> _untilEndOfTurnValues = new Dictionary<int, List<int>>();
         List<int> _untilEndOfNextTurn = new List<int>();
         List<int> _untilEndOfBattle = new List<int>();
-        Dictionary<int, int> _untilEndOfBattleValues = new Dictionary<int, int>();
+        Dictionary<int, List<int>> _untilEndOfBattleValues = new Dictionary<int, List<int>>();
         List<int> _permanent = new List<int>();
 
         public void AddContinuousState(int state)
@@ -887,7 +891,10 @@ namespace VanguardEngine
 
         public void AddContinuousValue(int state, int value)
         {
-            _continuousValues[state] = value;
+            if (!_continuousValues.ContainsKey(state))
+                _continuousValues[state] = new List<int>();
+            if (!_continuousValues[state].Contains(value))
+                _continuousValues[state].Add(value);
         }
 
         public void RefreshContinuousStates()
@@ -904,17 +911,21 @@ namespace VanguardEngine
 
         public void AddUntilEndOfTurnValue(int state, int value)
         {
-            _untilEndOfTurnValues[state] = value;
+            if (!_untilEndOfTurnValues.ContainsKey(state))
+                _untilEndOfTurnValues[state] = new List<int>();
+            _untilEndOfTurnValues[state].Add(value);
         }
 
         public void IncrementUntilEndOfTurnValue(int state, int value)
         {
-            if (_untilEndOfTurnValues.ContainsKey(state))
-                _untilEndOfTurnValues[state] += value;
-            else
-                _untilEndOfTurnValues[state] = value;
-            if (_untilEndOfTurnValues[state] < 0)
-                _untilEndOfTurnValues[state] = 0;
+            if (!_untilEndOfTurnValues.ContainsKey(state))
+            {
+                _untilEndOfTurnValues[state] = new List<int>();
+                _untilEndOfTurnValues[state].Add(0);
+            }
+            _untilEndOfTurnValues[state][0] += value;
+            if (_untilEndOfTurnValues[state][0] < 0)
+                _untilEndOfTurnValues[state][0] = 0;
         }
 
         public void AddUntilEndOfNextTurnState(int state)
@@ -939,7 +950,9 @@ namespace VanguardEngine
 
         public void AddUntilEndOfBattleValue(int state, int value)
         {
-            _untilEndOfBattleValues[state] = value;
+            if (!_untilEndOfBattleValues.ContainsKey(state))
+                _untilEndOfBattleValues[state] = new List<int>();
+            _untilEndOfBattleValues[state].Add(value);
         }
 
         public void EndAttack()
@@ -964,13 +977,28 @@ namespace VanguardEngine
 
         public int GetValue(int state)
         {
+            List<int> list = null;
             if (_continuousValues.ContainsKey(state))
-                return _continuousValues[state];
+                list = _continuousValues[state];
             if (_untilEndOfTurnValues.ContainsKey(state))
-                return _untilEndOfTurnValues[state];
+                list = _untilEndOfTurnValues[state];
             if (_untilEndOfBattleValues.ContainsKey(state))
-                return _untilEndOfBattleValues[state];
+                list = _untilEndOfBattleValues[state];
+            if (list != null && list.Count > 0)
+                return list[list.Count - 1];
             return -1;
+        }
+
+        public List<int> GetValues(int state)
+        {
+            List<int> list = new List<int>();
+            if (_continuousValues.ContainsKey(state))
+                list = _continuousValues[state];
+            if (_untilEndOfTurnValues.ContainsKey(state))
+                list = _untilEndOfTurnValues[state];
+            if (_untilEndOfBattleValues.ContainsKey(state))
+                list = _untilEndOfBattleValues[state];
+            return list;
         }
     }
 
@@ -1181,6 +1209,7 @@ namespace VanguardEngine
         public const int GuardRestrict = 24;
         public const int DoubleTriggerEffects = 25;
         public const int NumOfAttacks = 26;
+        public const int CannotCallGradeToGC = 27;
     }
 
     public class CardState

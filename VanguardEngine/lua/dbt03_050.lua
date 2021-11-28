@@ -58,7 +58,7 @@ function OnAttackCondition()
 end
 
 function OnAttackCanFullyResolve()
-	return obj.IsSameZone()
+	return obj.IsSameZone() and obj.Exists({q.Location, l.PlayerUnits, q.Other, o.This, q.Other, o.Resting})
 end
 
 function OnAttackCost(check)

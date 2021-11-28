@@ -362,6 +362,7 @@ namespace VanguardEngine
                     {
                         if (player1.MyStates.HasState(PlayerState.SoulBlastForRideDeck) && player1.GetSoul().Count > 0 && _inputManager.YesNo(player1, "Soul Blast 1 instead of discarding card?"))
                             SoulBlast(player1, player2, player1.GetSoul(), 1);
+                        else if (RideDeckDiscardCostReplaced(player1)) ;
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
                         input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
@@ -1099,7 +1100,7 @@ namespace VanguardEngine
                         givenAbility = _abilities.GetAbility(tuple.Item1, tuple.Item2);
                         if (givenAbility.GetActivations.Contains(Activation.Cont))
                         {
-                            givenAbility.CheckConditionAsGiven(card, Activation.Cont);
+                            givenAbility.CheckConditionAsGiven(card, Activation.Cont, null);
                             givenAbility.ActivateAsGiven(card);
                         }
                     }
@@ -1154,6 +1155,9 @@ namespace VanguardEngine
                 Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
                 PlayOrder(player1, ability.GetID(), false);
                 PlayOrder(player1, _alchemagicQueue[amSelection].GetID(), true);
+                List<Card> list = new List<Card>();
+                list.Add(ability.GetCard());
+                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
                 CardEventArgs args;
                 if (OnAlchemagic != null)
                 {
@@ -1173,13 +1177,13 @@ namespace VanguardEngine
             {
                 Log.WriteLine("----------\n" + ability.Name + "'s effect activates!");
                 PlayOrder(player1, ability.GetID(), false);
+                List<Card> list = new List<Card>();
+                list.Add(ability.GetCard());
+                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
                 ability.PayCost();
                 ability.Activate(Activation.OnOrder, null);
                 player1.EndOrder();
             }
-            List<Card> list = new List<Card>();
-            list.Add(ability.GetCard());
-            AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
         }
 
         public List<Ability> GetACTAbilities(Player player)
@@ -1254,7 +1258,6 @@ namespace VanguardEngine
             if (canActivate.Count > 0)
             {
                 AbilityTimingCount ability = canActivate[0];
-                ability.ability.SetTimingCount(ability.timingCount);
                 if (OnAbilityActivated != null)
                 {
                     CardEventArgs args = new CardEventArgs();
@@ -1311,7 +1314,6 @@ namespace VanguardEngine
                     args.card = canActivate[selection].ability.GetCard();
                     OnAbilityActivated(this, args);
                 }
-                canActivate[selection].ability.SetTimingCount(canActivate[selection].timingCount);
                 canActivate[selection].ability.PayCost();
                 _currentAbility = canActivate[selection].ability;
                 ThenNum = canActivate[selection].ability.Activate(canActivate[selection].activation, canActivate[selection].timingCount);
@@ -1719,6 +1721,14 @@ namespace VanguardEngine
             return _abilityTimings.GetAbilityTimingData(abilityTiming, timingCount, playerID);
         }
 
+        public AbilityTimingData GetAbilityTimingData(int abilityTiming, Tuple<int, int> timingCount, int playerID)
+        {
+            List<AbilityTimingData> list = _abilityTimings.GetAbilityTimingData(abilityTiming, timingCount.Item1, playerID);
+            if (list.Count > 0 && list.Count >= timingCount.Item2)
+                return list[timingCount.Item2 - 1];
+            return null;
+        }
+
         public void Sing(Player player, List<Card> cardsToSing, int count)
         {
             List<int> selectedCards = _inputManager.SelectFromList(player, cardsToSing, count, count, "to sing.");
@@ -1777,8 +1787,13 @@ namespace VanguardEngine
 
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards, bool append)
         {
+            Player player;
             AbilityTimingData abilityTimingData = new AbilityTimingData();
             Snapshot[] snapShots = new Snapshot[200];
+            if (playerID == 1)
+                player = _player1;
+            else
+                player = _player2;
             for (int i = 0;  i < 200; i++)
             {
                 snapShots[i] = _player1.GetSnapshot(i);
@@ -1796,7 +1811,7 @@ namespace VanguardEngine
             abilityTimingData.AddRelevantSnapshots(relevantSnapshots, 0);
             if (_currentAbility != null && snapShots[_currentAbility.GetCard().tempID] != null)
                 abilityTimingData.abilitySource = snapShots[_currentAbility.GetCard().tempID];
-            if (activation == Activation.OnPut && relevantSnapshots.Count > 0)
+            if (relevantSnapshots.Count > 0)
             {
                 abilityTimingData.movedFrom = relevantSnapshots[0].previousLocation;
                 abilityTimingData.movedTo = relevantSnapshots[0].location;
@@ -1810,6 +1825,8 @@ namespace VanguardEngine
                     temp.Add(_player2.GetSnapshot(_player2.Vanguard().tempID));
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
             }
+            else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())
+                abilityTimingData.additionalInfo = true;
             _abilityTimings.AddAbilityTiming(activation, playerID, abilityTimingData, append);
         }
 
@@ -1867,6 +1884,22 @@ namespace VanguardEngine
                 cards.Add(e.card);
                 AddAbilityTiming(Activation.OnPut, e.card.originalOwner, cards);
             }
+        }
+
+        public bool RideDeckDiscardCostReplaced(Player player)
+        {
+            List<Card> cards = new List<Card>();
+            cards.AddRange(player.GetActiveUnits());
+            List<Ability> abilities = _abilities.GetAbilities(Activation.RideDeckDiscardReplace, cards, null);
+            foreach (Ability ability in abilities)
+            {
+                if (_inputManager.YesNo(player, ability.GetPrompt()))
+                {
+                    ability.PayCost();
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -2045,6 +2078,7 @@ namespace VanguardEngine
         public Snapshot[] allSnapshots = new Snapshot[200];
         List<Snapshot>[] relevantSnapshots = new List<Snapshot>[5];
         public Snapshot abilitySource;
+        public bool additionalInfo = false;
         public int movedTo = -1;
         public int movedFrom = -1;
 
