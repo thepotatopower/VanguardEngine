@@ -52,6 +52,7 @@ namespace VanguardEngine
         protected int _alchemagicFreeCBAvailable = 0;
         protected bool _alchemagicUsed = false;
         protected bool _riddenThisTurn = false;
+        protected bool _payingCost = false;
         protected Zone PlayerHand;
         protected Zone EnemyHand;
         protected Zone PlayerDeck;
@@ -332,6 +333,12 @@ namespace VanguardEngine
         public int Turn
         {
             get => _field.Turn;
+        }
+
+        public bool PayingCost
+        {
+            get => _payingCost;
+            set => _payingCost = value;
         }
 
         public List<Card> GetHand()
@@ -2139,6 +2146,12 @@ namespace VanguardEngine
                 CardEventArgs args = new CardEventArgs();
                 args.cardList.Add(card);
                 args.i = Activation.OnPlayerRetired;
+                args.playerID = _playerID;
+                OnAbilityTiming(this, args);
+
+                args = new CardEventArgs();
+                args.cardList.Add(card);
+                args.i = Activation.OnRetire;
                 args.playerID = _playerID;
                 OnAbilityTiming(this, args);
             }

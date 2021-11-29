@@ -759,7 +759,7 @@ namespace VanguardEngine
             }
         }
 
-        public int SelectOption(Player actingPlayer, string[] list)
+        public int SelectOption(Player actingPlayer, params string[] list)
         {
             _actingPlayer = actingPlayer;
             _list = list;

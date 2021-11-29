@@ -102,6 +102,11 @@ namespace VanguardEngine
             }
         }
 
+        public string LoadName(string name)
+        {
+            return ConfigurationManager.AppSettings.Get(name);
+        }
+
         public Card LoadCard(string cardID)
         {
             List<string> list = new List<string>();
@@ -1232,12 +1237,32 @@ namespace VanguardEngine
         public void CallFromPrison(Player player1, Player player2)
         {
             List<Card> cards = new List<Card>();
-            cards.Add(player2.GetPlayerPrison());
-            List<Ability> abilities = _abilities.GetAbilities(Activation.OnCallFromPrison, cards, null);
-            if (abilities.Count == 0)
-                return;
-            abilities[0].PayCost();
-            abilities[0].Activate(abilities[0].GetActivations[0], null);
+            cards.AddRange(player2.GetPlayerPrisoners());
+            //List<Ability> abilities = _abilities.GetAbilities(Activation.OnCallFromPrison, cards, null);
+            //if (abilities.Count == 0)
+            //    return;
+            //abilities[0].PayCost();
+            //abilities[0].Activate(abilities[0].GetActivations[0], null);
+            if (cards.Count > 0)
+            {
+                int selection = 0;
+                if (player1.CanCB(1) && player1.CanSB(1))
+                    selection = _inputManager.SelectOption(player1, "Counter Blast 1", "Soul Blast 1");
+                else if (player1.CanCB(1))
+                    selection = 1;
+                else if (player1.CanSB(1))
+                    selection = 2;
+                if (selection == 1)
+                {
+                    CounterBlast(player1, player2, 1, 1);
+                    SuperiorCall(player1, player2, cards, 2, 0, null, false, true, true, false);
+                }
+                else if (selection == 2)
+                {
+                    SoulBlast(player1, player2, player1.GetSoul(), 1);
+                    SuperiorCall(player1, player2, cards, 1, 0, null, false, true, true, false);
+                }
+            }
         }
 
         public int ActivateNoPromptAbilities(Player player)
@@ -1382,6 +1407,17 @@ namespace VanguardEngine
             return false;
         }
 
+        public void CounterBlast(Player player1, Player player2, int count, int min)
+        {
+            List<Card> canCB = new List<Card>();
+            foreach (Card card in _player1.GetDamageZone())
+            {
+                if (_player1.IsFaceUp(card))
+                    canCB.Add(card);
+            }
+            CounterBlast(player1, player2, canCB, count, min);
+        }
+
         public void CounterBlast(Player player1, Player player2, List<Card> canCB, int count, int min)
         {
             int originalCount = count;
@@ -1509,10 +1545,11 @@ namespace VanguardEngine
             return cardsToAddToHand;
         }
 
-        public void AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
+        public List<int> AddToSoul(Player player1, Player player2, List<Card> canAddToHand, int count, int min)
         {
             List<int> cardsToAddToSoul = _inputManager.SelectFromList(player1, canAddToHand, count, min, "to add to soul.");
             player1.AddToSoul(cardsToAddToSoul);
+            return cardsToAddToSoul;
         }
 
         public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
@@ -1575,10 +1612,11 @@ namespace VanguardEngine
             }
         }
 
-        public void ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
+        public List<int> ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
         {
             List<int> cardsToReveal = _inputManager.SelectFromList(player1, canReveal, max, min, "to reveal.");
             player1.Reveal(cardsToReveal);
+            return cardsToReveal;
         }
 
         public void RevealFromDeck(Player player1, Player player2, int count)
@@ -1827,6 +1865,8 @@ namespace VanguardEngine
             }
             else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())
                 abilityTimingData.additionalInfo = true;
+            if (player.PayingCost)
+                abilityTimingData.asCost = true;
             _abilityTimings.AddAbilityTiming(activation, playerID, abilityTimingData, append);
         }
 
@@ -2078,6 +2118,7 @@ namespace VanguardEngine
         public Snapshot[] allSnapshots = new Snapshot[200];
         List<Snapshot>[] relevantSnapshots = new List<Snapshot>[5];
         public Snapshot abilitySource;
+        public bool asCost = false;
         public bool additionalInfo = false;
         public int movedTo = -1;
         public int movedFrom = -1;
