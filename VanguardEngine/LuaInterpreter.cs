@@ -409,6 +409,7 @@ namespace VanguardEngine
         bool _repeatable = false;
         AbilityTimingData data = null;
         string _prompt = "";
+        string _getCosts = "";
 
         public Ability(Player player1, Player player2, CardFight cardFight, Card card, int abilityID)
         {
@@ -524,6 +525,11 @@ namespace VanguardEngine
         {
             _cost = function;
             _isMandatory = false;
+        }
+
+        public void SetGetCosts(string function)
+        {
+            _getCosts = function;
         }
 
         public void SetCondition(string function)
@@ -1488,10 +1494,29 @@ namespace VanguardEngine
             return false;
         }
 
+        public List<Tuple<int, int>> GetCosts()
+        {
+            List<Tuple<int, int>> costs = new List<Tuple<int, int>>();
+            if (_getCosts != "")
+            {
+                DynValue list = _script.Call(_script.Globals[_getCosts]);
+                for (int i = 0; i < list.Tuple.Length; i++)
+                {
+                    Tuple<int, int> tuple = new Tuple<int, int>((int)list.Tuple[i].Number, (int)list.Tuple[i + 1].Number);
+                    costs.Add(tuple);
+                    i++;
+                }
+            }
+            return costs;
+        }
+
         public int GetCB()
         {
+            List<Tuple<int, int>> costs = GetCosts();
             if (_costs.ContainsKey(Property.CB))
                 return _costs[Property.CB];
+            else if (costs.Exists(tuple => tuple.Item1 == Property.CB))
+                return costs.Find(tuple => tuple.Item1 == Property.CB).Item2;
             else
                 return 0;
         }
@@ -2732,6 +2757,12 @@ namespace VanguardEngine
             return true;
         }
 
+        public bool CanSpecificDiscard(List<object> param)
+        {
+            SetParam(param, 1);
+            return CanSpecificDiscard(1);
+        }
+
         public bool CanSpecificDiscard(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -3266,6 +3297,12 @@ namespace VanguardEngine
         {
             List<Card> cardsToSelect = _player1.GetHand();
             _cardFight.Discard(_player1, _player2, cardsToSelect, count, min);
+        }
+
+        public void SpecificDiscard(List<object> param)
+        {
+            SetParam(param, 1);
+            SpecificDiscard(1);
         }
 
         public void SpecificDiscard(int paramNum)
@@ -4204,6 +4241,12 @@ namespace VanguardEngine
             return _player1.GetColumn(_card.tempID);
         }
 
+        public int GetColumn(List<object> param)
+        {
+            SetParam(param, 1);
+            return GetColumn(1);
+        }
+
         public int GetColumn(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -4681,6 +4724,11 @@ namespace VanguardEngine
         public int GetPlayerDamage()
         {
             return _player1.GetDamageZone().Count;
+        }
+
+        public bool SourceIsPlayerAbility()
+        {
+            return data != null && data.abilitySource != null && _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID;
         }
 
         public bool SourceIsVanguardAbility()

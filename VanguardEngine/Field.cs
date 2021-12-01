@@ -802,8 +802,8 @@ namespace VanguardEngine
             }
             if (_cards.Count > 0)
             {
-                _field.PreviousCardLocations[circle._cards[0].tempID] = _field.CardLocations[circle._cards[0].tempID];
-                _field.CardLocations[_cards[0].tempID] = new Tuple<Zone, int>(this, _field.CardLocations[circle._cards[0].tempID].Item2);
+                _field.PreviousCardLocations[_cards[0].tempID] = _field.CardLocations[_cards[0].tempID];
+                _field.CardLocations[_cards[0].tempID] = new Tuple<Zone, int>(this, _field.CardLocations[_cards[0].tempID].Item2);
             }
         }
     }
@@ -1210,6 +1210,7 @@ namespace VanguardEngine
         public const int DoubleTriggerEffects = 25;
         public const int NumOfAttacks = 26;
         public const int CannotCallGradeToGC = 27;
+        public const int VanguardAttackHitThisTurn = 28;
     }
 
     public class CardState
@@ -1244,6 +1245,7 @@ namespace VanguardEngine
         public const int Paralyze = 28;
         public const int DiscardAllOriginalDressAtEndOfBattle = 29;
         public const int CanDriveCheck = 30;
+        public const int UniversalPersonaRide = 31;
     }
 
     public class Zone

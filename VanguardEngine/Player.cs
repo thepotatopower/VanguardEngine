@@ -1540,7 +1540,11 @@ namespace VanguardEngine
             if (_field.UnitsHit.Exists(card => Vanguard().tempID == card.tempID))
                 MyStates.AddUntilEndOfTurnState(PlayerState.PlayerVanguardHitThisTurn);
             if (_field.UnitsHit.Count > 0)
+            {
+                if (_field.GetUnit(EnemyVanguard) != null && _field.GetUnit(EnemyVanguard).tempID == attacker.tempID)
+                    EnemyStates.AddUntilEndOfTurnState(PlayerState.VanguardAttackHitThisTurn);
                 return true;
+            }
             return false;
         }
 
@@ -1564,7 +1568,8 @@ namespace VanguardEngine
             _lastPlacedOnVC.Clear();
             _lastRidden.Add(_field.GetUnit(PlayerVanguard));
             bool personaRide = false;
-            if (card.name == _field.GetUnit(PlayerVanguard).name && _field.GetUnit(PlayerVanguard).personaRide == 1)
+            if ((card.name == _field.GetUnit(PlayerVanguard).name || _field.CardStates.HasState(_field.GetUnit(PlayerVanguard).tempID, CardState.UniversalPersonaRide)) && 
+                _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
                 personaRide = true;
             }
@@ -2904,7 +2909,16 @@ namespace VanguardEngine
             _soulChargedThisTurn = true;
             for (int i = 0; i < count && PlayerDeck.GetCards().Count > 0; i++)
             {
-                _field.GetSoulZone(PlayerVanguard).Add(PlayerDeck.Index(0));
+                Card card = PlayerDeck.Index(0);
+                _field.GetSoulZone(PlayerVanguard).Add(card);
+                if (OnAbilityTiming != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.cardList.Add(card);
+                    args.i = Activation.OnSoulCharge;
+                    args.playerID = _playerID;
+                    OnAbilityTiming(this, args);
+                }
             }
         }
 

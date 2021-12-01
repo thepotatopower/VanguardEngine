@@ -447,16 +447,12 @@ namespace VanguardEngine
                         canSelect.AddRange(player1.GetAvailableCircles(input));
                         location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
                         Log.WriteLine("input: " + input + " location: " + location);
-                        if (_abilities.CanOverDress(input, location))
+                        if (_abilities.CanOverDress(input, location) && _inputManager.YesNo(player1, "Perform overDress?"))
                         {
-                            //Log.WriteLine("Perform overDress?");
-                            if (_inputManager.YesNo(player1, "Perform overDress?"))
-                            {
-                                Call(player1, player2, location, input, true);
-                                continue;
-                            }
+                            Call(player1, player2, location, input, true);
                         }
-                        Call(player1, player2, location, input, false);
+                        else
+                            Call(player1, player2, location, input, false);
                     }
                     else
                         Log.WriteLine("No Rearguards can be called.");
@@ -1038,6 +1034,7 @@ namespace VanguardEngine
                 {
                     for (int i = 1; i <= abilityTiming.GetTimingCounts()[key]; i++)
                     {
+                        cards.Clear();
                         cards.Add(player1.GetTrigger(C.Player));
                         abilities.AddRange(_abilities.GetAbilities(activation, cards, new Tuple<int, int>(key, i)));
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), new Tuple<int, int>(key, i)));
@@ -1410,9 +1407,9 @@ namespace VanguardEngine
         public void CounterBlast(Player player1, Player player2, int count, int min)
         {
             List<Card> canCB = new List<Card>();
-            foreach (Card card in _player1.GetDamageZone())
+            foreach (Card card in player1.GetDamageZone())
             {
-                if (_player1.IsFaceUp(card))
+                if (player1.IsFaceUp(card))
                     canCB.Add(card);
             }
             CounterBlast(player1, player2, canCB, count, min);
