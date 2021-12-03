@@ -1576,13 +1576,12 @@ namespace VanguardEngine
             _player1.AddToDrop(tempID);
         }
 
-        public bool ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
+        public List<int> ChooseSendToBottom(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
         {
             List<int> cardsToSend = _inputManager.SelectFromList(player1, canSend, max, min, "to send to bottom of deck.");
             AddToChosen(cardsToSend);
-            if (cost)
-                player1.Reveal(cardsToSend);
-            return player1.SendToDeck(cardsToSend, true);
+            player1.SendToDeck(cardsToSend, true);
+            return cardsToSend;
         }
 
         public void ChooseSendToTop(Player player1, Player player2, List<Card> canSend, int max, int min, bool cost)
@@ -1626,17 +1625,19 @@ namespace VanguardEngine
             player1.EndReveal();
         }
 
-        public void ChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
+        public List<int> ChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
         {
             List<int> cardsToImprison = _inputManager.SelectFromList(player1, cardsToSelect, count, min, "to imprison.");
             player1.Imprison(cardsToImprison);
             AddToChosen(cardsToImprison);
+            return cardsToImprison;
         }
 
-        public void EnemyChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
+        public List<int> EnemyChooseImprison(Player player1, Player player2, List<Card> cardsToSelect, int count, int min)
         {
             List<int> cardsToImprison = _inputManager.SelectFromList(player2, cardsToSelect, count, min, "to imprison.");
             player1.Imprison(cardsToImprison);
+            return cardsToImprison;
         }
 
         public void ChooseMoveEnemyRearguard(Player player1, List<Card> cardsToSelect, List<int> availableCircles)

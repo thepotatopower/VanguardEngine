@@ -2791,6 +2791,12 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanRest(List<object> param)
+        {
+            SetParam(param, 1);
+            return CanRest(1);
+        }
+
         public bool CanRest(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -3009,6 +3015,11 @@ namespace VanguardEngine
         public void Draw(int count)
         {
             _player1.Draw(count);
+        }
+
+        public void EnemyDraw(int count)
+        {
+            _player2.Draw(count);
         }
 
         public void Mill(int count)
@@ -3393,12 +3404,12 @@ namespace VanguardEngine
             _cardFight.Retire(_player1, _player2, canRetire);
         }
 
-        public bool ChooseSendToBottom(int paramNum)
+        public List<int> ChooseSendToBottom(int paramNum)
         {
             return ChooseSendToBottom(paramNum, false);
         }
 
-        public bool ChooseSendToBottom(int paramNum, bool cost)
+        public List<int> ChooseSendToBottom(int paramNum, bool cost)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             int max = GetCount(paramNum);
@@ -3417,8 +3428,14 @@ namespace VanguardEngine
             _player1.Reveal(_player1.ConvertToTempIDs(_selected));
             _player1.SendToDeck(_player1.ConvertToTempIDs(_selected), true);
         }
+
+        public List<int> SendToBottom(List<object> param)
+        {
+            SetParam(param, 1);
+            return SendToBottom(1);
+        }
         
-        public bool SendToBottom(int paramNum)
+        public List<int> SendToBottom(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
             List<int> cardsToSend = new List<int>();
@@ -3427,7 +3444,13 @@ namespace VanguardEngine
                 cardsToSend.Add(card.tempID);
             }
             _player1.SendToDeck(cardsToSend, true);
-            return true;
+            return cardsToSend;
+        }
+
+        public void ChooseSendToTop(List<object> param)
+        {
+            SetParam(param, 1);
+            ChooseSendToTop(1);
         }
 
         public void ChooseSendToTop(int paramNum)
@@ -3455,6 +3478,12 @@ namespace VanguardEngine
                 cardsToSend.Add(card.tempID);
             }
             _player1.SendToDeck(cardsToSend, false);
+        }
+
+        public List<int> ChooseStand(List<object> param)
+        {
+            SetParam(param, 1);
+            return ChooseStand(1);
         }
 
         public List<int> ChooseStand(int paramNum)
@@ -3506,6 +3535,12 @@ namespace VanguardEngine
                 return _player1.Rest(_player1.ConvertToTempIDs(canRest));
             else
                 return _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
+        }
+
+        public void Rest(List<object> param)
+        {
+            SetParam(param, 1);
+            Rest(1);
         }
 
         public void Rest(int paramNum)
@@ -4032,16 +4067,16 @@ namespace VanguardEngine
             return _player1.HasPrison();
         }
 
-        public void ChooseImprison(List<object> param)
+        public List<int> ChooseImprison(List<object> param)
         {
             SetParam(param, 1);
-            ChooseImprison(1);
+            return ChooseImprison(1);
         }
 
-        public void ChooseImprison(int paramNum)
+        public List<int> ChooseImprison(int paramNum)
         {
             if (!_player1.HasPrison())
-                return;
+                return new List<int>();
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<Card> cardsToImprison = new List<Card>();
             foreach (Card card in cardsToSelect)
@@ -4049,15 +4084,21 @@ namespace VanguardEngine
                 if (!_player1.CardStates.HasState(card.tempID, CardState.Resist))
                     cardsToImprison.Add(card);
             }
-            _cardFight.ChooseImprison(_player1, _player2, cardsToImprison, GetCount(paramNum), GetMin(paramNum));
+            return _cardFight.ChooseImprison(_player1, _player2, cardsToImprison, GetCount(paramNum), GetMin(paramNum));
         }
 
-        public void EnemyChooseImprison(int paramNum)
+        public List<int> EnemyChooseImprison(List<object> param)
+        {
+            SetParam(param, 1);
+            return EnemyChooseImprison(1);
+        }
+
+        public List<int> EnemyChooseImprison(int paramNum)
         {
             if (!_player1.HasPrison())
-                return;
+                return new List<int>();
             List<Card> cardsToSelect = ValidCards(paramNum);
-            _cardFight.EnemyChooseImprison(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
+            return _cardFight.EnemyChooseImprison(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
         public void EnemyChooseRetire(int paramNum)
@@ -4180,6 +4221,15 @@ namespace VanguardEngine
         public bool AlchemagicUsedThisTurn()
         {
             return _player1.AlchemagicUsedThisTurn();
+        }
+
+        public int GetGrade(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            if (cards.Count > 0)
+                return _player1.Grade(cards[0].tempID);
+            return -1;
         }
 
         public List<int> GetGrades(List<object> param)
@@ -5037,6 +5087,7 @@ namespace VanguardEngine
         public const int RideDeckDiscardReplace = -40;
         public const int OnPlayerRetired = -41;
         public const int OnRetire = -42;
+        public const int OnSoulCharge = -43;
     }
 
     public class Location

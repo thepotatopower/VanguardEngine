@@ -1246,6 +1246,10 @@ namespace VanguardEngine
         public const int DiscardAllOriginalDressAtEndOfBattle = 29;
         public const int CanDriveCheck = 30;
         public const int UniversalPersonaRide = 31;
+        public const int CannotIntercept = 32;
+        public const int CannotGainIntercept = 33;
+        public const int CannotBoost = 34;
+        public const int CannotGainBoost = 35;
     }
 
     public class Zone

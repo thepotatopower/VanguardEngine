@@ -1023,6 +1023,8 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand.GetCards())
                 {
+                    if (MyStates.GetValues(PlayerState.MinGradeForGuard).Exists(grade => Grade(card.tempID) > grade))
+                        continue;
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
                         (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || Grade(card.tempID) >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
                         MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType &&
@@ -1046,6 +1048,8 @@ namespace VanguardEngine
 
         public bool CanIntercept(Card card)
         {
+            if (card != null && _field.CardStates.HasState(card.tempID, CardState.CannotIntercept))
+                return false;
             if (!MyStates.HasState(PlayerState.CannotIntercept) && card != null && !_field.Attacked.Contains(card) && 
                 (card.skill == Skill.Intercept || _field.CardStates.GetValues(card.tempID, CardState.BonusSkills).Contains(Skill.Intercept)) && 
                 (_field.GetRow(GetCircle(card)) == 0 || _field.CardStates.HasState(card.tempID, CardState.CanInterceptFromBackRow)))
@@ -1323,6 +1327,8 @@ namespace VanguardEngine
                 return false;
             if (IsUpRight(card))
             {
+                if (_field.CardStates.HasState(card.tempID, CardState.CannotBoost))
+                    return false;
                 if (card.skill == 0 || _field.CardStates.GetValues(card.tempID, CardState.BonusSkills).Contains(Skill.Boost))
                     return true;
             }
