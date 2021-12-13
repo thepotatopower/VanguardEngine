@@ -551,7 +551,7 @@ namespace VanguardEngine
                     {
                         if (ability.GetCard().tempID == _inputManager.int_input2)
                         {
-                            ActivateOrder(player1, ability);
+                            ActivateOrder(player1, ability, true, true);
                             break;
                         }
                     }
@@ -842,7 +842,7 @@ namespace VanguardEngine
                             {
                                 if (ability.GetCard().tempID == _inputManager.int_input2)
                                 {
-                                    ActivateOrder(player2, ability);
+                                    ActivateOrder(player2, ability, true, true);
                                     break;
                                 }
                             }
@@ -1118,10 +1118,30 @@ namespace VanguardEngine
 
         public List<Ability> GetAvailableOrders(Player player, bool blitz)
         {
+            List<Ability> abilities = new List<Ability>();
             if (blitz)
-                return _abilities.GetAbilities(Activation.OnBlitzOrder, player.GetOrderableCards(), null);
+                abilities = _abilities.GetAbilities(Activation.OnBlitzOrder, player.GetOrderableCards(), null);
             else
-                return _abilities.GetAbilities(Activation.OnOrder, player.GetOrderableCards(), null);
+                abilities = _abilities.GetAbilities(Activation.OnOrder, player.GetOrderableCards(), null);
+            List<Ability> available = new List<Ability>();
+            foreach (Ability ability in abilities)
+            {
+                if (ability.CanPayCost())
+                    available.Add(ability);
+            }
+            return available;
+        }
+
+        public List<Card> GetAvailableOrders(Player player, List<Card> cards)
+        {
+            List<Ability> abilites = _abilities.GetAbilities(Activation.OnOrder, cards, null);
+            List<Card> orders = new List<Card>();
+            foreach (Ability ability in abilites)
+            {
+                if (!orders.Exists(card => card.tempID == ability.GetCard().tempID))
+                    orders.Add(ability.GetCard());
+            }
+            return orders;
         }
 
         public void ChooseOrderToActivate(Player player1, bool blitz)
@@ -1134,15 +1154,24 @@ namespace VanguardEngine
             if (selection == abilities.Count)
                 return;
             else
-                ActivateOrder(player1, abilities[selection]);
+                ActivateOrder(player1, abilities[selection], true, true);
         }
 
-        public void ActivateOrder(Player player1, Ability ability)
+        public void ActivateOrder(Player player, Card card)
+        {
+            List<Card> cards = new List<Card>();
+            cards.Add(card);
+            List<Ability> abilities = _abilities.GetAbilities(Activation.OnOrder, cards, null);
+            if (abilities.Count > 0)
+                ActivateOrder(player, abilities[0], false, false);
+        }
+
+        public void ActivateOrder(Player player1, Ability ability, bool isPlayTiming, bool payCost)
         {
             int amSelection = -1;
             bool proceedWithAlchemagic = false;
             //_currentAbility = ability;
-            if (ability.GetCard().orderType == OrderType.Normal && (player1.CanAlchemagicSame() || player1.CanAlchemagicDiff()))
+            if (isPlayTiming && ability.GetCard().orderType == OrderType.Normal && (player1.CanAlchemagicSame() || player1.CanAlchemagicDiff()))
             {
                 _alchemagicQueue.AddRange(_abilities.GetAlchemagicableCards(player1, ability.GetID()));
                 if (_alchemagicQueue.Count >= 1 && (!ability.CheckConditionWithoutAlchemagic() || _inputManager.YesNo(player1, "Use Alchemagic?")))
@@ -1182,7 +1211,8 @@ namespace VanguardEngine
                 List<Card> list = new List<Card>();
                 list.Add(ability.GetCard());
                 AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
-                ability.PayCost();
+                if (payCost)
+                    ability.PayCost();
                 ability.Activate(Activation.OnOrder, null);
                 player1.EndOrder();
             }
@@ -1601,7 +1631,7 @@ namespace VanguardEngine
 
         public void PlayOrder(Player player1, int tempID, bool alchemagic)
         {
-            int result = player1.PlayOrder(tempID);
+            int result = player1.PlayOrder(tempID, alchemagic);
             if (result == 1)
             {
                 AddAbilityTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());

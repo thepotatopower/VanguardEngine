@@ -2552,12 +2552,12 @@ namespace VanguardEngine
             return false;
         }
 
-        public int PlayOrder(int tempID)
+        public int PlayOrder(int tempID, bool alchemagic)
         {
             _lastPutOnOrderZone.Clear();
             _lastOrderPlayed = null;
             Card card = _field.CardCatalog[tempID];
-            if (PlayerDrop.Contains(card))
+            if (alchemagic && PlayerDrop.Contains(card))
             {
                 PlayerBind.Add(card);
                 _isAlchemagic = true;

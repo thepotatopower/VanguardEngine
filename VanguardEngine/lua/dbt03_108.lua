@@ -1,24 +1,25 @@
--- 真理を照らす光
+-- 廃滅の虚竜
 
 function RegisterAbilities()
-	-- blitz order
+	-- on place
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetTiming(a.OnBlitzOrder)
-	ability1.SetCanFullyResolve("CanFullyResolve")
+	ability1.SetTiming(a.PlacedOnVC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
 	ability1.SetActivation("Activation")
+	ability1.SetProperty(p.NotMandatory)
 end
 
-function CanFullyResolve()
-	return obj.Exists({q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Name, obj.GetNameFromCardID("dbt01_008")})
+function Trigger()
+	return obj.IsApplicable()
+end
+
+function Condition()
+	return obj.Exists({q.Location, l.Drop, q.Other, o.NormalOrder})
 end
 
 function Activation()
-	obj.Select({q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Name, obj.GetNameFromCardID("dbt01_008")}, q.Count, 1)
-	if obj.GetNumberOf({q.Location, l.Selected}) > 0 and obj.CanCB(2) and obj.YesNo(obj.GetDescription(2)) then
-		obj.CounterBlast(2)
-		obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 40000, p.UntilEndOfBattle)
-	else
-		obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 10000, p.UntilEndOfBattle)
-	end
+	obj.Select({q.Location, l.Drop, q.Other, o.NormalOrder, q.Count, 1, q.Min, 0})
+	obj.PlayOrderWithoutCost({q.Location, l.Selected})
 end

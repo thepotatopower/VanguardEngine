@@ -4813,6 +4813,16 @@ namespace VanguardEngine
                 return cards[0].tempID;
             return -1;
         }
+
+        public void PlayOrderWithoutCost(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            foreach (Card card in cards)
+            {
+                _cardFight.ActivateOrder(_player1, card);
+            }
+        }
     }
 
     public class TimingCount
