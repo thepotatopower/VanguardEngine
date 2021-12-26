@@ -1,58 +1,36 @@
--- Blaze Maiden, Rino
+-- 焔の巫女 リノ
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on ride
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnRide)
+	ability1.SetTrigger("OnRideTrigger")
+	ability1.SetCondition("OnRideCondition")
+	ability1.SetActivation("OnRide")
+	-- cont
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.Cont)
+	ability2.SetLocation(l.VC)
+	ability2.SetLocation(l.RC)
+	ability2.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 2
+function OnRideTrigger()
+	return obj.WasRodeUponBy(obj.GetNameFromCardID("dsd01_002"))
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Deck, q.Name, "Trickstar", q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Other, o.This
+function OnRideCondition()
+	return obj.CanSuperiorCall({q.Location, l.Deck, q.Name, obj.GetNameFromCardID("dsd01_009")})
+end
+
+function OnRide()
+	obj.SuperiorCall({q.Location, l.Deck, q.Name, obj.GetNameFromCardID("dsd01_009"), q.Count, 1, q.Min, 0})
+end
+
+function Cont()
+	if obj.IsAttackingUnit() then
+		obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.This}, cs.BonusPower, 2000, p.Continuous)
 	end
-end
-
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnRide, p.HasPrompt
-	elseif n == 2 then
-		return a.OnAttack, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.WasRodeUponBy("Blaze Maiden, Reiyu") and obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsAttackingUnit() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.SuperiorCall(1)
-		obj.Shuffle()
-	elseif n == 2 then
-		obj.AddBattleOnlyPower(2, 2000)
-	end
-	return 0
 end

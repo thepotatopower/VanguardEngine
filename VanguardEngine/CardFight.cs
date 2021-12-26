@@ -1051,6 +1051,7 @@ namespace VanguardEngine
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetPlayerOrder(), new Tuple<int, int>(key, i)));
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetBind(), new Tuple<int, int>(key, i)));
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetRemoved(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetArms(player1.Vanguard().tempID), new Tuple<int, int>(key, i)));
                         foreach (AbilityTimingCount ability in abilityTiming.GetActivatedAbilities(key))
                         {
                             if (ability.timingCount.Item1 == key && ability.timingCount.Item2 == i && abilities.Contains(ability.ability))
@@ -1889,6 +1890,15 @@ namespace VanguardEngine
                     temp.Add(_player1.GetSnapshot(_player1.Vanguard().tempID));
                 else
                     temp.Add(_player2.GetSnapshot(_player2.Vanguard().tempID));
+                abilityTimingData.AddRelevantSnapshots(temp, 1);
+            }
+            else if (activation == Activation.PlacedOnVC)
+            {
+                List<Snapshot> temp = new List<Snapshot>();
+                if (playerID == 1 && _player1.GetSoul().Count > 0)
+                    temp.Add(_player1.GetSnapshot(_player1.GetSoul()[0].tempID));
+                else if (playerID == 2 && _player2.GetSoul().Count > 0)
+                    temp.Add(_player2.GetSnapshot(_player2.GetSoul()[0].tempID));
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
             }
             else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())

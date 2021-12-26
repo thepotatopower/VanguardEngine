@@ -1,61 +1,53 @@
--- Chakrabarthi Divine Dragon, Nirvana
+-- 天輪聖竜 ニルヴァーナ
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- ACT
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.VC)
+	ability1.SetProperty(p.OncePerTurn)
+	ability1.SetCost("ACTCost")
+	ability1.SetCanFullyResolve("ACTCanFullyResolve")
+	ability1.SetActivation("ACT")
+	-- on attack
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnAttack)
+	ability2.SetLocation(l.VC)
+	ability2.SetTrigger("OnAttackTrigger")
+	ability2.SetCost("OnAttackCost")
+	ability2.SetCanFullyResolve("OnAttackCanFullyResolve")
+	ability2.SetActivation("OnAttack")
 end
 
-function NumberOfParams()
-	return 3
+function ACTCost(check)
+	if check then return obj.CanDiscard(1) end
+	obj.Discard(1)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Drop, q.Grade, 0, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.UnitType, u.overDress
-	elseif n == 3 then
-		return q.Location, l.PlayerVC
-	end
+function ACTCanFullyResolve()
+	return obj.CanSuperiorCall({q.Location, l.Drop, q.Grade, 0})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.Discard, 1
-	elseif n == 2 then
-		return a.OnAttack, p.HasPrompt, p.CB, 1
-	end
+function ACT()
+	obj.SuperiorCall({q.Location, l.Drop, q.Grade, 0, q.Count, 1})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsVanguard() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() then 
-			return true
-		end
-	end
-	return false
+function OnAttackTrigger()
+	return obj.IsAttackingUnit()
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
-		return true
-	end
-	return false
+function OnAttackCost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function Activate(n)
-	if n == 1 then
-		obj.SuperiorCall(1)
-	elseif n == 2 then
-		obj.AddTempPower(2, 10000)
-		obj.AddTempPower(3, 10000)
-	end
-	return 0
+function OnAttackCanFullyResolve()
+	return obj.IsSameZone() or obj.Exists({q.Location, l.PlayerUnits, q.UnitType, u.overDress})
+end
+
+function OnAttack()
+	obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.This}, cs.BonusPower, 10000, p.UntilEndOfTurn)
+	obj.AddCardValue({q.Location, l.PlayerUnits, q.UnitType, u.overDress}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 end

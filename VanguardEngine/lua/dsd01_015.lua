@@ -1,47 +1,21 @@
--- Sunburst Evolution
+-- サンバースト・エヴォリューション
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- order
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Drop, q.Name, "Vairina", q.Count, 1
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.CB, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.Exists(2) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.ChooseAddTempPower(1, 5000)
-		obj.ChooseAddToHand(2)
-	end
-	return 0
+function Activation()
+	obj.Select({q.Location, l.PlayerUnits, q.Count, 1})
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 5000, p.UntilEndOfTurn)
+	obj.ChooseAddToHand({q.Location, l.Drop, q.Name, obj.GetNameFromCardID("dsd01_006"), q.Count, 1})
 end

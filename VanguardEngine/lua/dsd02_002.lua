@@ -1,58 +1,36 @@
--- Diabolos, "Anger" Richard
+-- ディアブロス “禎怒” リチャード
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on place
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnVC)
+	ability1.SetTrigger("PlacedOnVCTrigger")
+	ability1.SetCost("PlacedOnVCCost")
+	ability1.SetActivation("PlacedOnVC")
+	-- cont
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.Cont)
+	ability2.SetLocation(l.RC)
+	ability2.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 2
+function PlacedOnVCTrigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function PlacedOnVCCost(check)
+	if check then return obj.CanAddToSoul({q.Location, l.PlayerRC, q.Count, 1}) end
+	obj.ChooseAddToSoul({q.Location, l.PlayerRC, q.Count, 1})
+end
+
+function PlacedOnVC()
+	obj.Draw(1)
+end
+
+function Cont()
+	if obj.InFinalRush() then
+		obj.AddCardValue({q.Location, l.PlayerRC, q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnVC, p.HasPrompt, p.AddToSoul, 1
-	elseif n == 2 then
-		return a.Cont, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.LastPlacedOnVC() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Draw(1)
-	elseif n == 2 then
-		if obj.InFinalRush() then
-			obj.SetAbilityPower(2, 5000)
-		end
-	end
-	return 0
 end

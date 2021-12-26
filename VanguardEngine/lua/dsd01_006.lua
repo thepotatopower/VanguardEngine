@@ -1,56 +1,32 @@
--- Vairina
+-- ヴェルリーナ
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- overDress requirement
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetOverDress("isOverDressTarget")
+	-- on attack
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnAttack)
+	ability2.SetLocation(l.RC)
+	ability2.SetTrigger("Trigger")
+	ability2.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
+function isOverDressTarget(id)
+	obj.Store(id)
+	return obj.Exists({q.Location, l.Stored, q.Name, obj.GetNameFromCardID("dsd01_009")})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Name, "Trickstar"
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 3 then
-		return q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1
+function Trigger()
+	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.Attacking, q.Other, o.OverDress}) and obj.Exists({q.Location, l.EnemyVC, q.Other, o.Attacked})
+end
+
+function Activation()
+	obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.ThisFieldID}, cs.BonusPower, 10000, p.UntilEndOfTurn)
+	if obj.CanSB(2) and obj.YesNo(obj.GetDescription(3)) then
+		obj.SoulBlast(2)
+		obj.ChooseRetire({q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1})
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OverDress, 1
-	elseif n == 2 then
-		return a.OnAttack, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 2 then
-		if obj.InOverDress() and obj.IsAttackingUnit() and obj.TargetIsEnemyVanguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 2 then
-		obj.AddBattleOnlyPower(2, 10000)
-		if obj.CanSB(2) and obj.YesNo("Soul Blast 2 to retire one enemy rear-guard?") then
-			obj.SoulBlast(2)
-			obj.ChooseRetire(3)
-		end
-	end
-	return 0
 end

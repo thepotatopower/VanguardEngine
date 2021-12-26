@@ -1016,6 +1016,16 @@ namespace VanguardEngine
             return cards;
         }
 
+        public List<Card> GetPlayerFrontRowRC()
+        {
+            List<Card> cards = new List<Card>();
+            if (_field.GetUnit(PlayerFrontLeft) != null)
+                cards.Add(_field.GetUnit(PlayerFrontLeft));
+            if (_field.GetUnit(PlayerFrontRight) != null)
+                cards.Add(_field.GetUnit(PlayerFrontRight));
+            return cards;
+        }
+
         public List<Card> GetGuardableCards()
         {
             List<Card> cards = new List<Card>();
@@ -1523,7 +1533,7 @@ namespace VanguardEngine
             {
                 if (!GetAllUnitsOnField().Contains(card))
                     return false;
-                if (CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID))
+                if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeHit) && CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID))
                 {
                     _field.UnitsHit.Add(card);
                     Log.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
@@ -2958,6 +2968,11 @@ namespace VanguardEngine
                     _field.Orientation.Rotate(tempID, true);
                     _stoodByCardEffect.Add(_field.CardCatalog[tempID]);
                     _stoodByCardEffectThisTurn.Add(tempID);
+                    Card card = _field.CardCatalog[tempID];
+                    if (card.originalOwner == _playerID && GetLocation(card) == Location.RC)
+                        MyStates.AddUntilEndOfTurnState(PlayerState.RearguardStoodByEffectThisTurn);
+                    else if (card.originalOwner != _playerID && GetLocation(card) == Location.RC)
+                        EnemyStates.AddUntilEndOfTurnState(PlayerState.RearguardStoodByEffectThisTurn);
                 }
             }
         }
@@ -3638,6 +3653,57 @@ namespace VanguardEngine
             if (PlayerDamage.Count() >= 6)
                 return true;
             return false;
+        }
+
+        public bool VanguardIsArmed()
+        {
+            return _field.GetArm(true, PlayerVanguard) != null || _field.GetArm(false, PlayerVanguard) != null;
+        }
+        
+        public void Arm(int targetID, int armID, bool left)
+        {
+            Card target = _field.CardCatalog[targetID];
+            Card arm = _field.CardCatalog[armID];
+            if (GetCircle(target) == -1)
+                return;
+            _field.Arm(GetCircle(target), arm, left);
+            if (OnAbilityTiming != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                args.cardList.Add(target);
+                args.i = Activation.OnArmed;
+                args.playerID = _playerID;
+                OnAbilityTiming(this, args);
+            }
+        }
+
+        public Card FindArmedUnit(int tempID)
+        {
+            foreach (Card card in GetActiveUnits())
+            {
+                Card arm;
+                arm = _field.GetArm(true, GetCircle(card));
+                if (arm != null && arm.tempID == tempID)
+                    return card;
+                arm = _field.GetArm(false, GetCircle(card));
+                if (arm != null && arm.tempID == tempID)
+                    return card;
+            }
+            return null;
+        }
+
+        public List<Card> GetArms(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            List<Card> arms = new List<Card>();
+            if (card != null && GetCircle(card) != -1)
+            {
+                if (_field.GetArm(true, GetCircle(card)) != null)
+                    arms.Add(_field.GetArm(true, GetCircle(card)));
+                if (_field.GetArm(false, GetCircle(card)) != null)
+                    arms.Add(_field.GetArm(false, GetCircle(card)));
+            }
+            return arms;
         }
     }
 

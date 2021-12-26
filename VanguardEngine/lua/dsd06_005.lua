@@ -1,13 +1,18 @@
--- スチームガンナー ブローディ
+-- 封焔竜 ウーサルラ
 
 function RegisterAbilities()
+	-- on place
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetTiming(a.PutOnGC)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetTrigger("Trigger")
 	ability1.SetCost("Cost")
 	ability1.SetCanFullyResolve("CanFullyResolve")
-	ability1.SetTrigger("Trigger")
 	ability1.SetActivation("Activation")
+end
+
+function Trigger()
+	return obj.IsApplicable()
 end
 
 function Cost(check)
@@ -16,13 +21,9 @@ function Cost(check)
 end
 
 function CanFullyResolve()
-	return obj.IsSameZone()
-end
-
-function Trigger()
-	return obj.IsApplicable()
+	return obj.CanAddToHand({q.Location, l.Drop, q.Other, o.Arms})
 end
 
 function Activation()
-	obj.AddCardValue({q.Location, l.GC, q.Other, o.ThisFieldID}, cs.BonusShield, 5000, p.UntilEndOfBattle)
+	obj.ChooseAddToHand({q.Location, l.Drop, q.Other, o.Arms})
 end

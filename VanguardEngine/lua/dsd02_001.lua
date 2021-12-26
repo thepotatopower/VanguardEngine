@@ -1,54 +1,45 @@
--- Diabolos, "Violence" Bruce
+-- ディアブロス “暴虐” ブルース
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on ride phase
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnRidePhase)
+	ability1.SetLocation(l.VC)
+	ability1.SetActivation("OnRidePhase")
+	-- on attack
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnAttack)
+	ability2.SetLocation(l.VC)
+	ability2.SetTrigger("OnAttackTrigger")
+	ability2.SetCondition("OnAttackCondition")
+	ability2.SetCost("OnAttackCost")
+	ability2.SetCanFullyResolve("OnAttackCanFullyResolve")
+	ability2.SetActivation("OnAttack")
 end
 
-function NumberOfParams()
-	return 1
+function OnRidePhase()
+	obj.FinalRush()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.FL, FL.PlayerFrontLeft, q.FL, FL.PlayerFrontRight, q.Other, o.Resting
-	end
+function OnAttackTrigger()
+	return obj.IsAttackingUnit()
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnRidePhase, p.HasPrompt, p.IsMandatory
-	elseif n == 2 then
-		return a.OnAttack, p.HasPrompt, p.SB, 5
-	end
+function OnAttackCondition()
+	return obj.InFinalRush()
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsVanguard() and obj.IsPlayerTurn() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() and obj.InFinalRush() then
-			return true
-		end
-	end
-	return false
+function OnAttackCost(check)
+	if check then return obj.CanSB(5) end
+	obj.SoulBlast(5)
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
+function OnAttackCanFullyResolve()
+	return obj.Exists({q.Location, l.FrontRowRC, q.Other, o.Resting})
 end
 
-function Activate(n)
-	if n == 1 then
-		obj.FinalRush()
-	elseif n == 2 then
-		obj.Stand(1)
-	end
-	return 0
+function OnAttack()
+	obj.Stand({q.Location, l.FrontRowRC})
 end

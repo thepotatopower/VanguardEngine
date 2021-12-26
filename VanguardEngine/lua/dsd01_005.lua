@@ -1,44 +1,16 @@
--- Fire Slash Dragon, Inferno Sword
+-- 火斬竜 インフェルノソード
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- cont
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.RC)
+	ability1.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 1
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function Cont()
+	if obj.IsAttackingUnit() then
+		obj.AddCardValue({q.Location, l.PlayerRC, q.Other, o.This}, cs.BonusPower, 2000, p.Continuous)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnAttack, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsAttackingUnit() and obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddBattleOnlyPower(1, 2000)
-	end
-	return 0
 end

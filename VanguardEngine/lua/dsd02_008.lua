@@ -1,41 +1,26 @@
--- Acrobat Presenter
+-- アクロバット・プレゼンター
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnAttack)
+	ability1.SetLocation(l.RC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 0
+function Trigger()
+	return obj.IsAttackingUnit() or obj.IsBooster()
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnAttack, p.HasPrompt, p.IsMandatory
-	end
+function Condition()
+	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dsd01_001")})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() and obj.VanguardIs("Diabolos, \"Violence\" Bruce") and (obj.IsAttackingUnit() or obj.IsBooster()) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
+function Activation()
+	obj.SoulCharge(1)
+	if obj.InFinalRush() then
 		obj.SoulCharge(1)
-		if obj.InFinalRush() then
-			obj.SoulCharge(1)
-		end
 	end
-	return 0
 end

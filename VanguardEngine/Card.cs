@@ -146,11 +146,18 @@ namespace VanguardEngine
         public const int Song = 6;
         public const int Gem = 7;
         public const int Meteorite = 8;
+        public const int LeftDeityArms = 9;
+        public const int RightDeityArms = 10;
         public static bool IsSetOrder(int type)
         {
             if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song || type == OrderType.Meteorite)
                 return true;
             return false;
+        }
+        public static bool IsNormalOrder(int type)
+        {
+            return type == OrderType.Normal || type == OrderType.Gem || 
+                type == OrderType.LeftDeityArms || type == OrderType.RightDeityArms;
         }
     }
 

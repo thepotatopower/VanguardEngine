@@ -1,36 +1,12 @@
--- Brothers' Soul
+-- ブラザース・ソウル
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 0
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.SoulCharge(2)
-	end
-	return 0
+function Activation()
+	obj.SoulCharge(2)
 end

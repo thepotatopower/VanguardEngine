@@ -1,7 +1,7 @@
--- トリクスタ
+-- 咎叩き
 
 function RegisterAbilities()
-	-- cont
+	-- on place
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
 	ability1.SetTiming(a.Cont)
@@ -10,5 +10,6 @@ function RegisterAbilities()
 end
 
 function Activation()
-	obj.AddCardState({q.Location, l.PlayerRC, q.Other, o.This}, cs.Resist, p.Continuous)
+	local count = obj.GetNumberOf({q.Location, l.Bind, q.Other, o.Order})
+	obj.AddCardValue({q.Location, l.PlayerRC, q.Other, o.This}, cs.BonusPower, count * 5000, p.Continuous)
 end

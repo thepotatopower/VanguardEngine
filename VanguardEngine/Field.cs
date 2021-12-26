@@ -163,6 +163,14 @@ namespace VanguardEngine
             }
         }
 
+        public void Arm(int circle, Card arm, bool left)
+        {
+            if (circle != -1)
+            {
+                _circles[circle].Arm(arm, left);
+            }
+        }
+
         public int GetRow(int circle)
         {
             if (circle >= 0 && circle < _circles.Length && _circles[circle] != null)
@@ -186,6 +194,11 @@ namespace VanguardEngine
         public Soul GetSoulZone(int circle)
         {
             return _circles[circle].GetSoulZone();
+        }
+
+        public Card GetArm(bool left, int circle)
+        {
+            return _circles[circle].GetArm(left);
         }
 
         public int[] CirclePower
@@ -595,18 +608,30 @@ namespace VanguardEngine
         public bool ClearOverloadedCards()
         {
             bool retired = false;
-            RearguardCircle rc;
-            for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+            Circle circle;
+            for (int i = FL.PlayerFrontLeft; i <= FL.PlayerVanguard; i++)
             {
-                rc = (RearguardCircle)_circles[i];
-                while (rc.OverloadedUnits.Count > 0)
-                    _player1Drop.Add(rc.OverloadedUnits[0]);
+                circle = _circles[i];
+                if (circle.OverloadedUnits.Count > 0)
+                    retired = true;
+                while (circle.OverloadedUnits.Count > 0)
+                    _player1Drop.Add(circle.OverloadedUnits[0]);
+                while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                    _player1Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                    _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             }
-            for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+            for (int i = FL.EnemyFrontLeft; i <= FL.EnemyVanguard; i++)
             {
-                rc = (RearguardCircle)_circles[i];
-                while (rc.OverloadedUnits.Count > 0)
-                    _player2Drop.Add(rc.OverloadedUnits[0]);
+                circle = _circles[i];
+                if (circle.OverloadedUnits.Count > 0)
+                    retired = true;
+                while (circle.OverloadedUnits.Count > 0)
+                    _player2Drop.Add(circle.OverloadedUnits[0]);
+                while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                    _player2Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                    _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             }
             return retired;
         }
@@ -657,11 +682,12 @@ namespace VanguardEngine
     public class Circle : Zone
     {
         protected Soul _soul; //doubles as originalDress for rearguard circles
-        protected List<Card> _overloadedUnits = new List<Card>();
         protected int _row = 0;
         protected int _column = 0;
         protected int _power = 0;
         protected int _critical = 0;
+        protected Arm _leftArm;
+        protected Arm _rightArm;
 
         public Circle(int row, int column, int FL, Field field) : base(field)
         {
@@ -669,6 +695,8 @@ namespace VanguardEngine
             _column = column;
             _soul = new Soul(field, FL);
             _FL = FL;
+            _leftArm = new Arm(field);
+            _rightArm = new Arm(field);
         }
 
         protected override List<Card> AssociatedCards()
@@ -718,9 +746,23 @@ namespace VanguardEngine
             return _soul;
         }
 
-        public List<Card> OverloadedUnits
+        public Card GetArm(bool left)
         {
-            get => _overloadedUnits;
+            List<Card> arm;
+            if (left)
+                arm = _leftArm.GetCards();
+            else
+                arm = _rightArm.GetCards();
+            if (arm.Count > 0)
+                return arm[0];
+            return null;
+        }
+
+        public Arm GetArmZone(bool left)
+        {
+            if (left)
+                return _leftArm;
+            return _rightArm;
         }
 
         public int Row
@@ -742,6 +784,34 @@ namespace VanguardEngine
         {
             get => _critical;
         }
+
+        public void Arm(Card card, bool left)
+        {
+            if (left)
+                _leftArm.Add(card);
+            else
+                _rightArm.Add(card);
+        }
+    }
+
+    public class Arm : Zone
+    {
+        public Arm(Field field) : base(field)
+        {
+            location = Location.VC;
+        }
+
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            Card returnedCard = base.AddToZone(card, true);
+            if (_cards.Count > 1)
+            {
+                Card overloaded = _cards[0];
+                _cards.RemoveAt(0);
+                _overloadedCards.Add(overloaded);
+            }
+            return returnedCard;
+        }
     }
 
     public class RearguardCircle : Circle
@@ -751,16 +821,16 @@ namespace VanguardEngine
             location = Location.RC;
         }
 
-        protected override List<Card> Remove(Card card)
-        {
-            if (OverloadedUnits.Contains(card))
-            {
-                OverloadedUnits.Remove(card);
-                return new List<Card>();
-            }
-            else
-                return base.Remove(card);
-        }
+        //protected override List<Card> Remove(Card card)
+        //{
+        //    if (OverloadedUnits.Contains(card))
+        //    {
+        //        OverloadedUnits.Remove(card);
+        //        return new List<Card>();
+        //    }
+        //    else
+        //        return base.Remove(card);
+        //}
 
         protected override Card AddToZone(Card card, bool bottom)
         {
@@ -788,13 +858,13 @@ namespace VanguardEngine
         {
             Soul tempSoul = _soul;
             List<Card> tempCards = _cards;
-            List<Card> tempOverloaded = _overloadedUnits;
+            List<Card> tempOverloaded = _overloadedCards;
             _soul = circle._soul;
             _cards = circle._cards;
-            _overloadedUnits = circle._overloadedUnits;
+            _overloadedCards = circle._overloadedCards;
             circle._soul = tempSoul;
             circle._cards = tempCards;
-            circle._overloadedUnits = tempOverloaded;
+            circle._overloadedCards = tempOverloaded;
             if (circle._cards.Count > 0)
             {
                 _field.PreviousCardLocations[circle._cards[0].tempID] = _field.CardLocations[circle._cards[0].tempID];
@@ -1211,6 +1281,7 @@ namespace VanguardEngine
         public const int NumOfAttacks = 26;
         public const int CannotCallGradeToGC = 27;
         public const int VanguardAttackHitThisTurn = 28;
+        public const int RearguardStoodByEffectThisTurn = 29;
     }
 
     public class CardState
@@ -1250,11 +1321,13 @@ namespace VanguardEngine
         public const int CannotGainIntercept = 33;
         public const int CannotBoost = 34;
         public const int CannotGainBoost = 35;
+        public const int CannotBeHit = 36;
     }
 
     public class Zone
     {
         protected List<Card> _cards = new List<Card>();
+        protected List<Card> _overloadedCards = new List<Card>();
         protected Field _field;
         protected CardEventArgs args = new CardEventArgs();
         protected Zone previousZone;
@@ -1278,6 +1351,11 @@ namespace VanguardEngine
 
         protected virtual List<Card> Remove(Card card)
         {
+            if (OverloadedUnits.Contains(card))
+            {
+                OverloadedUnits.Remove(card);
+                return new List<Card>();
+            }
             _cards.Remove(card);
             _field.RemoveFromPseudoZones(card);
             return AssociatedCards();
@@ -1433,6 +1511,11 @@ namespace VanguardEngine
         public int GetFL()
         {
             return _FL;
+        }
+
+        public List<Card> OverloadedUnits
+        {
+            get => _overloadedCards;
         }
     }
 

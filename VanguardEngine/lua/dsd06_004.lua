@@ -1,4 +1,4 @@
--- ディアブロス “無垢” マット
+-- 封焔竜 アーヒンサ
 
 function RegisterAbilities()
 	-- on ride
