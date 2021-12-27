@@ -1,43 +1,21 @@
--- The Hour of Holy Judgement Cometh
+-- 聖裁の刻, 来たれり
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- order
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 1
+function Cost(check)
+	if check then return obj.CanCB(2) end
+	obj.CounterBlast(2)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 1
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.CB, 2
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Draw(2)
-		obj.ChooseAddTempPower(1, 5000)
-	end
-	return 0
+function Activation()
+	obj.Draw(2)
+	obj.Select({q.Location, l.PlayerUnits, q.Count, 1})
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end

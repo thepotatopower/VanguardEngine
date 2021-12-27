@@ -1,50 +1,26 @@
--- Knight of Broadaxe, Rafluke
+-- 斧鉞の騎士 ラフルク
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- ACT
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.RC)
+	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
+function Cost(check)
+	if check then return obj.CanAddToSoul({q.Location, l.PlayerRC, q.Other, o.This}) end
+	obj.AddToSoul({q.Location, l.PlayerRC, q.Other, o.This})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Grade, 3, q.Count, 2
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Grade, 3, q.Count, 1
-	end
+function CanFullyResolve()
+	return obj.Exists({q.Location, l.PlayerRC, q.Grade, 3, q.Other, o.NotThis})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.AddToSoul, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.Exists(2) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.ChooseAddTempPower(3, 10000)
-	end
-	return 0
+function Activation()
+	obj.Select({q.Location, l.PlayerRC, q.Grade, 3, q.Count, 1})
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 end

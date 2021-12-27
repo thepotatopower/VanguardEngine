@@ -1,38 +1,23 @@
--- Knight of Heavenly Bow, Base
+-- 天弓の騎士 ベイス
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- on ride
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnRide)
+	ability1.SetTriggerCondition("Trigger")
+	ability1.SetActivationCondition("Condition")
+	ability1.SetActivation("OnRide")
 end
 
-function NumberOfParams()
-	return 0
+function Trigger()
+	return obj.IsApplicable() 
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnRide, p.HasPrompt, p.IsMandatory
-	end
+function Condition()
+	return obj.Turn() % 2 == 0
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRodeUponThisTurn() and obj.Turn() % 2 == 0 then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Draw(1)
-	end
-	return 0
+function OnRide()
+	obj.Draw(1)
 end

@@ -5368,6 +5368,7 @@ namespace VanguardEngine
         public const int SendToBottom = 26;
         public const int RevealAndSendToBottom = 27;
         public const int Continuous = 28;
+        public const int Cont = 29;
         public const int UntilEndOfBattle = 29;
         public const int UntilEndOfTurn = 30;
         public const int Repeatable = 31;

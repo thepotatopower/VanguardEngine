@@ -1,44 +1,19 @@
--- Spiritual King of Determination, Olbaria
+-- 決意の精霊王 オルバリア
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- over trigger
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOverTrigger)
+	ability1.SetTrigger("Trigger")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 1
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerVC, q.Location, l.PlayerRC, q.Count, 1
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOverTrigger, p.HasPrompt, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.LastRevealedTrigger() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.ChooseAddTempPower(1, 100000000)
-	end
-	return 0
+function Activation()
+	obj.Select({q.Location, l.PlayerUnits, q.Count, 1})
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 100000000, p.UntilEndOfTurn)
 end

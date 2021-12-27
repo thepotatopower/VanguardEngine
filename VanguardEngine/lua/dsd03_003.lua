@@ -1,65 +1,49 @@
--- Knight of Heavenly Sword, Fort
+-- 天剣の騎士 フォート
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on ride
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnRide)
+	ability1.SetTrigger("OnRideTrigger")
+	ability1.SetCost("OnRideCost")
+	ability1.SetActivation("OnRide")
+	-- ACT
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnACT)
+	ability2.SetProperty(p.OncePerTurn)
+	ability2.SetLocation(l.RC)
+	ability2.SetCost("ACTCost")
+	ability2.SetCanFullyResolve("ACTCanFullyResolve")
+	ability2.SetActivation("ACT")
 end
 
-function NumberOfParams()
-	return 4
+function OnRideTrigger()
+	return obj.WasRodeUponBy(obj.GetNameFromCardID("dsd03_002"))
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerHand, q.Grade, 3, q.Count, 2
-	elseif n == 2 then
-		return q.Location, l.Revealed, q.Other, o.Unit, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.PlayerVC, q.Count, 1
-	elseif n == 4 then
-		return q.Location, l.Revealed
-	end
+function OnRideCost(check)
+	if check then return obj.CanReveal({q.Location, l.Hand, q.Grade, 3, q.Count, 2}) end
+	obj.ChooseReveal({q.Location, l.Hand, q.Grade, 3, q.Count, 2})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnRide, p.HasPrompt, p.Reveal, 1
-	elseif n == 2 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 1
-	end
+function OnRide()
+	obj.RevealFromDeck(1)
+	obj.SuperiorCall({q.Location, l.Revealed, q.Other, o.Unit})
+	obj.AddToDrop({q.Location, l.Revealed})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.WasRodeUponBy("Knight of Heavenly Spear, Rooks") then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() and obj.Exists(4) then
-			return true
-		end
-	end
-	return false
+function ACTCost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
+function ACTCanFullyResolve()
+	obj.Exists({q.Location, l.PlayerVC, q.Grade, 3})
 end
 
-function Activate(n)
-	if n == 1 then
-		obj.RevealFromDeck(1)
-		if obj.Exists(2) then
-			obj.SuperiorCall(2)
-		end
-		obj.AddToDrop(4)
-		obj.EndReveal()
-	elseif n == 2 then
-		obj.ChooseAddTempPower(3, 5000)
-	end
-	return 0
+function ACT()
+	obj.Select({q.Location, l.PlayerVC, q.Grade, 3, q.Count, 1})
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end
