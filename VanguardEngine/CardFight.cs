@@ -177,16 +177,16 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             _actingPlayer = player1;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player1, player2, false);
+            //TriggerCheck(player2, player1, false);
+            //TriggerCheck(player2, player1, false);
             player1.SoulCharge(10);
             player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
-            //player1.Mill(10);
-            //player2.Mill(10);
+            player1.Mill(5);
+            player2.Mill(5);
             while (true)
             {
                 _actingPlayer = player1;
@@ -432,8 +432,7 @@ namespace VanguardEngine
                 canSelect.Clear();
                 _inputManager._abilities.Clear();
                 _inputManager._abilities.AddRange(GetACTAbilities(player1));
-                if (player1.CanPlayOrder())
-                    _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
+                _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
                 selection = _inputManager.SelectMainPhaseAction(player1);
                 if (selection == 1)
                     BrowseHand(player1);
@@ -485,12 +484,13 @@ namespace VanguardEngine
                 }
                 else if (selection == 7) //Order
                 {
-                    if (player1.CanPlayOrder())
-                    {
-                        ChooseOrderToActivate(player1, false);
-                    }
-                    else
-                        Log.WriteLine("Already activated order this turn.");
+                    //if (player1.CanPlayOrder())
+                    //{
+                    //    ChooseOrderToActivate(player1, false);
+                    //}
+                    //else
+                    //    Log.WriteLine("Already activated order this turn.");
+                    ChooseOrderToActivate(player1, false);
                 }
                 else if (selection == 8)
                     break;
@@ -814,12 +814,13 @@ namespace VanguardEngine
                         }
                         else if (selection == 6)
                         {
-                            if (player2.CanPlayOrder())
-                            {
-                                ChooseOrderToActivate(player2, true);
-                            }
-                            else
-                                Log.WriteLine("Already activated order this turn.");
+                            //if (player2.CanPlayOrder())
+                            //{
+                            //    ChooseOrderToActivate(player2, true);
+                            //}
+                            //else
+                            //    Log.WriteLine("Already activated order this turn.");
+                            ChooseOrderToActivate(player2, true);
                         }
                         else if (selection == GuardStepAction.End) // end guard
                         {
@@ -1125,6 +1126,16 @@ namespace VanguardEngine
             else
                 abilities = _abilities.GetAbilities(Activation.OnOrder, player.GetOrderableCards(), null);
             List<Ability> available = new List<Ability>();
+            if (!player.CanPlayOrder())
+            {
+                if (player.MyStates.GetValue(PlayerState.AdditionalArms) >= 1)
+                {
+                    while (abilities.Exists(ability => !OrderType.IsArms(ability.GetCard().orderType)))
+                        abilities.Remove(abilities.Find(ability => !OrderType.IsArms(ability.GetCard().orderType)));
+                }
+                else
+                    abilities.Clear();
+            }
             foreach (Ability ability in abilities)
             {
                 if (ability.CanPayCost())
@@ -1867,15 +1878,11 @@ namespace VanguardEngine
             }
             abilityTimingData.allSnapshots = snapShots;
             List<Snapshot> relevantSnapshots = new List<Snapshot>();
-            if (cards != null)
+            if (cards != null && cards.Count > 0)
             {
-                foreach (Card card in cards)
-                {
-                    if (snapShots[card.tempID] != null)
-                        relevantSnapshots.Add(snapShots[card.tempID]);
-                }
+                relevantSnapshots.Add(snapShots[cards[0].tempID]);
+                abilityTimingData.AddRelevantSnapshots(relevantSnapshots, 0);
             }
-            abilityTimingData.AddRelevantSnapshots(relevantSnapshots, 0);
             if (_currentAbility != null && snapShots[_currentAbility.GetCard().tempID] != null)
                 abilityTimingData.abilitySource = snapShots[_currentAbility.GetCard().tempID];
             if (relevantSnapshots.Count > 0)
@@ -1883,7 +1890,7 @@ namespace VanguardEngine
                 abilityTimingData.movedFrom = relevantSnapshots[0].previousLocation;
                 abilityTimingData.movedTo = relevantSnapshots[0].location;
             }
-            else if (activation == Activation.OnRide)
+            if (activation == Activation.OnRide)
             {
                 List<Snapshot> temp = new List<Snapshot>();
                 if (playerID == 1)
@@ -1903,6 +1910,21 @@ namespace VanguardEngine
             }
             else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())
                 abilityTimingData.additionalInfo = true;
+            else
+            {
+                if (cards != null)
+                {
+                    for (int i = 1; i < cards.Count; i++)
+                    {
+                        if (snapShots[cards[i].tempID] != null)
+                        {
+                            relevantSnapshots.Clear();
+                            relevantSnapshots.Add(snapShots[cards[i].tempID]);
+                            abilityTimingData.AddRelevantSnapshots(relevantSnapshots, i);
+                        }
+                    }
+                }
+            }
             if (player.PayingCost)
                 abilityTimingData.asCost = true;
             _abilityTimings.AddAbilityTiming(activation, playerID, abilityTimingData, append);
@@ -1978,6 +2000,15 @@ namespace VanguardEngine
                 }
             }
             return false;
+        }
+
+        public void Arm(Player player, List<Card> cardsToArm)
+        {
+            if (cardsToArm.Count > 0)
+            {
+                if (_abilities.CanArm(cardsToArm[0].tempID, _player1.Vanguard().name))
+                    player.Arm(_player1.Vanguard().tempID, cardsToArm[0].tempID);
+            }
         }
     }
 

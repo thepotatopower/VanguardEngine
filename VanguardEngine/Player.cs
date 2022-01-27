@@ -487,6 +487,14 @@ namespace VanguardEngine
             return _field.GetUnit(circle);
         }
 
+        public bool CanChoose(int tempID)
+        {
+            Card card = _field.CardCatalog[tempID];
+            if (card.originalOwner != _playerID && _field.CardStates.HasState(tempID, CardState.Resist))
+                return false;
+            return true;
+        }
+
         public int GetCircle(Card card)
         {
             int circle = -1;
@@ -2146,6 +2154,10 @@ namespace VanguardEngine
                 Vanguard = PlayerVanguard;
             else
                 Vanguard = EnemyVanguard;
+            if (card.originalOwner == _playerID)
+                EnemyStates.IncrementUntilEndOfTurnValue(PlayerState.EnemyRCRetiredThisTurn, 1);
+            else
+                MyStates.IncrementUntilEndOfTurnValue(PlayerState.EnemyRCRetiredThisTurn, 1);
             if (toSoul)
             {
                 if (GetAllUnitsOnField().Contains(card))
@@ -2521,6 +2533,17 @@ namespace VanguardEngine
             }
         }
 
+        public void AddToOriginalDress(List<int> target, List<int> group)
+        {
+            if (target.Count > 0 && GetCircle(_field.CardCatalog[target[0]]) != -1)
+            {
+                foreach (int tempID in group)
+                {
+                    _field.GetSoulZone(GetCircle(_field.CardCatalog[target[0]])).Add(_field.CardCatalog[tempID]);
+                }
+            }
+        }
+
         public void AddToDrop(List<int> selections)
         {
             Card cardToAdd;
@@ -2579,7 +2602,12 @@ namespace VanguardEngine
                 _playedOrdersThisTurn.Add(card);
                 _lastOrderPlayed = card;
                 if (_orderPlayed)
-                    MyStates.IncrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, -1);
+                {
+                    if (OrderType.IsArms(card.orderType) && MyStates.GetValue(PlayerState.AdditionalArms) > 0)
+                        MyStates.IncrementUntilEndOfTurnValue(PlayerState.AdditionalArms, -1);
+                    else
+                        MyStates.IncrementUntilEndOfTurnValue(PlayerState.AdditionalOrder, -1);
+                }
                 else
                     _orderPlayed = true;
                 if (!OrderType.IsSetOrder(card.orderType))
@@ -3046,22 +3074,56 @@ namespace VanguardEngine
 
         public void RearrangeOnTop(List<int> tempIDs)
         {
+            List<int> returned = new List<int>();
             Card card;
             for (int i = tempIDs.Count - 1; i >= 0; i--)
             {
                 card = _field.CardCatalog[tempIDs[i]];
-                PlayerDeck.AddToTop(card);
+                if (card.originalOwner == _playerID)
+                    PlayerDeck.AddToTop(card);
+                else
+                    EnemyDeck.AddToTop(card);
             }
         }
 
         public void RearrangeOnBottom(List<int> tempIDs)
         {
+            List<int> returned = new List<int>();
             Card card;
             for (int i = 0; i < tempIDs.Count; i++)
             {
                 card = _field.CardCatalog[tempIDs[i]];
-                PlayerDeck.Add(card);
+                if (card.originalOwner == _playerID)
+                    PlayerDeck.Add(card);
+                else
+                    EnemyDeck.Add(card);
             }
+        }
+
+        public List<int> ReturnToDeck(List<int> tempIDs)
+        {
+            List<int> returned = new List<int>();
+            foreach (int tempID in tempIDs)
+            {
+                Card card = _field.CardCatalog[tempID];
+                if (card.originalOwner == _playerID)
+                {
+                    Card r = PlayerDeck.Add(card);
+                    if (PlayerDeck.Contains(r))
+                        returned.Add(tempID);
+                }
+                else
+                {
+                    Card r = EnemyDeck.Add(card);
+                    if (EnemyDeck.Contains(r))
+                        returned.Add(tempID);
+                }
+            }
+            if (returned.Exists(tempID => _field.CardCatalog[tempID].originalOwner == _playerID))
+                _field.Shuffle(_playerID);
+            if (returned.Exists(tempID => _field.CardCatalog[tempID].originalOwner == _enemyID))
+                _field.Shuffle(_enemyID);
+            return returned;
         }
 
         public void AddSkill(int tempID, int skill)
@@ -3524,7 +3586,7 @@ namespace VanguardEngine
         {
             foreach (Card card in GetActiveUnits())
             {
-                if (card.tempID == tempID && _field.GetSoul(GetCircle(card)).Count > 0)
+                if (card.tempID == tempID && IsRearguard(card.tempID) && _field.GetSoul(GetCircle(card)).Count > 0)
                     return true;
             }
             return false;
@@ -3659,6 +3721,25 @@ namespace VanguardEngine
         {
             return _field.GetArm(true, PlayerVanguard) != null || _field.GetArm(false, PlayerVanguard) != null;
         }
+
+        public int GetArmsCount()
+        {
+            int count = 0;
+            if (_field.GetArm(true, PlayerVanguard) != null)
+                count++;
+            if (_field.GetArm(false, PlayerVanguard) != null)
+                count++;
+            return count;
+        }
+
+        public void Arm(int targetID, int armID)
+        {
+            Card arm = _field.CardCatalog[armID];
+            if (arm.orderType == OrderType.LeftDeityArms)
+                Arm(targetID, armID, true);
+            else if (arm.orderType == OrderType.RightDeityArms)
+                Arm(targetID, armID, false);
+        }
         
         public void Arm(int targetID, int armID, bool left)
         {
@@ -3671,6 +3752,7 @@ namespace VanguardEngine
             {
                 CardEventArgs args = new CardEventArgs();
                 args.cardList.Add(target);
+                args.cardList.Add(arm);
                 args.i = Activation.OnArmed;
                 args.playerID = _playerID;
                 OnAbilityTiming(this, args);

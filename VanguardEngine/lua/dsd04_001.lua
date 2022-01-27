@@ -1,57 +1,31 @@
--- Sylvan Horned Beast King, Magnolia
+-- 樹角獣王 マグノリア
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- on end of battle
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnBattleEnds)
+	ability1.SetLocation(l.VC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
+function Trigger()
+	return obj.IsAttackingUnit()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Count, 3
-	elseif n == 3 then
-		return q.Location, l.Selected
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
+end
+
+function Activation()
+	if obj.PersonaRode() then
+		obj.Select({q.Location, l.PlayerRC, q.Count, 3})
+	else
+		obj.Select({q.Location, l.PlayerRC, q.Count, 1})
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnBattleEnds, p.HasPrompt, p.CB, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsVanguard() and obj.IsAttackingUnit() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.PersonaRode() then
-			obj.Select(2)
-		else
-			obj.Select(1)
-		end
-		obj.AllowBackRowAttack(3)
-		obj.AddTempPower(3, 5000)
-		obj.EndSelect()
-	end
-	return 0
+	obj.AddCardState({q.Location, l.Selected}, cs.CanAttackFromBackRow, p.UntilEndOfTurn)
+	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end

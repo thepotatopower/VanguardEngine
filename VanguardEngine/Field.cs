@@ -819,6 +819,7 @@ namespace VanguardEngine
         public RearguardCircle(int row, int column, int FL, Field field) : base(row, column, FL, field)
         {
             location = Location.RC;
+            _soul = new OriginalDress(field, FL);
         }
 
         //protected override List<Card> Remove(Card card)
@@ -902,6 +903,15 @@ namespace VanguardEngine
         protected override void ActivateEvent()
         {
             _field.ActivateEvent(args);
+        }
+    }
+
+    public class OriginalDress : Soul
+    {
+        public OriginalDress(Field field, int FL) : base(field, FL)
+        {
+            location = Location.originalDress;
+            _FL = FL;
         }
     }
 
@@ -1282,6 +1292,8 @@ namespace VanguardEngine
         public const int CannotCallGradeToGC = 27;
         public const int VanguardAttackHitThisTurn = 28;
         public const int RearguardStoodByEffectThisTurn = 29;
+        public const int EnemyRCRetiredThisTurn = 30;
+        public const int AdditionalArms = 31;
     }
 
     public class CardState

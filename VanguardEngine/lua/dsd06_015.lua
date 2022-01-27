@@ -1,6 +1,9 @@
 -- 封焔の盾 スワヤンブー
 
 function RegisterAbilities()
+	-- arm
+	local ability0 = NewAbility(GetID())
+	ability0.SetArmTarget(ability0.GetNameFromCardID("dsd06_001"))
 	-- on order
 	local ability1 = NewAbility(GetID())
 	ability1.SetTiming(a.OnOrder)
@@ -29,7 +32,7 @@ function OnOrderCanFullyResolve()
 end
 
 function OnOrder()
-	obj.Arm({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dsd06_001")}, false)
+	obj.Arm({q.Other, o.This})
 end
 
 function OnAttackTrigger()

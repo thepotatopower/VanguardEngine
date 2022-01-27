@@ -1,48 +1,16 @@
--- Sylvan Horned Beast, Dooger
+-- 樹角獣 ドゥーガー
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- cont
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.RC)
+	ability1.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 2
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Count, 5
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function Cont()
+	if obj.Exists({q.Location, l.PlayerRC, q.Count, 4}) then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.Cont, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.Exists(1) then
-			obj.SetAbilityPower(2, 5000)
-		end
-	end
-	return 0
 end

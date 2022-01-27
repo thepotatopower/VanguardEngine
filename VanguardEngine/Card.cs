@@ -159,6 +159,11 @@ namespace VanguardEngine
             return type == OrderType.Normal || type == OrderType.Gem || 
                 type == OrderType.LeftDeityArms || type == OrderType.RightDeityArms;
         }
+
+        public static bool IsArms(int type)
+        {
+            return type == OrderType.LeftDeityArms || type == OrderType.RightDeityArms;
+        }
     }
 
     public class Skill

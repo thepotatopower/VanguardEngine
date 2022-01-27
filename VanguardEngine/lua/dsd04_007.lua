@@ -1,45 +1,23 @@
--- Looting Petal, Stomalia
+-- ルーティングペタル ストマリア
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- ACT
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.RC)
+	ability1.SetProperty(p.OncePerTurn)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 1
+function Cost(check)
+	if check then return obj.CanCB(1) and obj.CanSB(1) end
+	obj.CounterBlast(1)
+	obj.SoulBlast(1)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.SB, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddSkillUntilEndOfTurn(1, s.Boost)
-		obj.AddTempPower(1, 5000)
-	end
-	return 0
+function Activation()
+	obj.AddCardValue({q.Other, o.This}, cs.BonusSkills, s.Boost, p.UntilEndOfTurn)
+	obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end

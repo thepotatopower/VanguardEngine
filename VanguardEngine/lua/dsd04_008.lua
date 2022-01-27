@@ -1,51 +1,23 @@
--- Knight of Friendship, Cryrus
+-- 友情の騎士 サイラス
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	-- ACT
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.RC)
+	ability1.SetProperty(p.OncePerTurn)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Cost(check)
+	if check then return obj.CanSB(2) end
+	obj.SoulBlast(2)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Revealed, q.Other, o.Unit, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Revealed
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.SB, 2
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.RevealFromDeck(1)
-		if obj.Exists(1) then
-			obj.SuperiorCall(1)
-		else
-			obj.AddToHand(2)
-		end
-	end
-	return 0
+function Activation()
+	obj.RevealFromDeck(1)
+	obj.SuperiorCall({q.Location, l.Revealed, q.Other, o.Unit})
+	obj.AddToHand({q.Location, l.Revealed})
 end

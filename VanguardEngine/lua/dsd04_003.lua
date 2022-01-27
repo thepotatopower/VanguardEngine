@@ -1,65 +1,33 @@
--- Sylvan Horned Beast, Charis
+-- 樹角獣 カリス
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on ride
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnRide)
+	ability1.SetTrigger("OnRideTrigger")
+	ability1.SetActivation("OnRideActivation")
+	ability1.SetProperty(p.NotMandatory)
+	-- cont
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.Cont)
+	ability2.SetLocation(l.BackRowRC)
+	ability2.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 3
+function OnRideTrigger()
+	return obj.WasRodeUponBy(obj.GetNameFromCardID("dsd04_002"))
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Revealed, q.Grade, 0, q.Grade, 1, q.Grade, 2, q.Other, o.Unit, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Revealed
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function OnRideActivation()
+	obj.RevealFromDeck(1)
+	obj.SuperiorCall({q.Location, l.Revealed, q.Grade, 2, q.Other, o.GradeOrLess, q.Other, o.Unit})
+	obj.AddToSoul({q.Location, l.Revealed})
+end
+
+function Cont()
+	if obj.IsAttackingUnit() then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnRide, p.HasPrompt
-	elseif n == 2 then
-		return a.Cont, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.WasRodeUponBy("Sylvan Horned Beast, Lattice") then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsBackRowRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.RevealFromDeck(1)
-		if obj.Exists(1) then
-			obj.SuperiorCall(1)
-		else
-			obj.AddToSoul(2)
-		end
-	elseif n == 2 then
-		if obj.IsAttackingUnit() then
-			obj.SetAbilityPower(3, 5000)
-		end
-	end
-	return 0
 end
