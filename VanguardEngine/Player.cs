@@ -326,7 +326,7 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             if (card != null)
-                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID));
+                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id);
             return null;
         }
 
@@ -2561,11 +2561,17 @@ namespace VanguardEngine
 
         public void AddToDamageZone(List<int> tempIDs)
         {
+            AddToDamageZone(tempIDs, true);
+        }
+
+        public void AddToDamageZone(List<int> tempIDs, bool faceup)
+        {
             Card card;
             foreach (int tempID in tempIDs)
             {
                 card = _field.CardCatalog[tempID];
                 PlayerDamage.Add(card);
+                _field.Orientation.SetFaceUp(tempID, faceup);
             }
         }
 
@@ -3466,6 +3472,17 @@ namespace VanguardEngine
                         availableCircles.AddRange(tempList);
                         tempList.Clear();
                     }
+                    else if (circle == FL.BackRow)
+                    {
+                        foreach (int c in availableCircles)
+                        {
+                            if (_field.GetRow(c) == 1)
+                                tempList.Add(c);
+                        }
+                        availableCircles.Clear();
+                        availableCircles.AddRange(tempList);
+                        tempList.Clear();
+                    }
                     else if (circle != -1)
                     {
                         if (availableCircles.Contains(circle))
@@ -3499,10 +3516,20 @@ namespace VanguardEngine
 
         public int Convert(int fl)
         {
+            if (fl < FL.EnemyFrontLeft || fl > FL.PlayerVanguard)
+                return fl;
             if (_playerID == 1)
                 return fl;
             else
                 return FL.SwitchSides(fl);
+        }
+
+        public int[] ConvertFL(int[] circles)
+        {
+            int[] newCircles = new int[circles.Length];
+            for (int i = 0; i < circles.Length; i++)
+                newCircles[i] = Convert(circles[i]);
+            return newCircles;
         }
 
         public bool IsPlayer(int circle)

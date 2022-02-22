@@ -6,6 +6,7 @@ function RegisterAbilities()
 	ability1.SetDescription(1)
 	ability1.SetTiming(a.OnRidePhase)
 	ability1.SetLocation(l.VC)
+	ability1.SetTrigger("OnRidePhaseTrigger")
 	ability1.SetActivation("OnRidePhase")
 	-- on attack
 	local ability2 = NewAbility(GetID())
@@ -17,6 +18,10 @@ function RegisterAbilities()
 	ability2.SetCost("OnAttackCost")
 	ability2.SetCanFullyResolve("OnAttackCanFullyResolve")
 	ability2.SetActivation("OnAttack")
+end
+
+function OnRidePhaseTrigger()
+	return obj.IsPlayerTurn()
 end
 
 function OnRidePhase()

@@ -124,6 +124,11 @@ namespace VanguardEngine
             _abilities.AddAbilities(ability.GetID(), abilities);
         }
 
+        public Ability GetAbility(int tempID, int activation)
+        {
+            return _abilities.GetAbilityWithActivation(tempID, activation);
+        }
+
         public void StartFight()
         {
             Player player1;
@@ -177,16 +182,16 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             _actingPlayer = player1;
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player1, player2, false);
-            //TriggerCheck(player2, player1, false);
-            //TriggerCheck(player2, player1, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player1, player2, false);
+            TriggerCheck(player2, player1, false);
+            TriggerCheck(player2, player1, false);
             player1.SoulCharge(10);
             player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
-            player1.Mill(5);
-            player2.Mill(5);
+            //player1.Mill(5);
+            //player2.Mill(5);
             while (true)
             {
                 _actingPlayer = player1;
@@ -233,7 +238,7 @@ namespace VanguardEngine
                     args = new CardEventArgs();
                     OnEndPhase(this, args);
                 }
-                AddAbilityTiming(Activation.OnEndPhase, 0, null);
+                AddAbilityTiming(Activation.OnEndPhase, 0);
                 PerformCheckTiming(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
@@ -356,7 +361,7 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnRidePhase(this, args);
             }
-            AddAbilityTiming(Activation.OnRidePhase, 0, null);
+            AddAbilityTiming(Activation.OnRidePhase, 0);
             PerformCheckTiming(player1, player2);
             while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
@@ -425,7 +430,7 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnMainPhase(this, args);
             }
-            AddAbilityTiming(Activation.OnMainPhase, 0, null);
+            AddAbilityTiming(Activation.OnMainPhase, 0);
             PerformCheckTiming(player1, player2);
             while (true)
             {
@@ -649,7 +654,11 @@ namespace VanguardEngine
                 _abilities.ResetActivation(tempID);
             }
             List<Card> lastPlacedOnRC = player1.GetLastPlacedOnRC();
-            AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
+            foreach (Card card in lastPlacedOnRC)
+            {
+                AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, card);
+            }
+            //AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
             if (sc == 1)
                 AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
             else
@@ -682,7 +691,7 @@ namespace VanguardEngine
                 args = new CardEventArgs();
                 OnBattlePhase(this, args);
             }
-            AddAbilityTiming(Activation.OnBattlePhase, 0, null);
+            AddAbilityTiming(Activation.OnBattlePhase, 0);
             PerformCheckTiming(player1, player2);
             while (true)
             {
@@ -757,7 +766,7 @@ namespace VanguardEngine
             player1.InitiateAttack(booster, targets);
             if (targets.Length > 0)
             {
-                AddAbilityTiming(Activation.OnAttack, 0, null);
+                AddAbilityTiming(Activation.OnAttack, 0);
                 PerformCheckTiming(player1, player2);
                 if (player1 == _player1)
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
@@ -883,19 +892,19 @@ namespace VanguardEngine
                             TriggerCheck(player2, player1, false);
                             PerformCheckTiming(player1, player2);
                         }
-                        AddAbilityTiming(Activation.OnAttackHitsVanguard, 0, null);
+                        AddAbilityTiming(Activation.OnAttackHitsVanguard, 0);
                     }
                     if (player2.GetLastPlayerRCRetired().Count > 0)
                         AddAbilityTiming(Activation.OnPlayerRCRetired, player2._playerID, player2.GetLastPlayerRCRetired());
                     for (int i = 0; i < player2.NumberOfTimesHit(); i++)
-                        AddAbilityTiming(Activation.OnAttackHits, 0, null);
+                        AddAbilityTiming(Activation.OnAttackHits, 0);
                     PerformCheckTiming(player1, player2);
                     player2.RetireAttackedUnit();
                     ////_inputManager.SwapPlayers();
                 }
                 //_inputManager.SwapPlayers();
             }
-            AddAbilityTiming(Activation.OnBattleEnds, 0, null);
+            AddAbilityTiming(Activation.OnBattleEnds, 0);
             PerformCheckTiming(player1, player2);
             _abilities.EndOfBattle();
             if (player1 == _player1)
@@ -1602,7 +1611,7 @@ namespace VanguardEngine
                 AddAbilityTiming(Activation.OnRetiredForPlayerCost, player1._playerID, player1.GetLastPlayerRetired());
             }
             if (player1.EnemyRetired())
-                AddAbilityTiming(Activation.OnEnemyRetired, 0, null);
+                AddAbilityTiming(Activation.OnEnemyRetired, 0);
             AddToChosen(cardsToRetire);
         }
 
@@ -1610,7 +1619,7 @@ namespace VanguardEngine
         {
             player1.Retire(toRetire);
             if (player1.EnemyRetired())
-                AddAbilityTiming(Activation.OnEnemyRetired, 0, null);
+                AddAbilityTiming(Activation.OnEnemyRetired, 0);
         }
 
         public void AddToDrop(int tempID)
@@ -1775,7 +1784,7 @@ namespace VanguardEngine
                 if (!_chosen[source].Contains(target))
                     _chosen[source].Add(target);
             }
-            AddAbilityTiming(Activation.OnChosen, 0, null);
+            AddAbilityTiming(Activation.OnChosen, 0);
         }
 
         public bool AlchemagicableCardsAvailable(Player player, int tempID)
@@ -1856,6 +1865,19 @@ namespace VanguardEngine
         {
             Player player = sender as Player;
             AddAbilityTiming(e.i, e.playerID, e.cardList);
+        }
+
+        public void AddAbilityTiming(int activation, int playerID)
+        {
+            List<Card> cards = new List<Card>();
+            AddAbilityTiming(activation, playerID, cards);
+        }
+
+        public void AddAbilityTiming(int activation, int playerID, Card card)
+        {
+            List<Card> cards = new List<Card>();
+            cards.Add(card);
+            AddAbilityTiming(activation, playerID, cards);
         }
 
         public void AddAbilityTiming(int activation, int playerID, List<Card> cards)
@@ -1984,6 +2006,7 @@ namespace VanguardEngine
                 cards.Add(e.card);
                 AddAbilityTiming(Activation.OnPut, e.card.originalOwner, cards);
             }
+            ActivateContAbilities(_player1, _player2);
         }
 
         public bool RideDeckDiscardCostReplaced(Player player)

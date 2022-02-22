@@ -455,9 +455,9 @@ namespace VanguardEngine
                 else if (i == FL.EnemyBackLeft)
                     _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this);
                 else if (i == FL.EnemyVanguard)
-                    _circles[i] = new VanguardCircle(0, 0, FL.MiddleColumn, this);
+                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this);
                 else if (i == FL.EnemyBackCenter)
-                    _circles[i] = new RearguardCircle(1, 0, FL.MiddleColumn, this);
+                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this);
                 else if (i == FL.EnemyFrontRight)
                     _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this);
                 else if (i == FL.EnemyBackRight)
@@ -609,7 +609,7 @@ namespace VanguardEngine
         {
             bool retired = false;
             Circle circle;
-            for (int i = FL.PlayerFrontLeft; i <= FL.PlayerVanguard; i++)
+            for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
             {
                 circle = _circles[i];
                 if (circle.OverloadedUnits.Count > 0)
@@ -621,7 +621,7 @@ namespace VanguardEngine
                 while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
                     _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             }
-            for (int i = FL.EnemyFrontLeft; i <= FL.EnemyVanguard; i++)
+            for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
             {
                 circle = _circles[i];
                 if (circle.OverloadedUnits.Count > 0)
@@ -633,6 +633,12 @@ namespace VanguardEngine
                 while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
                     _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             }
+            circle = _circles[FL.PlayerVanguard];
+            if (circle.OverloadedUnits.Count > 0)
+                circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
+            circle = _circles[FL.EnemyVanguard];
+            if (circle.OverloadedUnits.Count > 0)
+                circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
             return retired;
         }
 
@@ -699,11 +705,6 @@ namespace VanguardEngine
             _rightArm = new Arm(field);
         }
 
-        protected override List<Card> AssociatedCards()
-        {
-            return _soul.GetCards();
-        }
-
         protected override void UpdateLocation(Zone zone, int tempID)
         {
             _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
@@ -714,14 +715,19 @@ namespace VanguardEngine
         {
             _field.Orientation.SetFaceUp(card.tempID, true);
             _field.Orientation.SetUpRight(card.tempID, true);
+            if (_cards.Count > 0)
+            {
+                OverloadedUnits.AddRange(_cards);
+                _cards.Clear();
+            }
             return base.AddToZone(card, bottom);
         }
 
         public virtual Card AddRide(Card card)
         {
-            _soul.Add(_cards[0]);
+            //_soul.Add(_cards[0]);
             //Log.WriteLine("placed on FL: " + _FL);
-            return base.AddToZone(card, true);
+            return AddToZone(card, true);
         }
 
         protected override List<Card> Remove(Card card)
@@ -822,6 +828,11 @@ namespace VanguardEngine
             _soul = new OriginalDress(field, FL);
         }
 
+        protected override List<Card> AssociatedCards()
+        {
+            return _soul.GetCards();
+        }
+
         //protected override List<Card> Remove(Card card)
         //{
         //    if (OverloadedUnits.Contains(card))
@@ -835,12 +846,6 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-
-            if (_cards.Count > 0)
-            {
-                OverloadedUnits.AddRange(_cards);
-                _cards.Clear();
-            }
             return base.AddToZone(card, bottom);
         }
 
@@ -1334,6 +1339,7 @@ namespace VanguardEngine
         public const int CannotBoost = 34;
         public const int CannotGainBoost = 35;
         public const int CannotBeHit = 36;
+        public const int CountsAsTwoMeteorites = 37;
     }
 
     public class Zone
@@ -1366,7 +1372,7 @@ namespace VanguardEngine
             if (OverloadedUnits.Contains(card))
             {
                 OverloadedUnits.Remove(card);
-                return new List<Card>();
+                //return new List<Card>();
             }
             _cards.Remove(card);
             _field.RemoveFromPseudoZones(card);
@@ -1397,9 +1403,9 @@ namespace VanguardEngine
         protected virtual Card AddToZone(Card card, bool bottom)
         {
             ResetCard(card);
-            if (_field.Booster != -1 && _field.GetUnit(_field.Booster).tempID == card.tempID)
+            if (_field.Booster != -1 && (_field.GetUnit(_field.Booster) == null || _field.GetUnit(_field.Booster).tempID == card.tempID))
                 _field.Booster = -1;
-            if (_field.Attacker != -1 && _field.GetUnit(_field.Attacker).tempID == card.tempID)
+            if (_field.Attacker != -1 && (_field.GetUnit(_field.Attacker) == null || _field.GetUnit(_field.Attacker).tempID == card.tempID))
                 _field.Attacker = -1;
             if (_field.Attacked.Exists(c => c.tempID == card.tempID))
                 _field.Attacked.Remove(_field.Attacked.Find(c => c.tempID == card.tempID));
@@ -1877,8 +1883,9 @@ namespace VanguardEngine
         public readonly string name;
         public readonly int fieldID;
         public readonly int tempID;
+        public readonly string cardID;
 
-        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID)
+        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID)
         {
             tempID = _tempID;
             location = _location;
@@ -1886,6 +1893,7 @@ namespace VanguardEngine
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
+            cardID = _cardID;
         }
     }
 
