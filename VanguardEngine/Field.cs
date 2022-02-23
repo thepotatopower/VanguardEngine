@@ -1340,6 +1340,7 @@ namespace VanguardEngine
         public const int CannotGainBoost = 35;
         public const int CannotBeHit = 36;
         public const int CountsAsTwoMeteorites = 37;
+        public const int CanAttackBackRowInSameColumn = 38;
     }
 
     public class Zone

@@ -386,6 +386,14 @@ namespace VanguardEngine
             return backRow;
         }
 
+        public List<Card> GetOverloadedCircles()
+        {
+            List<Card> cards = new List<Card>();
+            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+                cards.AddRange(_field.GetOverloadedUnits(i));
+            return cards;
+        }
+
         public List<Card> GetOverloadedBackRow()
         {
             List<Card> backRow = new List<Card>();
@@ -982,11 +990,16 @@ namespace VanguardEngine
             {
                 if (i == EnemyVanguard && _field.CardStates.HasState(Attacker.tempID, CardState.CannotAttackVanguard))
                     continue;
-                if (_field.GetUnit(i) != null && 
-                    !CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID) && 
-                    (_field.GetRow(i) == 0 || _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)) &&
-                    !(IsRearguard(Attacker.tempID) && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotBeAttackedByRearguard)))
-                    cards.Add(_field.GetUnit(i));
+                if (_field.GetUnit(i) == null)
+                    continue;
+                if (CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID))
+                    continue;
+                if (_field.GetRow(i) != 0 && !((CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRowInSameColumn) && GetColumn(Attacker.tempID) == _field.GetColumn(i)) ||
+                    _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
+                    continue;
+                if (IsRearguard(Attacker.tempID) && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotBeAttackedByRearguard))
+                    continue;
+                cards.Add(_field.GetUnit(i));
             }
             return cards;
         }

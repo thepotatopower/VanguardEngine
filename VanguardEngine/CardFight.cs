@@ -1051,6 +1051,7 @@ namespace VanguardEngine
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), new Tuple<int, int>(key, i)));
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), new Tuple<int, int>(key, i)));
                         abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetOverloadedCircles(), new Tuple<int, int>(key, i)));
                         cards.Clear();
                         foreach (Card card in player1.GetGC())
                         {

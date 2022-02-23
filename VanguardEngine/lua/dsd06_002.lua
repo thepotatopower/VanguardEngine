@@ -12,7 +12,7 @@ function RegisterAbilities()
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
 	ability2.SetTiming(a.OnAttack)
-	ability2.SetLocation(l.VC)
+	ability2.SetLocation(l.RC)
 	ability2.SetTrigger("OnAttackTrigger")
 	ability2.SetCondition("OnAttackCondition")
 	ability2.SetActivation("OnAttack")
@@ -30,7 +30,7 @@ function OnPlace()
 	obj.ChooseAddToHand({q.Location, l.Drop, q.Other, o.Arms, q.Count, 1})
 end
 
-function OnAtackTrigger()
+function OnAttackTrigger()
 	return obj.IsAttackingUnit()
 end
 
