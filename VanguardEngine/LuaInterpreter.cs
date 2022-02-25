@@ -2032,6 +2032,18 @@ namespace VanguardEngine
             {
                 foreach (int other in param.Others)
                 {
+                    if (other == Other.Applicable)
+                    {
+                        List<Card> applicable = GetSnapshottedCards(0);
+                        foreach (Card card in currentPool)
+                        {
+                            if (applicable.Contains(card))
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                     if (other == Other.SameZone)
                     {
                         foreach (Card card in currentPool)
@@ -5715,6 +5727,7 @@ namespace VanguardEngine
         public const int Arms = 40;
         public const int SameZone = 41;
         public const int DifferentName = 42;
+        public const int Applicable = 43;
     }
 
     class Property

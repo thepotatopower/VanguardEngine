@@ -3020,6 +3020,14 @@ namespace VanguardEngine
                         MyStates.AddUntilEndOfTurnState(PlayerState.RearguardStoodByEffectThisTurn);
                     else if (card.originalOwner != _playerID && GetLocation(card) == Location.RC)
                         EnemyStates.AddUntilEndOfTurnState(PlayerState.RearguardStoodByEffectThisTurn);
+                    if (OnAbilityTiming != null)
+                    {
+                        CardEventArgs args = new CardEventArgs();
+                        args.cardList.Add(_field.CardCatalog[tempID]);
+                        args.i = Activation.OnStand;
+                        args.playerID = _playerID;
+                        OnAbilityTiming(this, args);
+                    }
                 }
             }
         }

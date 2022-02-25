@@ -1520,14 +1520,12 @@ namespace VanguardEngine
         {
             List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, count, "card(s) to stand.");
             player1.Stand(cardsToStand);
-            AddAbilityTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
             return player1.GetLastStood();
         }
 
         public void Stand(Player player1, Player player2, List<int> toStand)
         {
             player1.Stand(toStand);
-            AddAbilityTiming(Activation.OnStand, player1._playerID, player1.GetLastStood());
         }
 
         public List<int> Rest(Player player1, Player player2, List<Card> canRest, int count, bool select)
@@ -1951,6 +1949,10 @@ namespace VanguardEngine
             if (player.PayingCost)
                 abilityTimingData.asCost = true;
             _abilityTimings.AddAbilityTiming(activation, playerID, abilityTimingData, append);
+            if (playerID == 1)
+                AddAbilitiesToQueue(_player1);
+            else
+                AddAbilitiesToQueue(_player2);
         }
 
         public void PerformCheckTiming(Player turnPlayer, Player nonTurnPlayer)
