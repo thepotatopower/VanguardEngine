@@ -1313,23 +1313,24 @@ namespace VanguardEngine
 
         public bool CanAttack()
         {
-            for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
-            {
-                if (_field.GetUnit(i) != null)
-                {
-                    if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
-                    {
-                        if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
-                            return true;
-                    }
-                    else if (_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CanAttackFromBackRow))
-                    {
-                        if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
-                            return true;
-                    }
-                }
-            }
-            return false;
+            //for (int i = PlayerFrontLeft; i <= PlayerVanguard; i++)
+            //{
+            //    if (_field.GetUnit(i) != null)
+            //    {
+            //        if (i == PlayerFrontLeft || i == PlayerFrontRight || i == PlayerVanguard)
+            //        {
+            //            if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
+            //                return true;
+            //        }
+            //        else if (_field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CanAttackFromBackRow))
+            //        {
+            //            if (_field.Orientation.IsUpRight(_field.GetUnit(i).tempID))
+            //                return true;
+            //        }
+            //    }
+            //}
+            //return false;
+            return GetCardsToAttackWith().Count > 0;
         }
 
         public bool CanBeBoosted()
@@ -3834,6 +3835,17 @@ namespace VanguardEngine
                     arms.Add(_field.GetArm(false, GetCircle(card)));
             }
             return arms;
+        }
+
+        public void ResetModified()
+        {
+            PlayerDeck.ResetModified();
+        }
+
+        public void CheckForShuffle()
+        {
+            if (PlayerDeck.WasModified())
+                Shuffle();
         }
     }
 

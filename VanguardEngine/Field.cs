@@ -1341,6 +1341,7 @@ namespace VanguardEngine
         public const int CannotBeHit = 36;
         public const int CountsAsTwoMeteorites = 37;
         public const int CanAttackBackRowInSameColumn = 38;
+        public const int CannotBeRetiredByCardEffect = 39;
     }
 
     public class Zone
@@ -1352,6 +1353,7 @@ namespace VanguardEngine
         protected Zone previousZone;
         protected int location = -1;
         protected int _FL = -1;
+        protected bool modified = false;
 
         public Zone(Field field)
         {
@@ -1447,6 +1449,7 @@ namespace VanguardEngine
             ActivateEvent();
             //if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
             //    throw new ArgumentException("deck out.");
+            modified = true;
             return card;
         }
 
@@ -1535,6 +1538,16 @@ namespace VanguardEngine
         public List<Card> OverloadedUnits
         {
             get => _overloadedCards;
+        }
+
+        public void ResetModified()
+        {
+            modified = false;
+        }
+
+        public bool WasModified()
+        {
+            return modified;
         }
     }
 

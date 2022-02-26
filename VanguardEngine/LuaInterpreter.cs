@@ -1297,6 +1297,7 @@ namespace VanguardEngine
         public int Activate(int activation, Tuple<int, int> timingCount)
         {
             //_stored.Clear();
+            _player1.ResetModified();
             SetAbilityData(activation, timingCount);
             if (activation != Activation.Cont)
                 _activationCount++;
@@ -3722,7 +3723,8 @@ namespace VanguardEngine
             List<int> canRetire = new List<int>();
             foreach (Card card in cardsToSelect)
             {
-                canRetire.Add(card.tempID);
+                if (!_player1.CardStates.HasState(card.tempID, CardState.CannotBeRetiredByCardEffect))
+                    canRetire.Add(card.tempID);
             }
             _cardFight.Retire(_player1, _player2, canRetire);
         }
@@ -3801,6 +3803,12 @@ namespace VanguardEngine
                 cardsToSend.Add(card.tempID);
             }
             _player1.SendToDeck(cardsToSend, false);
+        }
+
+        public void SendToTop(List<object> param)
+        {
+            SetParam(param, 1);
+            SendToTop(1);
         }
 
         public List<int> ChooseStand(List<object> param)
@@ -4866,6 +4874,12 @@ namespace VanguardEngine
             return true;
         }
 
+        public void PutIntoOrderZone(List<object> param)
+        {
+            SetParam(param, 1);
+            PutIntoOrderZone(1);
+        }
+
         public void Sing(int paramNum)
         {
             List<Card> cards = ValidCards(paramNum);
@@ -5300,6 +5314,11 @@ namespace VanguardEngine
                 }
             }
             return false;
+        }
+
+        public void CheckForShuffle()
+        {
+            _player1.CheckForShuffle();
         }
     }
 
