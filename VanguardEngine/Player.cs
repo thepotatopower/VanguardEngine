@@ -933,6 +933,8 @@ namespace VanguardEngine
             Card VG = _field.GetUnit(PlayerVanguard);
             foreach (Card card in hand)
             {
+                if (CardStates.HasState(card.tempID, CardState.CannotBeNormalCalled))
+                    continue;
                 if (Grade(card.tempID) <= Grade(VG.tempID) && card.orderType < 0)
                     callableCards.Add(card);
             }
@@ -1047,6 +1049,11 @@ namespace VanguardEngine
             return cards;
         }
 
+        public List<Card> GetCallableGuardians()
+        {
+            return GetGuardableCards();
+        }
+
         public List<Card> GetGuardableCards()
         {
             List<Card> cards = new List<Card>();
@@ -1054,6 +1061,8 @@ namespace VanguardEngine
             {
                 foreach (Card card in PlayerHand.GetCards())
                 {
+                    if (CardStates.HasState(card.tempID, CardState.CannotBeNormalCalled))
+                        continue;
                     if (MyStates.GetValues(PlayerState.MinGradeForGuard).Exists(grade => Grade(card.tempID) > grade))
                         continue;
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
@@ -1287,14 +1296,7 @@ namespace VanguardEngine
 
         public bool CanCallRearguard()
         {
-            List<Card> hand = PlayerHand.GetCards();
-            Card VG = _field.GetUnit(PlayerVanguard);
-            foreach (Card card in hand)
-            {
-                if (Grade(card.tempID) <= Grade(VG.tempID) && card.orderType < 0)
-                    return true;
-            }
-            return false;
+            return GetCallableRearguards().Count > 0;
         }
 
         public bool CanMoveRearguard()

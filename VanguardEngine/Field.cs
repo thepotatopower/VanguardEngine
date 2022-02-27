@@ -1342,6 +1342,7 @@ namespace VanguardEngine
         public const int CountsAsTwoMeteorites = 37;
         public const int CanAttackBackRowInSameColumn = 38;
         public const int CannotBeRetiredByCardEffect = 39;
+        public const int CannotBeNormalCalled = 40;
     }
 
     public class Zone

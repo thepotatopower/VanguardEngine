@@ -1522,6 +1522,11 @@ namespace VanguardEngine
                         if ((data != null && _player1.GetRowNum(data.allSnapshots[_card.tempID].circle) == 0) || IsFrontRowRearguard())
                             validLocation = true;
                     }
+                    else if (location == Location.Hand)
+                    {
+                        if (_player1.GetHand().Exists(card => card.tempID == _card.tempID))
+                            validLocation = true;
+                    }
                     if (MovedFrom(location))
                         validLocation = true;
                 }
@@ -1682,30 +1687,30 @@ namespace VanguardEngine
         public bool WasRodeUponBy(string name)
         {
             AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
-            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
+            //AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
             //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
             //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
             return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID) &&
-                lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name);
+                lastRiddenOn.GetRelevantSnapshots(1).Exists(snapshot => snapshot.name == name);
         }
 
         public bool WasRodeUponByNameContains(string name)
         {
             AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
-            AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
+            //AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
             //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
             //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
             return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID) &&
-                lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name.Contains(name));
+                lastRiddenOn.GetRelevantSnapshots(1).Exists(snapshot => snapshot.name.Contains(name));
         }
 
         public bool PlacedByRidingOn(string name)
         {
-            AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
+            //AbilityTimingData lastRiddenOn = _cardFight.GetAbilityTimingData(Activation.OnRide, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
             AbilityTimingData lastPlacedOnVC = _cardFight.GetAbilityTimingData(Activation.PlacedOnVC, _timingCount.Item1, _player1._playerID)[_timingCount.Item2 - 1];
             //return lastRiddenOn.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID)) &&
             //    lastPlacedOnVC.Exists(data => data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name));
-            return lastRiddenOn.GetRelevantSnapshots(0).Exists(snapshot => snapshot.name == name) &&
+            return lastPlacedOnVC.GetRelevantSnapshots(1).Exists(snapshot => snapshot.name == name) &&
                 lastPlacedOnVC.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID);
         }
 
