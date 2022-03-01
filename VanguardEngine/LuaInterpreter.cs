@@ -573,10 +573,13 @@ namespace VanguardEngine
             }
         }
 
-        public void SetTiming(int activation)
+        public void SetTiming(params int[] activations)
         {
-            if (!_activations.Contains(activation))
-                _activations.Add(activation);
+            foreach (int activation in activations)
+            {
+                if (!_activations.Contains(activation))
+                    _activations.Add(activation);
+            }
         }
 
         public void SetLocation(int location)
@@ -1453,6 +1456,16 @@ namespace VanguardEngine
             return true;
         }
 
+        public bool CanPayCost(string cost)
+        {
+            return _script.Call(_script.Globals[cost], true).Boolean;
+        }
+
+        public void PayCost(string cost)
+        {
+            _script.Call(_script.Globals[cost]);
+        }
+
         public bool ChoosesToPayCost()
         {
             if (CanPayCost() && _cardFight.YesNo(_player1, "Pay cost?"))
@@ -1974,7 +1987,10 @@ namespace VanguardEngine
                 else if (location == Location.AllUnits)
                     currentPool.AddRange(_player1.GetAllUnitsOnField());
                 else if (location == Location.SuccessfullyRetired)
+                {
                     currentPool.AddRange(_player1.GetSuccessfullyRetired());
+                    currentPool.AddRange(_player2.GetSuccessfullyRetired());
+                }
             }
             if (param.SnapshotIndexes.Count > 0)
             {
@@ -4509,6 +4525,12 @@ namespace VanguardEngine
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             _cardFight.SelectCardToRetire(_player2, _player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
+        }
+
+        public void EnemyChooseRetire(List<object> param)
+        {
+            SetParam(param, 1);
+            EnemyChooseRetire(1);
         }
 
         public void Imprison(List<object> param)
