@@ -1899,8 +1899,9 @@ namespace VanguardEngine
         public readonly int fieldID;
         public readonly int tempID;
         public readonly string cardID;
+        public readonly int grade;
 
-        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID)
+        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
         {
             tempID = _tempID;
             location = _location;
@@ -1909,6 +1910,7 @@ namespace VanguardEngine
             name = _name;
             fieldID = _fieldID;
             cardID = _cardID;
+            grade = _grade;
         }
     }
 

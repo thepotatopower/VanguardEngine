@@ -905,7 +905,7 @@ namespace VanguardEngine
                 }
                 //_inputManager.SwapPlayers();
             }
-            AddAbilityTiming(Activation.OnBattleEnds, 0);
+            AddAbilityTiming(Activation.OnBattleEnds, player1._playerID);
             PerformCheckTiming(player1, player2);
             _abilities.EndOfBattle();
             if (player1 == _player1)
@@ -1600,13 +1600,13 @@ namespace VanguardEngine
             return cardsToAddToSoul;
         }
 
-        public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, bool upto)
+        public void SelectCardToRetire(Player player1, Player player2, List<Card> canRetire, int count, int min)
         {
-            List<int> cardsToRetire = _inputManager.SelectFromList(player1, canRetire, count, count, "to retire.");
+            List<int> cardsToRetire = _inputManager.SelectFromList(player1, canRetire, count, min, "to retire.");
             player1.Retire(cardsToRetire);
             if (player1.GetLastPlayerRCRetired().Count > 0)
                 AddAbilityTiming(Activation.OnPlayerRCRetired, player1._playerID, player1.GetLastPlayerRCRetired());
-            if (player1.PlayerRetired() && _currentAbility.GetPlayer1() == player1 && _currentAbility.IsPayingCost())
+            if (player1.PlayerRetired() && _currentAbility != null && _currentAbility.GetPlayer1() == player1 && _currentAbility.IsPayingCost())
             {
                 AddAbilityTiming(Activation.OnRetiredForPlayerCost, player1._playerID, player1.GetLastPlayerRetired());
             }
@@ -1696,6 +1696,13 @@ namespace VanguardEngine
             int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "to switch places.")[0];
             int selection2 = _inputManager.SelectCircle(player1, availableCircles, 1)[0];
             player1.MoveRearguardSpecific(selection, selection2);
+        }
+
+        public void ChooseMoveRearguard(Player player, List<Card> cardsToSelect, List<int> availableCircles)
+        {
+            int selection = _inputManager.SelectFromList(player, cardsToSelect, 1, 1, "to switch places.")[0];
+            int selection2 = _inputManager.SelectCallLocation(player, "Choose circle to move to.", player.GetCard(selection), new List<int>(), player.GetTotalAvailableCircles(player.GetCard(selection), availableCircles.ToArray()));
+            player.MoveRearguardSpecific(selection, selection2);
         }
 
         public void Heal(Player player1)
@@ -1808,6 +1815,11 @@ namespace VanguardEngine
             return _abilityTimings.GetAbilityTimingData(abilityTiming, timingCount, playerID);
         }
 
+        public List<AbilityTimingData> GetAbilityTimingData(int abilityTiming)
+        {
+            return _abilityTimings.GetAbilityTimingData(abilityTiming);
+        }
+
         public AbilityTimingData GetAbilityTimingData(int abilityTiming, Tuple<int, int> timingCount, int playerID)
         {
             List<AbilityTimingData> list = _abilityTimings.GetAbilityTimingData(abilityTiming, timingCount.Item1, playerID);
@@ -1890,6 +1902,7 @@ namespace VanguardEngine
             Player player;
             AbilityTimingData abilityTimingData = new AbilityTimingData();
             Snapshot[] snapShots = new Snapshot[200];
+            abilityTimingData.playerID = playerID;
             if (playerID == 1)
                 player = _player1;
             else
@@ -1975,8 +1988,8 @@ namespace VanguardEngine
             } while (actionPerformed > 0);
             ActivateContAbilities(turnPlayer, nonTurnPlayer);
             AllAbilitiesResolved();
-            turnPlayer.UpdateRecordedValues();
-            nonTurnPlayer.UpdateRecordedValues();
+            turnPlayer.CheckTimingPerformed();
+            nonTurnPlayer.CheckTimingPerformed();
         }
 
         public int ResolveRuleActions()
@@ -2101,6 +2114,13 @@ namespace VanguardEngine
             return new List<AbilityTimingData>();
         }
 
+        public List<AbilityTimingData> GetAbilityTimingData(int activation)
+        {
+            if (_abilityTimings.ContainsKey(activation))
+                return _abilityTimings[activation].GetAbilityTimingData();
+            return new List<AbilityTimingData>();
+        }
+
         public List<int> GetActivations()
         {
             List<int> activations = new List<int>();
@@ -2181,6 +2201,17 @@ namespace VanguardEngine
             return new List<AbilityTimingData>();
         }
 
+        public List<AbilityTimingData> GetAbilityTimingData()
+        {
+            List<AbilityTimingData> list = new List<AbilityTimingData>();
+            foreach (int key in _abilityTimingData.Keys)
+            {
+                foreach (AbilityTimingData data in _abilityTimingData[key])
+                    list.Add(data);
+            }
+            return list;
+        }
+
         public Dictionary<int, int> GetTimingCounts()
         {
             return _timingCount;
@@ -2218,6 +2249,7 @@ namespace VanguardEngine
         public bool additionalInfo = false;
         public int movedTo = -1;
         public int movedFrom = -1;
+        public int playerID = 0;
 
         public AbilityTimingData()
         {
@@ -2251,6 +2283,12 @@ namespace VanguardEngine
             timingCount = _timingCount;
             activation = _activation;
         }
+    }
+
+    public class ActionLog
+    {
+        int playerID;
+
     }
 
     public static class Log

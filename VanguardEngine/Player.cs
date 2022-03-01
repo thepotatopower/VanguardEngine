@@ -27,7 +27,7 @@ namespace VanguardEngine
         protected List<Card> _lastPlayerRCRetired = new List<Card>();
         protected List<Card> _lastPlacedOnVC = new List<Card>();
         protected List<Card> _lastPutOnOrderZone = new List<Card>();
-        protected List<Card> _lastRevealedDriveChecks = new List<Card>();
+        protected List<Snapshot> _lastRevealedDriveChecks = new List<Snapshot>();
         protected List<Card> _lastRevealedDamageChecks = new List<Card>();
         protected Card _lastRevealedTrigger = null;
         protected List<Card> _lastDiscarded = new List<Card>();
@@ -38,6 +38,7 @@ namespace VanguardEngine
         protected List<Card> _retiredForPlayerCost = new List<Card>();
         protected Card _playedOrder;
         protected List<Card> _playedOrdersThisTurn = new List<Card>();
+        protected List<Card> _successfullyRetired = new List<Card>();
         protected int _CBUsed = 0;
         protected int _bonusDriveCheckPower = 0;
         protected bool _enemyRetired = false;
@@ -271,6 +272,13 @@ namespace VanguardEngine
             }
         }
 
+        public void CheckTimingPerformed()
+        {
+            UpdateRecordedValues();
+            UpdateRecordedValues();
+            _successfullyRetired.Clear();
+        }
+
         void _fieldOnShuffle(object sender, CardEventArgs e)
         {
             if (OnShuffle != null)
@@ -326,7 +334,7 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             if (card != null)
-                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id);
+                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id, Grade(card.tempID));
             return null;
         }
 
@@ -616,7 +624,8 @@ namespace VanguardEngine
         public List<Card> GetRevealedTriggers()
         {
             List<Card> triggers = new List<Card>();
-            triggers.AddRange(_lastRevealedDriveChecks);
+            foreach (Snapshot snapshot in _lastRevealedDriveChecks)
+                triggers.Add(GetCard(snapshot.tempID));
             triggers.AddRange(_lastRevealedDamageChecks);
             return triggers;
         }
@@ -628,7 +637,15 @@ namespace VanguardEngine
 
         public List<Card> GetRevealedDriveChecks()
         {
-            return _lastRevealedDriveChecks;
+            List<Card> triggers = new List<Card>();
+            foreach (Snapshot snapshot in _lastRevealedDriveChecks)
+                triggers.Add(GetCard(snapshot.tempID));
+            return triggers;
+        }
+
+        public List<Snapshot> GetRevealedDriveCheckSnapshots()
+        {
+            return new List<Snapshot>(_lastRevealedDriveChecks);
         }
 
         public Card GetRevealedTrigger()
@@ -1792,7 +1809,7 @@ namespace VanguardEngine
 
         public void MoveRearguardSpecific(int tempID, int location)
         {
-            if (!MyStates.HasState(PlayerState.CannotMove))
+            if (MyStates.HasState(PlayerState.CannotMove))
                 return;
             if ((location == PlayerFrontLeft || location == PlayerFrontRight) &&
                 _field.CardStates.HasState(tempID, CardState.CannotMoveToFrontRow))
@@ -2204,6 +2221,7 @@ namespace VanguardEngine
                 args.playerID = _playerID;
                 OnAbilityTiming(this, args);
             }
+            _successfullyRetired.Add(card);
         }
 
         public void RetireAttackedUnit()
@@ -2299,9 +2317,13 @@ namespace VanguardEngine
         {
             Card trigger = PlayerTrigger.Add(PlayerDeck.Index(0));
             if (drivecheck)
-                _lastRevealedDriveChecks.Add(trigger);
-            else
-                _lastRevealedDamageChecks.Add(trigger);
+            {
+                _lastRevealedDriveChecks.Add(GetSnapshot(trigger.tempID));
+            }
+            //if (drivecheck)
+            //    _lastRevealedDriveChecks.Add(trigger);
+            //else
+            //    _lastRevealedDamageChecks.Add(trigger);
             _lastRevealedTrigger = trigger;
             if (trigger.trigger == Trigger.Critical)
                 Log.WriteLine("----------\nCritical Trigger!");
@@ -3848,6 +3870,11 @@ namespace VanguardEngine
         {
             if (PlayerDeck.WasModified())
                 Shuffle();
+        }
+
+        public List<Card> GetSuccessfullyRetired()
+        {
+            return new List<Card>(_successfullyRetired);
         }
     }
 

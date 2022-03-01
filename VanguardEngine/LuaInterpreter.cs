@@ -1502,6 +1502,11 @@ namespace VanguardEngine
                         if ((data != null && data.allSnapshots[_card.tempID].location == Location.Drop) || (data == null && _player1.GetDrop().Exists(card => card.tempID == _card.tempID)))
                             validLocation = true;
                     }
+                    else if (location == Location.Trigger)
+                    {
+                        if ((data != null && data.allSnapshots[_card.tempID].location == Location.Trigger) || (data == null && _player1.GetTrigger(true) != null && _player1.GetTrigger(true).tempID == _card.tempID))
+                            validLocation = true;
+                    }
                     else if (location == Location.PlayerUnits)
                     {
                         int snapshottedLocation = -1;
@@ -1968,6 +1973,8 @@ namespace VanguardEngine
                 }
                 else if (location == Location.AllUnits)
                     currentPool.AddRange(_player1.GetAllUnitsOnField());
+                else if (location == Location.SuccessfullyRetired)
+                    currentPool.AddRange(_player1.GetSuccessfullyRetired());
             }
             if (param.SnapshotIndexes.Count > 0)
             {
@@ -2422,6 +2429,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.Blitz)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (card.orderType == OrderType.Blitz)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                     else if (other == Other.ThisFieldID || other == Other.NotThisFieldID)
                     {
                         if (data != null)
@@ -2489,11 +2507,21 @@ namespace VanguardEngine
             {
                 for (int i = 0; i < currentPool.Count; i++)
                 {
-                    if ((param.Grades.Contains(_player1.Grade(currentPool[i].tempID)) || 
-                        (param.Others.Contains(Other.GradeOrLess) && _player1.Grade(currentPool[i].tempID) <= param.Grades.Max()) ||
-                        (param.Others.Contains(Other.GradeOrHigher) && _player1.Grade(currentPool[i].tempID) >= param.Grades.Min())) && 
-                        !newPool.Contains(currentPool[i]))
-                        newPool.Add(currentPool[i]);
+                    int grade = _player1.Grade(currentPool[i].tempID);
+                    if (param.Locations.Contains(Location.RevealedDriveChecks) && _player1.GetRevealedDriveCheckSnapshots().Exists(snapshot => snapshot.tempID == _card.tempID))
+                        grade = _player1.GetRevealedDriveCheckSnapshots().Find(snapshot => snapshot.tempID == _card.tempID).grade;
+                    if (newPool.Contains(currentPool[i]))
+                        continue;
+                    if (!param.Grades.Contains(grade))
+                    {
+                        if (!param.Others.Contains(Other.GradeOrLess) && !param.Others.Contains(Other.GradeOrHigher))
+                            continue;
+                        if (param.Others.Contains(Other.GradeOrLess) && grade > param.Grades.Max())
+                            continue;
+                        if (param.Others.Contains(Other.GradeOrHigher) && grade < param.Grades.Min())
+                            continue;
+                    }
+                    newPool.Add(currentPool[i]);
                 }
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
@@ -2550,6 +2578,20 @@ namespace VanguardEngine
                 {
                     if (param.Powers.Exists(power => power == currentPool[i].power))
                         newPool.Add(currentPool[i]);
+                }
+                currentPool.Clear();
+                currentPool.AddRange(newPool);
+                newPool.Clear();
+            }
+            if (param.OrderTypes.Count > 0)
+            {
+                for (int i = 0; i < currentPool.Count; i++)
+                {
+                    foreach (int orderType in param.OrderTypes)
+                    {
+                        if (orderType == currentPool[i].orderType)
+                            newPool.Add(currentPool[i]);
+                    }
                 }
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
@@ -2777,6 +2819,15 @@ namespace VanguardEngine
                 return;
             List<Card> cards = ValidCards(paramNum);
             _cardFight.ChooseMoveEnemyRearguard(_player1, cards, circles);
+        }
+
+        public void ChooseMoveRearguard(List<object> param, List<int> circles)
+        {
+            if (circles.Count == 0)
+                return;
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            _cardFight.ChooseMoveRearguard(_player1, cards, circles);
         }
 
         public void ChooseGiveAbility(int paramNum, int activationNumber)
@@ -3669,7 +3720,7 @@ namespace VanguardEngine
             if (!HasCount(paramNum) && !HasMin(paramNum))
                 _cardFight.Retire(_player1, _player2, _player1.ConvertToTempIDs(canRetire));
             else
-                _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum].Counts[0], false); 
+                _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum].Counts[0], GetMin(paramNum)); 
         }
 
         public bool CanBind(int paramNum)
@@ -4457,7 +4508,7 @@ namespace VanguardEngine
         public void EnemyChooseRetire(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            _cardFight.SelectCardToRetire(_player2, _player1, cardsToSelect, GetCount(paramNum), false);
+            _cardFight.SelectCardToRetire(_player2, _player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
         public void Imprison(List<object> param)
@@ -5325,6 +5376,35 @@ namespace VanguardEngine
         {
             _player1.CheckForShuffle();
         }
+
+        public List<int> GetAbilityTimingCards(int activation, bool forCost, string nameOfSource, bool nameContains)
+        {
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(activation);
+            List<int> tempIDs = new List<int>();
+            foreach (AbilityTimingData data in list)
+            {
+                if (forCost && !data.asCost)
+                    continue;
+                if (nameOfSource != "")
+                {
+                    if (data.abilitySource == null)
+                        continue;
+                    if (!nameContains && data.abilitySource.name != nameOfSource)
+                        continue;
+                    if (!data.abilitySource.name.Contains(nameOfSource))
+                        continue;
+                }
+                if (data.GetRelevantSnapshots(0).Count < 1)
+                    continue;
+                tempIDs.Add(data.GetRelevantSnapshots(0)[0].tempID);
+            }
+            return tempIDs;
+        }
+
+        public bool IsPlayerAction()
+        {
+            return data != null && data.playerID == _player1._playerID;
+        }
     }
 
     public class TimingCount
@@ -5380,6 +5460,7 @@ namespace VanguardEngine
         List<int> _power = new List<int>();
         List<int> _snapshotIndex = new List<int>();
         List<string> _nameIsNot = new List<string>();
+        List<int> _orderType = new List<int>();
 
         public void AddLocation(int location)
         {
@@ -5484,6 +5565,12 @@ namespace VanguardEngine
         {
             _nameIsNot.Add(name);
         }
+
+        public void AddOrderType(int type)
+        {
+            _orderType.Add(type);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -5562,6 +5649,11 @@ namespace VanguardEngine
         public List<string> NameIsNots
         {
             get => _nameIsNot;
+        }
+
+        public List<int> OrderTypes
+        {
+            get => _orderType;
         }
     }
 
@@ -5684,6 +5776,7 @@ namespace VanguardEngine
         public const int MyArms = 68;
         public const int EnemySoul = 69;
         public const int AllUnits = 70;
+        public const int SuccessfullyRetired = 71;
     }
 
     class Query
@@ -5752,6 +5845,7 @@ namespace VanguardEngine
         public const int SameZone = 41;
         public const int DifferentName = 42;
         public const int Applicable = 43;
+        public const int Blitz = 44;
     }
 
     class Property

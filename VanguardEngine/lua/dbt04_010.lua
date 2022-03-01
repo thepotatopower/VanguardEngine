@@ -40,5 +40,5 @@ end
 
 function OnBattleEnds()
 	obj.Stand({q.Location, l.PlayerRC, q.Grade, 3})
-	obj.AddCardValue({q.Location,  l.PlayerRC, q.Grade, 3}, cs.BonusPower, 10000, p.UntilEndOfTurn)
+	obj.AddCardValue({q.Location, l.PlayerRC, q.Grade, 3}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 end
