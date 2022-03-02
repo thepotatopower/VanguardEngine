@@ -1343,6 +1343,7 @@ namespace VanguardEngine
         public const int CanAttackBackRowInSameColumn = 38;
         public const int CannotBeRetiredByCardEffect = 39;
         public const int CannotBeNormalCalled = 40;
+        public const int PlacedThisTurn = 41;
     }
 
     public class Zone

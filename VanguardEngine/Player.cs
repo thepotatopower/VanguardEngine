@@ -1682,6 +1682,7 @@ namespace VanguardEngine
                 Log.WriteLine("----------\nSuperior Call! " + ToBeCalled.name + "!");
             _lastPlacedOnRC.Add(ToBeCalled);
             _unitsCalledThisTurn.Add(ToBeCalled);
+            CardStates.AddUntilEndOfTurnState(ToBeCalled.tempID, CardState.PlacedThisTurn);
             if (fromHand)
             {
                 _unitsCalledFromHandThisTurn.Add(ToBeCalled);

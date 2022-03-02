@@ -988,7 +988,6 @@ namespace VanguardEngine
                 {
                     param.AddLocation((int)(double)newParam[j + 1]);
                     j++;
-
                 }
                 else if (newParam[j] is System.Double && (double)newParam[j] == Query.Grade)
                 {
@@ -1053,6 +1052,12 @@ namespace VanguardEngine
                 else if (newParam[j] is System.Double && (double)newParam[j] == Query.NameIsNot)
                 {
                     param.AddNameIsNot((string)newParam[j + 1]);
+                    j++;
+                }
+                else if (newParam[j] is System.Double && (double)newParam[j] == Query.CardState)
+                {
+                    param.AddCardState((int)(double)newParam[j + 1]);
+                    j++;
                 }
             }
             return param;
@@ -2608,6 +2613,26 @@ namespace VanguardEngine
                         if (orderType == currentPool[i].orderType)
                             newPool.Add(currentPool[i]);
                     }
+                }
+                currentPool.Clear();
+                currentPool.AddRange(newPool);
+                newPool.Clear();
+            }
+            if (param.CardStates.Count > 0)
+            {
+                for (int i = 0; i < currentPool.Count; i++)
+                {
+                    bool hasState = true;
+                    foreach (int cardState in param.CardStates)
+                    {
+                        if (!_player1.CardStates.HasState(currentPool[i].tempID, cardState))
+                        {
+                            hasState = false;
+                            break;
+                        }
+                    }
+                    if (hasState)
+                        newPool.Add(currentPool[i]);
                 }
                 currentPool.Clear();
                 currentPool.AddRange(newPool);
@@ -5483,6 +5508,7 @@ namespace VanguardEngine
         List<int> _snapshotIndex = new List<int>();
         List<string> _nameIsNot = new List<string>();
         List<int> _orderType = new List<int>();
+        List<int> _cardState = new List<int>();
 
         public void AddLocation(int location)
         {
@@ -5593,6 +5619,11 @@ namespace VanguardEngine
             _orderType.Add(type);
         }
 
+        public void AddCardState(int cardState)
+        {
+            _cardState.Add(cardState);
+        }
+
         public List<int> Locations
         {
             get => _location;
@@ -5676,6 +5707,11 @@ namespace VanguardEngine
         public List<int> OrderTypes
         {
             get => _orderType;
+        }
+
+        public List<int> CardStates
+        {
+            get => _cardState;
         }
     }
 
@@ -5819,6 +5855,7 @@ namespace VanguardEngine
         public const int Power = 14;
         public const int SnapshotIndex = 15;
         public const int NameIsNot = 16;
+        public const int CardState = 17;
     }
 
     class Other
