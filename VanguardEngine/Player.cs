@@ -1285,12 +1285,23 @@ namespace VanguardEngine
                 return false;
             List<Card> rideDeck = PlayerRideDeck.GetCards();
             Card VG = _field.GetUnit(PlayerVanguard);
+            Card toRide = null;
             if (PlayerHand.GetCards().Count < 1)
                 return false;
             foreach (Card card in rideDeck)
             {
                 if (Grade(VG.tempID) + 1 == Grade(card.tempID) &&
                     !_field.CardStates.HasState(card.tempID, CardState.CannotBeRidden))
+                    toRide = card;
+            }
+            if (toRide != null)
+            {
+                if (PlayerHand.GetCards().Count < 1)
+                {
+                    if (MyStates.GetStrings(PlayerState.CanRideFromRideDeckWithoutDiscard).Contains(toRide.id))
+                        return true;
+                }
+                else
                     return true;
             }
             return false;

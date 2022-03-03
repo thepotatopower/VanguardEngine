@@ -961,6 +961,7 @@ namespace VanguardEngine
     {
         List<int> _continuous = new List<int>();
         Dictionary<int, List<int>> _continuousValues = new Dictionary<int, List<int>>();
+        Dictionary<int, List<string>> _continuousStrings = new Dictionary<int, List<string>>();
         List<int> _untilEndOfTurn = new List<int>();
         Dictionary<int, List<int>> _untilEndOfTurnValues = new Dictionary<int, List<int>>();
         List<int> _untilEndOfNextTurn = new List<int>();
@@ -982,10 +983,18 @@ namespace VanguardEngine
                 _continuousValues[state].Add(value);
         }
 
+        public void AddContinuousString(int state, string value)
+        {
+            if (!_continuousStrings.ContainsKey(state))
+                _continuousStrings[state] = new List<string>();
+            _continuousStrings[state].Add(value);
+        }
+
         public void RefreshContinuousStates()
         {
             _continuous.Clear();
             _continuousValues.Clear();
+            _continuousStrings.Clear();
         }
 
         public void AddUntilEndOfTurnState(int state)
@@ -1084,6 +1093,13 @@ namespace VanguardEngine
             if (_untilEndOfBattleValues.ContainsKey(state))
                 list = _untilEndOfBattleValues[state];
             return list;
+        }
+
+        public List<string> GetStrings(int state)
+        {
+            if (_continuousStrings.ContainsKey(state))
+                return _continuousStrings[state];
+            return new List<string>();
         }
     }
 
@@ -1299,6 +1315,7 @@ namespace VanguardEngine
         public const int RearguardStoodByEffectThisTurn = 29;
         public const int EnemyRCRetiredThisTurn = 30;
         public const int AdditionalArms = 31;
+        public const int CanRideFromRideDeckWithoutDiscard = 32;
     }
 
     public class CardState
@@ -1901,6 +1918,7 @@ namespace VanguardEngine
         public readonly int tempID;
         public readonly string cardID;
         public readonly int grade;
+        public readonly Snapshot abilitySource;
 
         public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
         {
@@ -1912,6 +1930,19 @@ namespace VanguardEngine
             fieldID = _fieldID;
             cardID = _cardID;
             grade = _grade;
+        }
+
+        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource)
+        {
+            tempID = _tempID;
+            location = _location;
+            previousLocation = _previousLocation;
+            circle = _circle;
+            name = _name;
+            fieldID = _fieldID;
+            cardID = _cardID;
+            grade = _grade;
+            abilitySource = _abilitySource;
         }
     }
 

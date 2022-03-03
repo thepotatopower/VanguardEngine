@@ -4,7 +4,7 @@ function RegisterAbilities()
 	-- ACT
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetTiming(a.ACT)
+	ability1.SetTiming(a.OnACT)
 	ability1.SetLocation(l.VC)
 	ability1.SetCost("ACTCost")
 	ability1.SetActivation("ACT")
@@ -26,7 +26,11 @@ function ACTCost(check)
 end
 
 function ACT()
-	obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.UntilEndOfTurn)
+	obj.AddCardValue("ACTFilter", {l.Units}, cs.BonusPower, 5000, p.UntilEndOfTurn)
+end
+
+function ACTFilter(id)
+	return obj.IsThis(id)
 end
 
 function OnBattleEndsTrigger()
@@ -34,7 +38,11 @@ function OnBattleEndsTrigger()
 end
 
 function OnBattleEndsCondition()
-	return obj.SoulCount() == 0 and not obj.Exists({q.Location, l.Damage, q.Other, o.FaceUp})
+	return obj.SoulCount() == 0 and obj.GetNumberOf("OnBattleEndsConditionFilter", {l.Damage}, {}) == 0
+end
+
+function OnBattleEndsConditionFilter(id)
+	return obj.IsPlayer(id) and obj.IsFaceUp(id)
 end
 
 function OnBattleEndsCost(check)
@@ -44,5 +52,10 @@ end
 
 function OnBattleEnds()
 	obj.ChooseStand({q.Location, l.PlayerRC, q.Property, p.Powerful, q.Count, 1})
+	obj.Select("OnBattleEndsFilter", {l.Units}, 1, 1, {}, Prompt.Stand)
 	obj.IncrementUntilEndOfTurnPlayerValue(ps.FreeCB, 1)
+end
+
+function OnBattleEndsFilter(id)
+	return obj.IsPlayer(id) and obj.IsRearguard(id) and obj.HasProperty(id, p.Powerful)
 end

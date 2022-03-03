@@ -43,6 +43,7 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnAlchemagic;
         int _clientNumber = 0;
         string _connectionString;
+        public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, int clientNumber)
         {
@@ -129,6 +130,11 @@ namespace VanguardEngine
             return _abilities.GetAbilityWithActivation(tempID, activation);
         }
 
+        public List<Ability> GetAbilities(int tempID)
+        {
+            return _abilities.GetAbilities(tempID);
+        }
+
         public void StartFight()
         {
             Player player1;
@@ -186,8 +192,8 @@ namespace VanguardEngine
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
             TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
+            //player1.SoulCharge(10);
+            //player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(5);
@@ -373,6 +379,8 @@ namespace VanguardEngine
                         if (player1.MyStates.HasState(PlayerState.SoulBlastForRideDeck) && player1.GetSoul().Count > 0 && _inputManager.YesNo(player1, "Soul Blast 1 instead of discarding card?"))
                             SoulBlast(player1, player2, player1.GetSoul(), 1);
                         else if (RideDeckDiscardCostReplaced(player1)) ;
+                        else if (player1.MyStates.GetStrings(PlayerState.CanRideFromRideDeckWithoutDiscard).Contains(player1.GetRideDeck().Find(card => card.OriginalGrade() == player1.Grade(player1.Vanguard().tempID) + 1).id) &&
+                            (_player1.GetHand().Count == 0 || _inputManager.YesNo(player1, "Skip discard cost?"))) ;
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
                         input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
@@ -1497,6 +1505,15 @@ namespace VanguardEngine
             }
             List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, count, "to Soul Blast.");
             player1.SoulBlast(cardsToSB);
+            foreach (int tempID in cardsToSB)
+            {
+                Card card = _player1.GetCard(tempID);
+                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, player1.GetSnapshot(_currentAbility.GetCard().tempID));
+                if (!actionLogs.ContainsKey(Location.SoulBlasted))
+                    actionLogs[Location.SoulBlasted] = new List<ActionLog>();
+                ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
+                actionLogs[Location.SoulBlasted].Add(actionLog);
+            }
         }
 
         public void CounterCharge(Player player1, List<Card> canCC, int count)
@@ -1657,6 +1674,12 @@ namespace VanguardEngine
             {
                 AddAbilityTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
             }
+            Card card = _player1.GetCard(tempID);
+            Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, null);
+            if (!actionLogs.ContainsKey(Location.PlayedOrdersThisTurn))
+                actionLogs[Location.PlayedOrdersThisTurn] = new List<ActionLog>();
+            ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
+            actionLogs[Location.PlayedOrdersThisTurn].Add(actionLog);
         }
 
         public List<int> ChooseReveal(Player player1, Player player2, List<Card> canReveal, int max, int min)
@@ -2050,6 +2073,17 @@ namespace VanguardEngine
                     player.Arm(_player1.Vanguard().tempID, cardsToArm[0].tempID);
             }
         }
+
+        public List<Snapshot> GetSnapshots(int location)
+        {
+            List<Snapshot> snapshots = new List<Snapshot>();
+            if (actionLogs.ContainsKey(location))
+            {
+                foreach (ActionLog actionLog in actionLogs[location])
+                    snapshots.Add(actionLog.snapshot);
+            }
+            return snapshots;
+        }
     }
 
     public class C
@@ -2287,8 +2321,14 @@ namespace VanguardEngine
 
     public class ActionLog
     {
-        int playerID;
+        public readonly int playerID;
+        public readonly Snapshot snapshot;
 
+        public ActionLog(int _playerID, Snapshot _snapshot)
+        {
+            playerID = _playerID;
+            snapshot = _snapshot;
+        }
     }
 
     public static class Log
