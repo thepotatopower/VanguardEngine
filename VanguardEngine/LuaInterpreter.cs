@@ -35,7 +35,7 @@ namespace VanguardEngine
         DynValue cs;
         DynValue r;
         DynValue li;
-        DynValue n;
+        DynValue Prompt;
 
 
         public LuaInterpreter(string path, CardFight cf)
@@ -60,6 +60,8 @@ namespace VanguardEngine
             UserData.RegisterType<Card>();
             UserData.RegisterType<Names>();
             UserData.RegisterType<Snapshot>();
+            UserData.RegisterType<Prompt>();
+            UserData.RegisterType<Prompt>();
             l = UserData.Create(new Location());
             a = UserData.Create(new Activation());
             q = UserData.Create(new Query());
@@ -73,7 +75,7 @@ namespace VanguardEngine
             cs = UserData.Create(new CardState());
             r = UserData.Create(new Race());
             li = UserData.Create(this);
-            n = UserData.Create(new Names());
+            Prompt = UserData.Create(new Prompt());
         }
 
         public List<Ability> GetAbilities(Card card, Player player1, Player player2, bool player)
@@ -118,7 +120,7 @@ namespace VanguardEngine
                     script.Globals.Set("ps", ps);
                     script.Globals.Set("cs", cs);
                     script.Globals.Set("r", r);
-                    script.Globals.Set("n", n);
+                    script.Globals.Set("Prompt", Prompt);
                     script.DoFile(filePath);
                     ability = new Ability(player1, player2, cardFight, card, _abilityID++);
                     success = ability.StoreAbility(script, i + 1, player);
@@ -149,7 +151,7 @@ namespace VanguardEngine
                 tempScript.Globals.Set("ps", ps);
                 tempScript.Globals.Set("cs", cs);
                 tempScript.Globals.Set("r", r);
-                tempScript.Globals.Set("n", n);
+                tempScript.Globals.Set("Prompt", Prompt);
                 tempScript.DoFile(filePath);
                 tempScript.Call(tempScript.Globals["RegisterAbilities"]);
                 if (OrderType.IsSetOrder(card.orderType) && cardFight.GetAbility(GetID(), Activation.OnOrder) == null)
@@ -184,7 +186,7 @@ namespace VanguardEngine
             script.Globals.Set("ps", ps);
             script.Globals.Set("cs", cs);
             script.Globals.Set("r", r);
-            script.Globals.Set("n", n);
+            script.Globals.Set("Prompt", Prompt);
             if (currentFilePath == "")
                 script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
             else
@@ -579,6 +581,8 @@ namespace VanguardEngine
                 _costRequired = false;
                 _isMandatory = true;
             }
+            else
+                _additionalProperties.Add(property);
         }
 
         public void SetTiming(params int[] activations)
@@ -1460,8 +1464,6 @@ namespace VanguardEngine
                     return false;
                 else if (key == Property.AddToDamageZone && !Exists(_costs[key]))
                     return false;
-                else if (key == Property.Call && !CanSuperiorCall(_costs[key]))
-                    return false;
                 else if (key == Property.SendToTop && !Exists(_costs[key]))
                     return false;
                 else if (key == Property.SendToBottom && !Exists(_costs[key]))
@@ -1579,16 +1581,17 @@ namespace VanguardEngine
             SetAbilityData(activation, timingCount);
             if (!CanActivate())
                 return false;
-            if (_additionalProperties.Contains(Property.BlackWings) && !IsBlackWings())
-                return false;
-            if (_additionalProperties.Contains(Property.WhiteWings) && !IsWhiteWings())
-                return false;
             if (newFormat)
                 return true;
             DynValue check = _script.Call(_checkCondition, _abilityNumber);
             if (check.Boolean)
                 return true;
             return false;
+        }
+
+        public bool CheckCondition()
+        {
+            return CheckCondition(Activation.Cont, new Tuple<int, int>(-1, -1));
         }
 
         public bool CheckConditionAsGiven(Card card, int activation, Tuple<int, int> timingCount)
@@ -1630,6 +1633,10 @@ namespace VanguardEngine
 
         public bool CanActivate()
         {
+            if (_additionalProperties.Contains(Property.BlackWings) && !IsBlackWings())
+                return false;
+            if (_additionalProperties.Contains(Property.WhiteWings) && !IsWhiteWings())
+                return false;
             if (_costRequired && !CanPayCost())
                 return false;
             if (_oncePerTurn && _activated)
@@ -1787,9 +1794,16 @@ namespace VanguardEngine
             return CanSuperiorCall(1);
         }
 
-        public bool CanSuperiorCall(int paramNum)
+        public bool CanSuperiorCall(int tempID)
         {
-            return CanSuperiorCallToSpecificCircle(paramNum);
+            List<Card> cards = new List<Card>();
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+            {
+                cards.Add(card);
+                return CanSuperiorCall(cards);
+            }
+            return false;
         }
 
         public bool CanSuperiorCallToSpecificCircle(List<object> param, params int[] circles)
@@ -1800,17 +1814,25 @@ namespace VanguardEngine
 
         public bool CanSuperiorCallToSpecificCircle(int paramNum, params int[] circles)
         {
-            int count = 0;
-            circles = _player1.ConvertFL(circles);
-            if (Exists(paramNum))
+            List<Card> cards = ValidCards(paramNum);
+            return CanSuperiorCall(cards, circles);
+        }
+
+        public bool CanSuperiorCall(string filter, List<int> locations)
+        {
+            return CanSuperiorCall(FilterCards(filter, locations));
+        }
+
+        public bool CanSuperiorCall(string filter, List<int> locations, params int[] circles)
+        {
+            return CanSuperiorCall(FilterCards(filter, locations), circles);
+        }
+
+        public bool CanSuperiorCall(List<Card> cards, params int[] circles)
+        {
+            foreach (Card card in cards)
             {
-                foreach (Card card in ValidCards(paramNum))
-                {
-                    List<int> availableCircles = _player1.GetTotalAvailableCircles(card, circles);
-                    if (availableCircles.Count > 0)
-                        count++;
-                }
-                if (count >= GetCount(paramNum))
+                if (_player1.GetTotalAvailableCircles(card, circles).Count > 0)
                     return true;
             }
             return false;
@@ -2939,6 +2961,8 @@ namespace VanguardEngine
         {
             List<Card> damage = _player1.GetDamageZone();
             int faceupCards = 0;
+            if (_player1.MyStates.GetValue(PlayerState.FreeCB) > 0)
+                count -= _player1.MyStates.GetValue(PlayerState.FreeCB);
             foreach (Card card in damage)
             {
                 if (_player1.IsFaceUp(card))
@@ -3206,7 +3230,7 @@ namespace VanguardEngine
 
         public bool IsVanguard(int tempID)
         {
-            return _player1.Vanguard().tempID == tempID;
+            return _player1.Vanguard().tempID == tempID || _player2.Vanguard().tempID == tempID;
         }
 
         public bool IsRearguard()
@@ -3410,23 +3434,40 @@ namespace VanguardEngine
 
         public List<int> SuperiorCallToSpecificCircle(int paramNum, bool standing, string tokenID, bool convert, params int[] circles)
         {
-            List<Card> cardsToSelect = new List<Card>();
+            return SuperiorCall(ValidCards(paramNum), GetCount(paramNum), GetMin(paramNum), standing, tokenID, convert, circles.ToList());
+        }
+
+        public List<int> SuperiorCall(string filter, List<int> locations, int max, int min)
+        {
+            return SuperiorCall(FilterCards(filter, locations), max, min, true, "", false, null);
+        }
+
+        public List<int> SuperiorCall(string filter, List<int> locations, int max, int min, bool standing, string tokenID, bool convert, List<int> circles)
+        {
+            return SuperiorCall(FilterCards(filter, locations), max, min, standing, tokenID, convert, circles);
+        }
+
+        public List<int> SuperiorCall(List<Card> cards, int max, int min, bool standing, string tokenID, bool convert, List<int> circles)
+        {
+            List<Card> cardsToSelect = cards;
+            int[] circlesToSelect;
+            if (circles == null)
+                circlesToSelect = new int[0];
+            else
+                circlesToSelect = circles.ToArray();
             if (tokenID != "")
             {
+                cardsToSelect = new List<Card>();
                 int token = _player1.CreateToken(tokenID);
                 cardsToSelect.Add(_player1.GetCard(token));
                 cardsToSelect[0].originalOwner = _player1._playerID;
             }
-            else
-                cardsToSelect = ValidCards(paramNum);
             if (convert)
-                circles = _player1.ConvertFL(circles);
-            if (circles.Length > 0 && circles[0] == -1)
-                circles = null;
-            int count = GetCount(paramNum);
-            int min = GetMin(paramNum);
-            if (count == -1)
-                count = cardsToSelect.Count;
+                circlesToSelect = _player1.ConvertFL(circlesToSelect);
+            if (circlesToSelect.Length > 0 && circlesToSelect[0] == -1)
+                circlesToSelect = null;
+            if (max == -1)
+                max = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
             if (IsPayingCost())
@@ -3434,7 +3475,7 @@ namespace VanguardEngine
                 foreach (Card card in cardsToSelect)
                     _calledForCost.Add(card.tempID);
             }
-            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, circles, false, standing, false, false));
+            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, false, standing, false, false));
             return ConvertToTempIDs(_lastCalled);
         }
 
@@ -3598,22 +3639,32 @@ namespace VanguardEngine
         public List<int> ChooseAddToHand(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            return _cardFight.AddToHand(_player1, _player2, cardsToSelect, GetCount(1), GetMin(1));
+            return ChooseAddToHand(cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
-        public void AddToHand(List<object> param)
+        public List<int> ChooseAddToHand(string filter, List<int> locations, int max, int min, List<int> specifications)
+        {
+            return ChooseAddToHand(FilterCards(filter, locations), max, min);
+        }
+
+        public List<int> ChooseAddToHand(List<Card> cards, int max, int min)
+        {
+            return _cardFight.AddToHand(_player1, _player2, cards, max, min);
+        }
+
+        public List<int> AddToHand(List<object> param)
         {
             SetParam(param, 1);
-            AddToHand(1);
+            return AddToHand(1);
         }
 
-        public void AddToHand(int paramNum)
+        public List<int> AddToHand(int paramNum)
         {
             List<Card> cardsToAdd = ValidCards(paramNum);
             List<int> IDs = new List<int>();
             foreach (Card card in cardsToAdd)
                 IDs.Add(card.tempID);
-            _player1.AddToHand(IDs);
+            return _player1.AddToHand(IDs);
         }
 
         public List<int> ChooseAddToSoul(List<object> param)
@@ -3751,7 +3802,7 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
-                _player1.CountsAsTwoRetires(card.tempID);
+                _player1.CountsAsTwoRetires(card.tempID, _abilityID);
         }
 
         public void DoesNotCountAsTwoRetires(int paramNum)
@@ -3948,13 +3999,24 @@ namespace VanguardEngine
         public List<int> ChooseStand(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
+            return ChooseStand(cardsToSelect, GetCount(paramNum), GetMin(paramNum));
+        }
+
+        public List<int> ChooseStand(string filter, List<int> locations, int max, int min, List<int> specifications)
+        {
+            return ChooseStand(FilterCards(filter, locations), max, min);
+        }
+
+        public List<int> ChooseStand(List<Card> cards, int max, int min)
+        {
+            List<Card> cardsToSelect = cards;
             List<Card> canStand = new List<Card>();
             foreach (Card card in cardsToSelect)
             {
                 if (!_player1.IsUpRight(card))
                     canStand.Add(card);
             }
-            return _player1.ConvertToTempIDs(_cardFight.Stand(_player1, _player2, canStand, _params[paramNum].Counts[0], true));
+            return _player1.ConvertToTempIDs(_cardFight.Stand(_player1, _player2, cards, max, min, true));
         }
 
         public void Stand(List<object> param)
@@ -4182,7 +4244,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _cardFight.Resist(_player1, _player2, card.tempID);
+                _cardFight.Resist(_player1, _player2, card.tempID, _abilityID);
             }
         }
 
@@ -4191,7 +4253,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _cardFight.Resist(_player1, _player2, card.tempID);
+                _cardFight.Resist(_player1, _player2, card.tempID, _abilityID);
             }
         }
 
@@ -4236,7 +4298,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityPower(card.tempID, power);
+                _player1.SetAbilityPower(card.tempID, power, _abilityID);
             }
         }
 
@@ -4245,7 +4307,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityShield(card.tempID, shield);
+                _player1.SetAbilityShield(card.tempID, shield, _abilityID);
             }
         }
 
@@ -4254,7 +4316,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityDrive(card.tempID, drive);
+                _player1.SetAbilityDrive(card.tempID, drive, _abilityID);
             }
         }
 
@@ -4263,7 +4325,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _player1.SetAbilityCritical(card.tempID, critical);
+                _player1.SetAbilityCritical(card.tempID, critical, _abilityID);
             }
         }
 
@@ -4354,7 +4416,7 @@ namespace VanguardEngine
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
             {
-                _cardFight.AddSkill(_player1, _player2, card, skill);
+                _cardFight.AddSkill(_player1, _player2, card, skill, _abilityID);
             }
         }
 
@@ -4386,7 +4448,7 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
-                _player1.DisableAttack(card.tempID);
+                _player1.DisableAttack(card.tempID, _abilityID);
         }
 
         public void DisableMove(int paramNum)
@@ -4426,7 +4488,7 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
-                _player1.AllowColumnAttack(card.tempID);
+                _player1.AllowColumnAttack(card.tempID, _abilityID);
         }
 
         public void DisableColumnAttack(int paramNum)
@@ -4438,7 +4500,7 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
-                _player1.AllowInterceptFromBackRow(card.tempID);
+                _player1.AllowInterceptFromBackRow(card.tempID, _abilityID);
         }
 
         public void EnemyDisableIntercept()
@@ -4519,7 +4581,7 @@ namespace VanguardEngine
             if (specifications.Contains(Property.SameName))
                 sameName = true;
             List<int> selectedCards;
-            if (specifications.Contains(Property.Auto))
+            if (!specifications.Contains(Property.Auto))
             {
                 if (player)
                     selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, max, min, "", sameName);
@@ -4905,7 +4967,7 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             foreach (Card card in cards)
-                _player1.CardStates.AddContinuousState(card.tempID, state);
+                _player1.CardStates.AddContinuousState(card.tempID, state, _abilityID);
         }
 
         public void AddContinuousPlayerState(int state)
@@ -5025,7 +5087,7 @@ namespace VanguardEngine
             {
                 foreach (Card value in values)
                 {
-                    _player1.CardStates.AddContinuousValue(target.tempID, state, value.tempID);
+                    _player1.CardStates.AddContinuousValue(target.tempID, state, value.tempID, _abilityID);
                 }
             }
         }
@@ -5131,6 +5193,11 @@ namespace VanguardEngine
             return GetSnapshottedCards(0).Exists(card => card.tempID == _card.tempID);
         }
 
+        public bool IsApplicable(int tempID)
+        {
+            return GetSnapshottedCards(0).Exists(card => card.tempID == tempID);
+        }
+
         public int GetCurrentActivation()
         {
             return _currentActivation;
@@ -5174,11 +5241,17 @@ namespace VanguardEngine
         public void AddCardState(List<object> param, int state, int duration)
         {
             SetParam(param, 1);
-            foreach (Card card in ValidCards(1))
+            AddCardState("", null, state, duration);
+        }
+
+        public void AddCardState(string filter, List<int> locations, int state, int duration)
+        {
+            List<Card> filtered = FilterCards(filter, locations);
+            foreach (Card card in filtered)
             {
                 int tempID = card.tempID;
                 if (duration == Property.Continuous)
-                    _player1.CardStates.AddContinuousState(tempID, state);
+                    _player1.CardStates.AddContinuousState(tempID, state, _abilityID);
                 else if (duration == Property.UntilEndOfBattle)
                     _player1.CardStates.AddUntilEndOfBattleState(tempID, state);
                 else if (duration == Property.UntilEndOfTurn)
@@ -5199,7 +5272,7 @@ namespace VanguardEngine
             {
                 int tempID = card.tempID;
                 if (duration == Property.Continuous)
-                    _player1.CardStates.AddContinuousValue(tempID, state, value);
+                    _player1.CardStates.AddContinuousValue(tempID, state, value, _abilityID);
                 else if (duration == Property.UntilEndOfBattle)
                     _player1.CardStates.AddUntilEndOfBattleValue(tempID, state, value);
                 else if (duration == Property.UntilEndOfTurn)
@@ -5533,7 +5606,7 @@ namespace VanguardEngine
             List<Card> cards = new List<Card>();
             List<Snapshot> snapshots = new List<Snapshot>();
             List<Card> filtered = new List<Card>();
-            if (filter == "")
+            if (filter == "" && locations == null)
                 return ValidCards(1);
             foreach (int location in locations)
             {
@@ -5547,7 +5620,15 @@ namespace VanguardEngine
                     cards.AddRange(_player2.GetDamageZone());
                     cards.AddRange(_player1.GetDamageZone());
                 }
-                else if (location == Location.PlayedOrdersThisTurn || 
+                else if (location == Location.Drop)
+                    cards.AddRange(_player1.GetDrop());
+                else if (location == Location.Soul)
+                    cards.AddRange(_player1.GetSoul());
+                else if (location == Location.Bind)
+                    cards.AddRange(_player1.GetBind());
+                else if (location == Location.Hand)
+                    cards.AddRange(_player1.GetHand());
+                else if (location == Location.PlayedOrdersThisTurn ||
                          location == Location.SoulBlasted)
                 {
                     snapshots.AddRange(_cardFight.GetSnapshots(location));
@@ -5555,37 +5636,37 @@ namespace VanguardEngine
             }
             foreach (Card card in cards)
             {
-                if (_script.Call(_script.Globals[filter], card.tempID).Boolean)
+                if (filter == "" || _script.Call(_script.Globals[filter], card.tempID).Boolean)
                     filtered.Add(card);
             }
             foreach (Snapshot snapshot in snapshots)
             {
-                if (_script.Call(_script.Globals[filter], snapshot).Boolean)
+                if (filter == "" || _script.Call(_script.Globals[filter], snapshot).Boolean)
                     filtered.Add(_player1.GetCard(snapshot.tempID));
             }
             return filtered;
         }
 
-        public bool IsThis(int id)
+        public bool IsThis(int tempID)
         {
-            return id == _card.tempID;
+            return tempID == _card.tempID;
         }
 
-        public bool IsPlayer(int id)
+        public bool IsPlayer(int tempID)
         {
-            Card card = _player1.GetCard(id);
+            Card card = _player1.GetCard(tempID);
             return card != null && card.originalOwner == _player1._playerID;
         }
 
-        public bool IsFaceUp(int id)
+        public bool IsFaceUp(int tempID)
         {
-            Card card = _player1.GetCard(id);
+            Card card = _player1.GetCard(tempID);
             return card != null && _player1.IsFaceUp(card);
         }
 
-        public bool HasProperty(int id, int property)
+        public bool HasProperty(int tempID, int property)
         {
-            List<Ability> abilities = _cardFight.GetAbilities(id);
+            List<Ability> abilities = _cardFight.GetAbilities(tempID);
             foreach (Ability ability in abilities)
             {
                 if (ability._additionalProperties.Contains(property))
@@ -5600,20 +5681,62 @@ namespace VanguardEngine
                 _player1.MyStates.AddContinuousString(state, value);
         }
 
-        public bool NameIs(int id, string name)
+        public bool NameIs(int tempID, string name)
         {
-            Card card = _player1.GetCard(id);
+            Card card = _player1.GetCard(tempID);
             return card != null && card.name == name;
         }
 
-        public bool IsCircle(int id, int circle)
+        public bool NameContains(int tempID, string name)
         {
-            return circle == _player1.GetCircle(_player1.GetCard(id));
+            Card card = _player1.GetCard(tempID);
+            return card != null && card.name.Contains(name);
+        }
+
+        public bool IsCircle(int tempID, int circle)
+        {
+            return circle == _player1.GetCircle(_player1.GetCard(tempID));
         }
 
         public int Convert(int circle)
         {
             return _player1.Convert(circle);
+        }
+
+        public bool IsSameColumn(int tempID)
+        {
+            return _player1.GetColumn(tempID) == _player1.GetColumn(_card.tempID);
+        }
+
+        public bool HasCardState(int tempID, int cardState)
+        {
+            return _player1.CardStates.HasState(tempID, cardState);
+        }
+
+        public bool IsRace(int tempID, int race)
+        {
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+                return card.race == race;
+            return false;
+        }
+
+        public bool IsUnitType(int tempID, int unitType)
+        {
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+            {
+                if (unitType == UnitType.Normal)
+                    return UnitType.IsNormal(card.unitType);
+                else
+                    return card.unitType == unitType;
+            }
+            return false;
+        }
+
+        public bool CanChoose(int tempID)
+        {
+            return IsPlayer(tempID) || !HasCardState(tempID, CardState.Resist);
         }
     }
 
@@ -6144,5 +6267,12 @@ namespace VanguardEngine
         public const int SameName = 33;
         public const int Auto = 34;
         public const int Powerful = 35;
+    }
+
+    public class Prompt
+    {
+        public const int Stand = 0;
+        public const int AddToHand = 1;
+        public const int Bind = 2;
     }
 }

@@ -1105,8 +1105,10 @@ namespace VanguardEngine
 
     public class CardStates
     {
-        Dictionary<int, List<int>> _continuous = new Dictionary<int, List<int>>();
-        Dictionary<Tuple<int, int>, List<int>> _continuousValues = new Dictionary<Tuple<int, int>, List<int>>();
+        //tempId, cardState, abilityID
+        Dictionary<int, List<Tuple<int, int>>> _continuous = new Dictionary<int, List<Tuple<int, int>>>();
+        //tempID, cardState, value, abilityID
+        Dictionary<Tuple<int, int>, List<Tuple<int, int>>> _continuousValues = new Dictionary<Tuple<int, int>, List<Tuple<int, int>>>();
         Dictionary<int, List<int>> _untilEndOfTurn = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfTurnValues = new Dictionary<Tuple<int, int>, List<int>>();
         Dictionary<int, List<Tuple<int, int>>> _untilEndOfTurnAbilities = new Dictionary<int, List<Tuple<int, int>>>();
@@ -1114,20 +1116,23 @@ namespace VanguardEngine
         Dictionary<int, List<int>> _untilEndOfBattle = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfBattleValues = new Dictionary<Tuple<int, int>, List<int>>();
 
-        public void AddContinuousState(int tempID, int state)
+        public void AddContinuousState(int tempID, int state, int abilityID)
         {
+            Tuple<int, int> newTuple = new Tuple<int, int>(state, abilityID);
             if (!_continuous.ContainsKey(tempID))
-                _continuous[tempID] = new List<int>();
-            if (!_continuous[tempID].Contains(state))
-                _continuous[tempID].Add(state);
+                _continuous[tempID] = new List<Tuple<int, int>>();
+            if (!_continuous[tempID].Exists(tuple => tuple == newTuple))
+                _continuous[tempID].Add(newTuple);
         }
 
-        public void AddContinuousValue(int tempID, int state, int value)
+        public void AddContinuousValue(int tempID, int state, int value, int abilityID)
         {
+            Tuple<int, int> newTuple = new Tuple<int, int>(value, abilityID);
             Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
             if (!_continuousValues.ContainsKey(tuple))
-                _continuousValues[tuple] = new List<int>();
-            _continuousValues[tuple].Add(value);
+                _continuousValues[tuple] = new List<Tuple<int, int>>();
+            if (!_continuousValues[tuple].Exists(existingTuple => existingTuple.Item2 == newTuple.Item2))
+            _continuousValues[tuple].Add(newTuple);
         }
 
         public void RefreshContinuousStates()
@@ -1214,7 +1219,7 @@ namespace VanguardEngine
 
         public bool HasState(int tempID, int state)
         {
-            if (_continuous.ContainsKey(tempID) && _continuous[tempID].Contains(state))
+            if (_continuous.ContainsKey(tempID) && _continuous[tempID].Exists(tuple => tuple.Item1 == state))
                 return true;
             if (_untilEndOfTurn.ContainsKey(tempID) && _untilEndOfTurn[tempID].Contains(state))
                 return true;
@@ -1231,7 +1236,8 @@ namespace VanguardEngine
             List<int> values = new List<int>();
             if (_continuousValues.ContainsKey(tuple))
             {
-                values.AddRange(_continuousValues[tuple]);
+                foreach (Tuple<int, int> value in _continuousValues[tuple])
+                    values.Add(value.Item1);
             }
             if (_untilEndOfTurnValues.ContainsKey(tuple))
             {
@@ -1316,6 +1322,7 @@ namespace VanguardEngine
         public const int EnemyRCRetiredThisTurn = 30;
         public const int AdditionalArms = 31;
         public const int CanRideFromRideDeckWithoutDiscard = 32;
+        public const int FreeCB = 33;
     }
 
     public class CardState
@@ -1361,6 +1368,7 @@ namespace VanguardEngine
         public const int CannotBeRetiredByCardEffect = 39;
         public const int CannotBeNormalCalled = 40;
         public const int PlacedThisTurn = 41;
+        public const int Friend = 42;
     }
 
     public class Zone

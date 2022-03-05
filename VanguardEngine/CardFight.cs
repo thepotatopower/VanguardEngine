@@ -25,6 +25,7 @@ namespace VanguardEngine
         public Abilities _abilities;
         public List<AbilityTimingCount> _player1AbilityQueue = new List<AbilityTimingCount>();
         public List<AbilityTimingCount> _player2AbilityQueue = new List<AbilityTimingCount>();
+        public List<Ability> _continuousAbilities = new List<Ability>();
         public List<Ability> _alchemagicQueue = new List<Ability>();
         public List<Ability> _activatedAbilities = new List<Ability>();
         public List<AbilityTimingCount> _skippedAbilities = new List<AbilityTimingCount>();
@@ -913,7 +914,7 @@ namespace VanguardEngine
                 }
                 //_inputManager.SwapPlayers();
             }
-            AddAbilityTiming(Activation.OnBattleEnds, player1._playerID);
+            AddAbilityTiming(Activation.OnBattleEnds, player1._playerID, player1.GetAttacker());
             PerformCheckTiming(player1, player2);
             _abilities.EndOfBattle();
             if (player1 == _player1)
@@ -1028,10 +1029,10 @@ namespace VanguardEngine
             player1.PerfectGuard(target);
         }
 
-        public void Resist(Player player1, Player player2, int tempID)
+        public void Resist(Player player1, Player player2, int tempID, int abilityID)
         {
-            _player1.Resist(tempID);
-            _player2.Resist(tempID);
+            _player1.Resist(tempID, abilityID);
+            _player2.Resist(tempID, abilityID);
         }
 
         public void AddAbilitiesToQueue(Player player1)
@@ -1129,9 +1130,13 @@ namespace VanguardEngine
                     }
                 }
             }
-            foreach (Ability ability in abilities)
+            for (int i = 0; i < 2; i++)
             {
-                ability.Activate(Activation.Cont, null);
+                foreach (Ability ability in abilities)
+                {
+                    if (ability.CanActivate())
+                        ability.Activate(Activation.Cont, null);
+                }
             }
             player1.UpdateRecordedValues();
             player2.UpdateRecordedValues();
@@ -1468,6 +1473,11 @@ namespace VanguardEngine
         public void CounterBlast(Player player1, Player player2, int count, int min)
         {
             List<Card> canCB = new List<Card>();
+            if (player1.MyStates.GetValue(PlayerState.FreeCB) > 0)
+            {
+                count--;
+                player1.MyStates.IncrementUntilEndOfTurnValue(PlayerState.FreeCB, -1);
+            }
             foreach (Card card in player1.GetDamageZone())
             {
                 if (player1.IsFaceUp(card))
@@ -1534,9 +1544,9 @@ namespace VanguardEngine
             return cardsToSearch;
         }
 
-        public List<Card> Stand(Player player1, Player player2, List<Card> canStand, int count, bool select)
+        public List<Card> Stand(Player player1, Player player2, List<Card> canStand, int count, int min, bool select)
         {
-            List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, count, "card(s) to stand.");
+            List<int> cardsToStand = _inputManager.SelectFromList(player1, canStand, count, min, "card(s) to stand.");
             player1.Stand(cardsToStand);
             return player1.GetLastStood();
         }
@@ -1597,10 +1607,10 @@ namespace VanguardEngine
             AddToChosen(cardsToAddCritical);
         }
 
-        public void AddSkill(Player player1, Player player2, Card card, int skill)
+        public void AddSkill(Player player1, Player player2, Card card, int skill, int abilityID)
         {
-            player1.AddSkill(card.tempID, skill);
-            player2.AddSkill(card.tempID, skill);
+            player1.AddSkill(card.tempID, skill, abilityID);
+            player2.AddSkill(card.tempID, skill, abilityID);
         }
 
         public List<int> AddToHand(Player player1, Player player2, List<Card> canAddToHand, int count, int min)

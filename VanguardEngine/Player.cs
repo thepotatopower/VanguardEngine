@@ -2100,9 +2100,9 @@ namespace VanguardEngine
             return false;
         }
 
-        public void Resist(int tempID)
+        public void Resist(int tempID, int abilityID)
         {
-            _field.CardStates.AddContinuousState(tempID, CardState.Resist);
+            _field.CardStates.AddContinuousState(tempID, CardState.Resist, abilityID);
         }
 
         public void CannotMove()
@@ -2124,12 +2124,12 @@ namespace VanguardEngine
             }
         }
 
-        public void CountsAsTwoRetires(int tempID)
+        public void CountsAsTwoRetires(int tempID, int abilityID)
         {
             Card card = _field.CardCatalog[tempID];
             if (GetActiveUnits().Contains(card))
             {
-                _field.CardStates.AddContinuousState(card.tempID, CardState.CountsAsTwoRetires);
+                _field.CardStates.AddContinuousState(card.tempID, CardState.CountsAsTwoRetires, abilityID);
             }
         }
 
@@ -2467,28 +2467,28 @@ namespace VanguardEngine
             Log.WriteLine("----------\n" + shield + " shield to " + target.name + "!");
         }
 
-        public void SetAbilityPower(int selection, int power)
+        public void SetAbilityPower(int selection, int power, int abilityID)
         {
             Card target = _field.CardCatalog[selection];
-            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusPower, power);
+            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusPower, power, abilityID);
         }
 
-        public void SetAbilityShield(int selection, int shield)
+        public void SetAbilityShield(int selection, int shield, int abilityID)
         {
             Card target = _field.CardCatalog[selection];
-            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusShield, shield);
+            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusShield, shield, abilityID);
         }
 
-        public void SetAbilityDrive(int selection, int drive)
+        public void SetAbilityDrive(int selection, int drive, int abilityID)
         {
             Card target = _field.CardCatalog[selection];
-            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusDrive, drive);
+            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusDrive, drive, abilityID);
         }
 
-        public void SetAbilityCritical(int selection, int critical)
+        public void SetAbilityCritical(int selection, int critical, int abilityID)
         {
             Card target = _field.CardCatalog[selection];
-            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusCritical, critical);
+            _field.CardStates.AddContinuousValue(target.tempID, CardState.BonusCritical, critical, abilityID);
         }
 
         public void Stand(int selection)
@@ -2533,7 +2533,7 @@ namespace VanguardEngine
             return cards;
         }
 
-        public void AddToHand(List<int> selections)
+        public List<int> AddToHand(List<int> selections)
         {
             Card cardToAdd;
             List<Card> rearguardsReturnedToHand = new List<Card>();
@@ -2556,6 +2556,7 @@ namespace VanguardEngine
                     OnAbilityTiming(this, args);
                 }
             }
+            return selections;
         }
 
         public void AddToSoul(List<int> selections)
@@ -2710,14 +2711,14 @@ namespace VanguardEngine
             return MyStates.HasState(PlayerState.FreeSwap);
         }
 
-        public void AllowColumnAttack(int tempID)
+        public void AllowColumnAttack(int tempID, int abilityID)
         {
-            _field.CardStates.AddContinuousState(tempID, CardState.CanColumnAttack);
+            _field.CardStates.AddContinuousState(tempID, CardState.CanColumnAttack, abilityID);
         }
 
-        public void AllowInterceptFromBackRow(int tempID)
+        public void AllowInterceptFromBackRow(int tempID, int abilityID)
         {
-            _field.CardStates.AddContinuousState(tempID, CardState.CanInterceptFromBackRow);
+            _field.CardStates.AddContinuousState(tempID, CardState.CanInterceptFromBackRow, abilityID);
         }
 
         public void SetAlchemagicDiff()
@@ -3190,9 +3191,9 @@ namespace VanguardEngine
             return returned;
         }
 
-        public void AddSkill(int tempID, int skill)
+        public void AddSkill(int tempID, int skill, int abilityID)
         {
-            _field.CardStates.AddContinuousValue(tempID, CardState.BonusSkills, skill);
+            _field.CardStates.AddContinuousValue(tempID, CardState.BonusSkills, skill, abilityID);
         }
 
         public void AddSkillUntilEndOfTurn(int tempID, int skill)
@@ -3215,9 +3216,9 @@ namespace VanguardEngine
             _field.CardStates.AddUntilEndOfTurnState(tempID, CardState.CanAttackBackRow);
         }
 
-        public void DisableAttack(int tempID)
+        public void DisableAttack(int tempID, int abilityID)
         {
-            _field.CardStates.AddContinuousState(tempID, CardState.CannotAttack);
+            _field.CardStates.AddContinuousState(tempID, CardState.CannotAttack, abilityID);
         }
 
         public void DisableMove(int tempID)

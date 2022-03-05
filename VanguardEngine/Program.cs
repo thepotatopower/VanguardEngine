@@ -26,7 +26,7 @@ namespace VanguardEngine
             //Console.WriteLine(r.Next(48));
             //Console.ReadLine();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("wilista.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("herminia.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("herminia.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());

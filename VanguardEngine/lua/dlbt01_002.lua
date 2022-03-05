@@ -1,75 +1,56 @@
--- Archangel of Twin Wings, Alestiel
+-- 双翼の大天使 アレスティエル
 
-function NumberOfAbilities()
-	return 3
+function RegisterAbilities()
+	-- on main phase
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnMainPhase)
+	ability1.SetLocation(l.VC)
+	ability1.SetTrigger("OnMainPhaseTrigger")
+	ability1.SetCondition("OnMainPhaseCondition")
+	ability1.SetActivation("OnMainPhase")
+	-- white wings
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetProperty(p.WhiteWings)
+	ability2.SetTiming(a.Cont)
+	ability2.SetLocation(l.VC)
+	ability2.SetActivation("WhiteWings")
+	-- black wings
+	local ability3 = NewAbility(GetID())
+	ability3.SetDescription(3)
+	ability3.SetProperty(p.BlackWings)
+	ability3.SetTiming(a.Cont)
+	ability3.SetLocation(l.VC)
+	ability3.SetActivation("BlackWings")
 end
 
-function NumberOfParams()
-	return 3
+function OnMainPhaseTrigger()
+	return obj.IsPlayerTurn()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Bind, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerVC, q.Other, o.This
-	elseif n == 3 then
-		return q.Location, l.EnemyUnits
+function OnMainPhaseCondition()
+	return obj.GetNumberOf("", {l.Bind}) > 0
+end
+
+function OnMainPhase()
+	obj.Select("", {l.Bind}, 1, 1, {}, Prompt.AddToHand)
+	obj.Store(obj.AddToHand({q.Location, l.Selected}))
+	if obj.GetNumberOf({q.Location, l.Stored}) > 0 then
+		obj.Select({q.Location, l.Hand, q.Count, 1})
+		obj.Bind({q.Location, l.Selected})
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnMainPhase, p.HasPrompt, p.IsMandatory
-	elseif n == 2 then
-		return a.Cont, p.IsMandatory, p.WhiteWings
-	elseif n == 3 then
-		return a.Cont, p.IsMandatory, p.BlackWings
+function WhiteWings()
+	if obj.IsPlayerTurn() then
+		obj.AddCardValue({q.Location, l.PlayerVC}, cs.BonusPower, 5000, p.Continuous)
+		obj.AddCardValue({q.Location, l.PlayerVC}, cs.BonusCritical, 1, p.Continuous)
 	end
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsVanguard() and obj.IsPlayerTurn() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() then
-			return true
-		end
-	elseif n == 3 then
-		if obj.IsVanguard() then
-			return true
-		end
+function BlackWings()
+	if obj.IsPlayerTurn() then
+		obj.AddCardValue({q.Location, l.EnemyUnits}, cs.BonusPower, -5000, p.Continuous)
 	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	elseif n == 3 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.ChooseAddToHand(1) then
-			obj.BindTopOfDeck(1)
-		end
-	elseif n == 2 then
-		if obj.IsPlayerTurn() then
-			obj.SetAbilityPower(2, 5000)
-			obj.SetAbilityCritical(2, 1)
-		end
-	elseif n == 3 then
-		if obj.IsPlayerTurn() then
-			obj.SetAbilityPower(3, -5000)
-		end
-	end
-	return 0
 end

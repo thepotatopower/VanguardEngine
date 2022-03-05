@@ -51,8 +51,8 @@ function OnBattleEndsCost(check)
 end
 
 function OnBattleEnds()
-	obj.ChooseStand({q.Location, l.PlayerRC, q.Property, p.Powerful, q.Count, 1})
 	obj.Select("OnBattleEndsFilter", {l.Units}, 1, 1, {}, Prompt.Stand)
+	obj.Stand({q.Location, l.Selected})
 	obj.IncrementUntilEndOfTurnPlayerValue(ps.FreeCB, 1)
 end
 
