@@ -994,8 +994,16 @@ namespace VanguardEngine
                 card = _field.GetUnit(i);
                 if (card != null && _field.Orientation.IsUpRight(card.tempID) && !_field.CardStates.HasState(card.tempID, CardState.CannotAttack))
                 {
-                    if (_field.GetRow(i) == 0 || _field.CardStates.HasState(card.tempID, CardState.CanAttackFromBackRow))
-                        cards.Add(card);
+                    if (_field.GetRow(i) != 0)
+                    {
+                        if (!_field.CardStates.HasState(card.tempID, CardState.CanAttackFromBackRow))
+                        {
+                            if (!(_field.CardStates.HasState(card.tempID, CardState.CanAttackGrade3OrGreaterVanguardFromBackRow)
+                                && _field.GetUnit(EnemyVanguard) != null && Grade(_field.GetUnit(EnemyVanguard).tempID) >= 3))
+                                continue;
+                        }
+                    }
+                    cards.Add(card);
                 }
             }
             return cards;
@@ -1013,9 +1021,14 @@ namespace VanguardEngine
                     continue;
                 if (CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID))
                     continue;
-                if (_field.GetRow(i) != 0 && !((CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRowInSameColumn) && GetColumn(Attacker.tempID) == _field.GetColumn(i)) ||
-                    _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack)))
+                if (_field.GetRow(i) != 0)
+                {
+                    if (!((CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRowInSameColumn) && GetColumn(Attacker.tempID) == _field.GetColumn(i)) ||
+                    _field.CardStates.HasState(Attacker.tempID, CardState.CanAttackBackRow) || 
+                    _field.CardStates.HasState(Attacker.tempID, CardState.CanColumnAttack) ||
+                    (_field.CardStates.HasState(Attacker.tempID, CardState.CanAttackGrade3OrGreaterVanguardFromBackRow) && Grade(_field.GetUnit(EnemyVanguard).tempID) >= 3)))
                     continue;
+                }
                 if (IsRearguard(Attacker.tempID) && _field.CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotBeAttackedByRearguard))
                     continue;
                 cards.Add(_field.GetUnit(i));
@@ -3031,16 +3044,18 @@ namespace VanguardEngine
         public void Search(List<int> cardsToSearch)
         {
             List<int> list = new List<int>();
+            bool addedFromDeck = false;
             foreach (int tempID in cardsToSearch)
             {
                 if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
-                {
-                    PlayerHand.Add(_field.CardCatalog[tempID]);
-                    list.Add(_field.CardCatalog[tempID].tempID);
-                    Reveal(list);
-                }
+                    addedFromDeck = true;
+                PlayerHand.Add(_field.CardCatalog[tempID]);
+                list.Add(_field.CardCatalog[tempID].tempID);
+                Reveal(list);
+                list.Clear();
             }
-            Shuffle();
+            if (addedFromDeck)
+                Shuffle();
         }
 
         public void Stand(List<int> cardsToStand)

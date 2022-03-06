@@ -1,4 +1,4 @@
--- MiMish フォルティア
+-- やる気充分！ アルレット
 
 function RegisterAbilities()
 	-- cont
@@ -12,8 +12,7 @@ function RegisterAbilities()
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
 	ability2.SetTiming(a.OnBattleEnds)
-	ability2.SetLocation(l.VC)
-	ability2.SetProperty(p.OncePerTurn)
+	ability2.SetLocation(l.RC)
 	ability2.SetTrigger("OnBattleEndsTrigger")
 	ability2.SetCondition("OnBattleEndsCondition")
 	ability2.SetCost("OnBattleEndsCost")
@@ -40,17 +39,16 @@ function OnBattleEndsTrigger()
 end
 
 function OnBattleEndsCondition()
-	return obj.GetNumberOf("OnBattleEndsConditionFilter", {l.Units}) >= 5 
+	return obj.GetNumberOf("OnBattleEndsFilter", {l.Units}) >= 3
 end
 
-function OnBattleEndsConditionFilter(id)
+function OnBattleEndsFilter(id)
 	return obj.IsPlayer(id) and not obj.IsThis(id) and obj.HasCardState(id, cs.Friend)
 end
 
 function OnBattleEndsCost(check)
-	if check then return obj.CanCB(1) and obj.CanDiscard(1) end
-	obj.CounterBlast(1)
-	obj.Discard(1) 
+	if check then return obj.CanSB(1) end
+	obj.SoulBlast(1)
 end
 
 function OnBattleEndsCanFullyResolve()
@@ -58,11 +56,5 @@ function OnBattleEndsCanFullyResolve()
 end
 
 function OnBattleEnds()
-	obj.Stand("OnBattleEndsFilter", {l.Units})
-	obj.AddCardValue("OnBattleEndsFilter", {l.Units}, cs.BonusPower, 5000, p.UntilEndOfTurn)
-	obj.AddCardValue("OnBattleEndsFilter", {l.Units}, cs.BonusDrive, -1, p.UntilEndOfTurn)
-end
-
-function OnBattleEndsFilter(id)
-	return obj.IsThis(id) and obj.IsSameZone(id)
+	obj.AddToHand({q.Other, o.ThisFieldID})
 end

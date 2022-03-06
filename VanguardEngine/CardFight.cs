@@ -252,6 +252,7 @@ namespace VanguardEngine
                 player1.CardStates.EndTurn();
                 player1.IncrementTurn();
                 _abilities.EndTurn();
+                actionLogs.Clear();
                 _activatedOrder = false;
                 _turn++;
                 player1.UpdateRecordedValues();
@@ -1518,7 +1519,10 @@ namespace VanguardEngine
             foreach (int tempID in cardsToSB)
             {
                 Card card = _player1.GetCard(tempID);
-                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, player1.GetSnapshot(_currentAbility.GetCard().tempID));
+                Snapshot abilitySnapshot = null;
+                if (_currentAbility != null)
+                    abilitySnapshot = player1.GetSnapshot(_currentAbility.GetCard().tempID);
+                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot);
                 if (!actionLogs.ContainsKey(Location.SoulBlasted))
                     actionLogs[Location.SoulBlasted] = new List<ActionLog>();
                 ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
@@ -1537,10 +1541,17 @@ namespace VanguardEngine
             player1.SoulCharge(count);
         }
 
-        public List<int> Search(Player player1, Player player2, List<Card> canSearch)
+        public List<int> Search(Player player1, Player player2, List<Card> canSearch, int max, int min)
         {
-            List<int> cardsToSearch = _inputManager.SelectFromList(player1, canSearch, 1, 1, "to search.");
+            List<int> cardsToSearch = _inputManager.SelectFromList(player1, canSearch, max, min, "to search.");
             player1.Search(cardsToSearch);
+            return cardsToSearch;
+        }
+
+        public List<int> Search(Player player, List<Card> cards, int max, int min)
+        {
+            List<int> cardsToSearch = _inputManager.SelectFromList(_player1, cards, max, min, "to search.");
+            _player1.Search(cardsToSearch);
             return cardsToSearch;
         }
 
@@ -1884,6 +1895,11 @@ namespace VanguardEngine
             ability.Activate(Activation.OnSing, null);
             player.Flip(selectedCards, false);
             player.MyStates.AddUntilEndOfTurnState(PlayerState.VanguardHasSungSongThisTurn);
+            Snapshot snapshot = new Snapshot(ability.GetCard().tempID, -1, -1, -1, ability.GetCard().name, -1, ability.GetCard().id, -1, null);
+            if (!actionLogs.ContainsKey(Location.SungThisTurn))
+                actionLogs[Location.SungThisTurn] = new List<ActionLog>();
+            ActionLog actionLog = new ActionLog(player._playerID, snapshot);
+            actionLogs[Location.SungThisTurn].Add(actionLog);
         }
 
         public void ChooseFlip(Player actingPlayer, List<Card> cardsToFlip, int max, int min, bool faceup)
@@ -2084,13 +2100,16 @@ namespace VanguardEngine
             }
         }
 
-        public List<Snapshot> GetSnapshots(int location)
+        public List<Snapshot> GetSnapshots(int playerID, int location)
         {
             List<Snapshot> snapshots = new List<Snapshot>();
             if (actionLogs.ContainsKey(location))
             {
                 foreach (ActionLog actionLog in actionLogs[location])
-                    snapshots.Add(actionLog.snapshot);
+                {
+                    if (playerID == actionLog.playerID)
+                        snapshots.Add(actionLog.snapshot);
+                }
             }
             return snapshots;
         }

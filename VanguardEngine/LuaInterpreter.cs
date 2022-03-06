@@ -480,8 +480,8 @@ namespace VanguardEngine
         protected bool _sourceIsRelevant = false;
         protected bool _sourceIsPlayer = false;
         protected int _sourceLocation = -1;
-        protected int _movedTo = -1;
-        protected int _movedFrom = -1;
+        protected List<int> _movedTo = new List<int>();
+        protected List<int> _movedFrom = new List<int>();
         protected int _notMovedFrom = -1;
         protected bool _repeatable = false;
         protected AbilityTimingData data = null;
@@ -671,14 +671,16 @@ namespace VanguardEngine
             _sourceLocation = location;
         }
 
-        public void SetMovedFrom(int location)
+        public void SetMovedFrom(params int[] locations)
         {
-            _movedFrom = location;
+            foreach (int location in locations)
+                _movedFrom.Add(location);
         }
 
-        public void SetMovedTo(int location)
+        public void SetMovedTo(params int[] locations)
         {
-            _movedTo = location;
+            foreach (int location in locations)
+                _movedTo.Add(location);
         }
 
         public void SetNotMovedFrom(int location)
@@ -1852,183 +1854,7 @@ namespace VanguardEngine
             List<Card> cards;
             foreach (int location in param.Locations)
             {
-                if (location == Location.Deck)
-                    currentPool.AddRange(_player1.GetDeck());
-                else if (location == Location.RideDeck)
-                    currentPool.AddRange(_player1.GetRideDeck());
-                else if (location == Location.Drop || location == Location.PlayerDrop)
-                    currentPool.AddRange(_player1.GetDrop());
-                else if (location == Location.EnemyDrop)
-                    currentPool.AddRange(_player2.GetDrop());
-                else if (location == Location.PlayerHand || location == Location.Hand)
-                    currentPool.AddRange(_player1.GetHand());
-                else if (location == Location.EnemyHand)
-                    currentPool.AddRange(_player2.GetHand());
-                else if (location == Location.Soul)
-                    currentPool.AddRange(_player1.GetSoul());
-                else if (location == Location.EnemySoul)
-                    currentPool.AddRange(_player2.GetSoul());
-                else if (location == Location.PlayerRC)
-                {
-                    currentPool.AddRange(_player1.GetRearguards(C.Player));
-                }
-                else if (location == Location.EnemyRC)
-                {
-                    currentPool.AddRange(_player1.GetRearguards(C.Enemy));
-                }
-                else if (location == Location.PlayerVC)
-                    currentPool.Add(_player1.Vanguard());
-                else if (location == Location.EnemyVC)
-                    currentPool.Add(_player2.Vanguard());
-                else if (location == Location.Damage)
-                    currentPool.AddRange(_player1.GetDamageZone());
-                else if (location == Location.GC)
-                    currentPool.AddRange(_player1.GetGC());
-                else if (location == Location.Revealed)
-                    currentPool.AddRange(_player1.GetRevealed());
-                else if (location == Location.RevealedTriggers)
-                    currentPool.AddRange(_player1.GetRevealedTriggers());
-                else if (location == Location.RevealedDamageChecks)
-                    currentPool.AddRange(_player1.GetRevealedDamageChecks());
-                else if (location == Location.RevealedDriveChecks)
-                    currentPool.AddRange(_player1.GetRevealedDriveChecks());
-                else if (location == Location.RevealedTrigger)
-                {
-                    if (_player1.GetRevealedTrigger() != null)
-                        currentPool.Add(_player1.GetRevealedTrigger());
-                }
-                else if (location == Location.Selected)
-                    currentPool.AddRange(_selected);
-                else if (location == Location.BackRow)
-                    currentPool.AddRange(_player1.GetBackRow());
-                else if (location == Location.FrontRow)
-                    currentPool.AddRange(_player1.GetPlayerFrontRow());
-                else if (location == Location.FrontRowRC)
-                    currentPool.AddRange(_player1.GetPlayerFrontRowRC());
-                else if (location == Location.PlayerPrisoners)
-                    currentPool.AddRange(_player1.GetPlayerPrisoners());
-                else if (location == Location.EnemyPrisoners)
-                    currentPool.AddRange(_player1.GetEnemyPrisoners());
-                else if (location == Location.Looking)
-                    currentPool.AddRange(_player1.GetLooking());
-                else if (location == Location.FrontRowEnemyRC)
-                    currentPool.AddRange(_player1.GetEnemyFrontRowRearguards());
-                else if (location == Location.BackRowEnemyRC)
-                    currentPool.AddRange(_player1.GetEnemyBackRowRearguards());
-                else if (location == Location.Trigger)
-                    currentPool.Add(_player1.GetTrigger(true));
-                else if (location == Location.LastCalled)
-                    currentPool.AddRange(_lastCalled);
-                else if (location == Location.PlayerOrder)
-                    currentPool.AddRange(_player1.GetPlayerOrder());
-                else if (location == Location.OrderArea)
-                    currentPool.AddRange(_player1.GetOrderArea());
-                else if (location == Location.Order)
-                    currentPool.AddRange(_player1.GetOrderZone());
-                else if (location == Location.PlayerUnits)
-                {
-                    currentPool.AddRange(_player1.GetRearguards(C.Player));
-                    if (_player1.Vanguard() != null)
-                        currentPool.Add(_player1.Vanguard());
-                    currentPool.AddRange(_player1.GetGC());
-                }
-                else if (location == Location.EnemyUnits)
-                {
-                    currentPool.AddRange(_player2.GetRearguards(C.Player));
-                    if (_player1.Vanguard() != null)
-                        currentPool.Add(_player2.Vanguard());
-                    currentPool.AddRange(_player2.GetGC());
-                }
-                else if (location == Location.Bind)
-                    currentPool.AddRange(_player1.GetBind());
-                else if (location == Location.PlayedOrder)
-                {
-                    if (_player1.GetPlayedOrder() != null)
-                        currentPool.Add(_player1.GetPlayedOrder());
-                }
-                else if (location == Location.LastCalledFromPrison)
-                {
-                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromPrison, _timingCount, _player2._playerID))
-                    //{
-                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
-                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    //}
-                }
-                else if (location == Location.LastStood)
-                {
-                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID))
-                    //{
-                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
-                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    //}
-                }
-                else if (location == Location.InFront)
-                    currentPool.AddRange(_player1.GetInFront(_card.tempID));
-                else if (location == Location.UnitsCalledThisTurn)
-                    currentPool.AddRange(_player1.GetUnitsCalledThisTurn());
-                else if (location == Location.UnitsCalledFromHandThisTurn)
-                    currentPool.AddRange(_player1.GetUnitsCalledFromHandThisTurn());
-                else if (location == Location.CalledForCost)
-                {
-                    List<Card> calledForCost = new List<Card>();
-                    foreach (int tempID in _calledForCost)
-                        calledForCost.Add(_player1.GetCard(tempID));
-                    currentPool.AddRange(calledForCost);
-                }
-                else if (location == Location.PlayerRCRetired)
-                {
-                    currentPool.AddRange(GetSnapshottedCards(0));
-                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnPlayerRCRetired, _timingCount, _player1._playerID))
-                    //{
-                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
-                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    //}
-                }
-                else if (location == Location.LastOrderPlayed)
-                {
-                    currentPool.AddRange(GetSnapshottedCards(0));
-                    //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID))
-                    //{
-                    //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
-                    //        currentPool.Add(_player1.GetCard(snapShot.tempID));
-                    //}
-                }
-                else if (location == Location.Applicable)
-                    currentPool.AddRange(GetSnapshottedCards(0));
-                else if (location == Location.PlayedOrdersThisTurn)
-                    currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
-                else if (location == Location.MyOriginalDress)
-                    currentPool.AddRange(_player1.GetOriginalDress(_card.tempID));
-                else if (location == Location.Stored)
-                {
-                    foreach (int tempID in _stored)
-                        currentPool.Add(_player1.GetCard(tempID));
-                }
-                else if (location == Location.Stored)
-                {
-                    foreach (int tempID in _tracking)
-                        currentPool.Add(_player1.GetCard(tempID));
-                }
-                else if (location == Location.MyArmedUnit)
-                {
-                    Card unit = _player1.FindArmedUnit(_card.tempID);
-                    if (unit != null)
-                        currentPool.Add(unit);
-                }
-                else if (location == Location.MyArms)
-                    currentPool.AddRange(_player1.GetArms(_card.tempID));
-                else if (location == Location.Tracking)
-                {
-                    foreach (int tempID in _tracking)
-                        currentPool.Add(_player1.GetCard(tempID));
-                }
-                else if (location == Location.AllUnits)
-                    currentPool.AddRange(_player1.GetAllUnitsOnField());
-                else if (location == Location.SuccessfullyRetired)
-                {
-                    currentPool.AddRange(_player1.GetSuccessfullyRetired());
-                    currentPool.AddRange(_player2.GetSuccessfullyRetired());
-                }
+                GetCardsFromLocation(currentPool, null, location);
             }
             if (param.SnapshotIndexes.Count > 0)
             {
@@ -3627,7 +3453,12 @@ namespace VanguardEngine
         public List<int> Search(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            return _cardFight.Search(_player1, _player2, cardsToSelect);
+            return _cardFight.Search(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
+        }
+
+        public List<int> Search(string filter, List<int> locations, int max, int min)
+        {
+            return _cardFight.Search(_player1, FilterCards(filter, locations), max, min);
         }
 
         public List<int> ChooseAddToHand(List<object> param)
@@ -5367,6 +5198,11 @@ namespace VanguardEngine
             return ConfigurationManager.AppSettings.Get(name);
         }
 
+        public string GetName()
+        {
+            return _card.name;
+        }
+
         List<Card> GetSnapshottedCards(int index)
         {
             List<Card> cards = new List<Card>();
@@ -5415,19 +5251,11 @@ namespace VanguardEngine
             {
                 if (_notMovedFrom != -1 && _notMovedFrom == snapshot.previousLocation)
                     continue;
-                if (_movedTo == -1 && _movedFrom == -1)
-                    cards.Add(_player1.GetCard(snapshot.tempID));
-                else if (_movedTo != -1 && _movedFrom != -1)
-                {
-                    if (_movedTo == snapshot.location && _movedFrom == snapshot.previousLocation)
-                        cards.Add(_player1.GetCard(snapshot.tempID));
-                    else
-                        continue;
-                }
-                else if (_movedTo != -1 && _movedTo == snapshot.location)
-                    cards.Add(_player1.GetCard(snapshot.tempID));
-                else if (_movedFrom != -1 && _movedFrom == snapshot.previousLocation)
-                    cards.Add(_player1.GetCard(snapshot.tempID));
+                if (_movedTo.Count > 0 && !_movedTo.Contains(snapshot.location))
+                    continue;
+                if (_movedFrom.Count > 0 && !_movedFrom.Contains(snapshot.location))
+                    continue;
+                cards.Add(_player1.GetCard(snapshot.tempID));
             }
             return cards;
         }
@@ -5610,29 +5438,7 @@ namespace VanguardEngine
                 return ValidCards(1);
             foreach (int location in locations)
             {
-                if (location == Location.Units)
-                {
-                    cards.AddRange(_player1.GetGC());
-                    cards.AddRange(_player1.GetAllUnitsOnField());
-                }
-                else if (location == Location.Damage)
-                {
-                    cards.AddRange(_player2.GetDamageZone());
-                    cards.AddRange(_player1.GetDamageZone());
-                }
-                else if (location == Location.Drop)
-                    cards.AddRange(_player1.GetDrop());
-                else if (location == Location.Soul)
-                    cards.AddRange(_player1.GetSoul());
-                else if (location == Location.Bind)
-                    cards.AddRange(_player1.GetBind());
-                else if (location == Location.Hand)
-                    cards.AddRange(_player1.GetHand());
-                else if (location == Location.PlayedOrdersThisTurn ||
-                         location == Location.SoulBlasted)
-                {
-                    snapshots.AddRange(_cardFight.GetSnapshots(location));
-                }
+                GetCardsFromLocation(cards, snapshots, location);
             }
             foreach (Card card in cards)
             {
@@ -5737,6 +5543,202 @@ namespace VanguardEngine
         public bool CanChoose(int tempID)
         {
             return IsPlayer(tempID) || !HasCardState(tempID, CardState.Resist);
+        }
+
+        public void GetCardsFromLocation(List<Card> currentPool, List<Snapshot> snapshots, int location)
+        {
+            if (currentPool == null)
+                currentPool = new List<Card>();
+            if (snapshots == null)
+                snapshots = new List<Snapshot>();
+            if (location == Location.Units)
+            {
+                currentPool.AddRange(_player1.GetGC());
+                currentPool.AddRange(_player1.GetAllUnitsOnField());
+            }
+            else if (location == Location.Deck)
+                currentPool.AddRange(_player1.GetDeck());
+            else if (location == Location.RideDeck)
+                currentPool.AddRange(_player1.GetRideDeck());
+            else if (location == Location.Drop || location == Location.PlayerDrop)
+                currentPool.AddRange(_player1.GetDrop());
+            else if (location == Location.EnemyDrop)
+                currentPool.AddRange(_player2.GetDrop());
+            else if (location == Location.PlayerHand || location == Location.Hand)
+                currentPool.AddRange(_player1.GetHand());
+            else if (location == Location.EnemyHand)
+                currentPool.AddRange(_player2.GetHand());
+            else if (location == Location.Soul)
+                currentPool.AddRange(_player1.GetSoul());
+            else if (location == Location.EnemySoul)
+                currentPool.AddRange(_player2.GetSoul());
+            else if (location == Location.PlayerRC)
+            {
+                currentPool.AddRange(_player1.GetRearguards(C.Player));
+            }
+            else if (location == Location.EnemyRC)
+            {
+                currentPool.AddRange(_player1.GetRearguards(C.Enemy));
+            }
+            else if (location == Location.PlayerVC)
+                currentPool.Add(_player1.Vanguard());
+            else if (location == Location.EnemyVC)
+                currentPool.Add(_player2.Vanguard());
+            else if (location == Location.Damage)
+                currentPool.AddRange(_player1.GetDamageZone());
+            else if (location == Location.GC)
+                currentPool.AddRange(_player1.GetGC());
+            else if (location == Location.Revealed)
+                currentPool.AddRange(_player1.GetRevealed());
+            else if (location == Location.RevealedTriggers)
+                currentPool.AddRange(_player1.GetRevealedTriggers());
+            else if (location == Location.RevealedDamageChecks)
+                currentPool.AddRange(_player1.GetRevealedDamageChecks());
+            else if (location == Location.RevealedDriveChecks)
+                currentPool.AddRange(_player1.GetRevealedDriveChecks());
+            else if (location == Location.RevealedTrigger)
+            {
+                if (_player1.GetRevealedTrigger() != null)
+                    currentPool.Add(_player1.GetRevealedTrigger());
+            }
+            else if (location == Location.Selected)
+                currentPool.AddRange(_selected);
+            else if (location == Location.BackRow)
+                currentPool.AddRange(_player1.GetBackRow());
+            else if (location == Location.FrontRow)
+                currentPool.AddRange(_player1.GetPlayerFrontRow());
+            else if (location == Location.FrontRowRC)
+                currentPool.AddRange(_player1.GetPlayerFrontRowRC());
+            else if (location == Location.PlayerPrisoners)
+                currentPool.AddRange(_player1.GetPlayerPrisoners());
+            else if (location == Location.EnemyPrisoners)
+                currentPool.AddRange(_player1.GetEnemyPrisoners());
+            else if (location == Location.Looking)
+                currentPool.AddRange(_player1.GetLooking());
+            else if (location == Location.FrontRowEnemyRC)
+                currentPool.AddRange(_player1.GetEnemyFrontRowRearguards());
+            else if (location == Location.BackRowEnemyRC)
+                currentPool.AddRange(_player1.GetEnemyBackRowRearguards());
+            else if (location == Location.Trigger)
+                currentPool.Add(_player1.GetTrigger(true));
+            else if (location == Location.LastCalled)
+                currentPool.AddRange(_lastCalled);
+            else if (location == Location.PlayerOrder)
+                currentPool.AddRange(_player1.GetPlayerOrder());
+            else if (location == Location.OrderArea)
+                currentPool.AddRange(_player1.GetOrderArea());
+            else if (location == Location.Order)
+                currentPool.AddRange(_player1.GetOrderZone());
+            else if (location == Location.PlayerUnits)
+            {
+                currentPool.AddRange(_player1.GetRearguards(C.Player));
+                if (_player1.Vanguard() != null)
+                    currentPool.Add(_player1.Vanguard());
+                currentPool.AddRange(_player1.GetGC());
+            }
+            else if (location == Location.EnemyUnits)
+            {
+                currentPool.AddRange(_player2.GetRearguards(C.Player));
+                if (_player1.Vanguard() != null)
+                    currentPool.Add(_player2.Vanguard());
+                currentPool.AddRange(_player2.GetGC());
+            }
+            else if (location == Location.Bind)
+                currentPool.AddRange(_player1.GetBind());
+            else if (location == Location.PlayedOrder)
+            {
+                if (_player1.GetPlayedOrder() != null)
+                    currentPool.Add(_player1.GetPlayedOrder());
+            }
+            else if (location == Location.LastCalledFromPrison)
+            {
+                //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.PlacedOnRCFromPrison, _timingCount, _player2._playerID))
+                //{
+                //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                //}
+            }
+            else if (location == Location.LastStood)
+            {
+                //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnStand, _timingCount, _player1._playerID))
+                //{
+                //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                //}
+            }
+            else if (location == Location.InFront)
+                currentPool.AddRange(_player1.GetInFront(_card.tempID));
+            else if (location == Location.UnitsCalledThisTurn)
+                currentPool.AddRange(_player1.GetUnitsCalledThisTurn());
+            else if (location == Location.UnitsCalledFromHandThisTurn)
+                currentPool.AddRange(_player1.GetUnitsCalledFromHandThisTurn());
+            else if (location == Location.CalledForCost)
+            {
+                List<Card> calledForCost = new List<Card>();
+                foreach (int tempID in _calledForCost)
+                    calledForCost.Add(_player1.GetCard(tempID));
+                currentPool.AddRange(calledForCost);
+            }
+            else if (location == Location.PlayerRCRetired)
+            {
+                currentPool.AddRange(GetSnapshottedCards(0));
+                //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnPlayerRCRetired, _timingCount, _player1._playerID))
+                //{
+                //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                //}
+            }
+            else if (location == Location.LastOrderPlayed)
+            {
+                currentPool.AddRange(GetSnapshottedCards(0));
+                //foreach (AbilityTimingData data in _cardFight.GetAbilityTimingData(Activation.OnOrderPlayed, _timingCount, _player1._playerID))
+                //{
+                //    foreach (Snapshot snapShot in data.GetRelevantSnapshots(0))
+                //        currentPool.Add(_player1.GetCard(snapShot.tempID));
+                //}
+            }
+            else if (location == Location.Applicable)
+                currentPool.AddRange(GetSnapshottedCards(0));
+            else if (location == Location.PlayedOrdersThisTurn)
+                currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
+            else if (location == Location.MyOriginalDress)
+                currentPool.AddRange(_player1.GetOriginalDress(_card.tempID));
+            else if (location == Location.Stored)
+            {
+                foreach (int tempID in _stored)
+                    currentPool.Add(_player1.GetCard(tempID));
+            }
+            else if (location == Location.Stored)
+            {
+                foreach (int tempID in _tracking)
+                    currentPool.Add(_player1.GetCard(tempID));
+            }
+            else if (location == Location.MyArmedUnit)
+            {
+                Card unit = _player1.FindArmedUnit(_card.tempID);
+                if (unit != null)
+                    currentPool.Add(unit);
+            }
+            else if (location == Location.MyArms)
+                currentPool.AddRange(_player1.GetArms(_card.tempID));
+            else if (location == Location.Tracking)
+            {
+                foreach (int tempID in _tracking)
+                    currentPool.Add(_player1.GetCard(tempID));
+            }
+            else if (location == Location.AllUnits)
+                currentPool.AddRange(_player1.GetAllUnitsOnField());
+            else if (location == Location.SuccessfullyRetired)
+            {
+                currentPool.AddRange(_player1.GetSuccessfullyRetired());
+                currentPool.AddRange(_player2.GetSuccessfullyRetired());
+            }
+            else if (location == Location.PlayedOrdersThisTurn ||
+                         location == Location.SoulBlasted ||
+                         location == Location.SungThisTurn)
+            {
+                snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
+            }
         }
     }
 
@@ -6156,6 +6158,7 @@ namespace VanguardEngine
         public const int SuccessfullyRetired = 71;
         public const int Units = 72;
         public const int SoulBlasted = 73;
+        public const int SungThisTurn = 74;
     }
 
     class Query
@@ -6267,6 +6270,7 @@ namespace VanguardEngine
         public const int SameName = 33;
         public const int Auto = 34;
         public const int Powerful = 35;
+        public const int Friend = 36;
     }
 
     public class Prompt
