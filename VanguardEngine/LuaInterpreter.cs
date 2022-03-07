@@ -4986,6 +4986,12 @@ namespace VanguardEngine
             _stored.AddRange(tempIDs);
         }
 
+        public void StoreIDs(List<object> param)
+        {
+            SetParam(param, 1);
+            Store(ConvertToTempIDs(ValidCards(1)));
+        }
+
         public int Stored()
         {
             return -1;
@@ -5253,7 +5259,7 @@ namespace VanguardEngine
                     continue;
                 if (_movedTo.Count > 0 && !_movedTo.Contains(snapshot.location))
                     continue;
-                if (_movedFrom.Count > 0 && !_movedFrom.Contains(snapshot.location))
+                if (_movedFrom.Count > 0 && !_movedFrom.Contains(snapshot.previousLocation))
                     continue;
                 cards.Add(_player1.GetCard(snapshot.tempID));
             }
@@ -5312,6 +5318,12 @@ namespace VanguardEngine
             if (cards.Count > 0)
                 return cards[0].tempID;
             return -1;
+        }
+
+        public List<int> GetIDs(List<object> param)
+        {
+            SetParam(param, 1);
+            return ConvertToTempIDs(ValidCards(1));
         }
 
         public void PlayOrderWithoutCost(List<object> param)
@@ -5739,6 +5751,11 @@ namespace VanguardEngine
             {
                 snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
             }
+        }
+
+        public bool IsStored(int tempID)
+        {
+            return _stored.Contains(tempID);
         }
     }
 
