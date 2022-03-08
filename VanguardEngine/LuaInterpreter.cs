@@ -2885,7 +2885,7 @@ namespace VanguardEngine
         public bool CanAddToSoul(int paramNum)
         {
             List<Card> canAddToSoul = ValidCards(paramNum);
-            if (canAddToSoul != null && canAddToSoul.Count >= GetCount(paramNum))
+            if (canAddToSoul != null && canAddToSoul.Count > 0 && canAddToSoul.Count >= GetCount(paramNum))
                 return true;
             return false;
         }
@@ -3742,6 +3742,12 @@ namespace VanguardEngine
             }
         }
 
+        public List<int> ChooseSendToBottom(List<object> param)
+        {
+            SetParam(param, 1);
+            return ChooseSendToBottom(1, true);
+        }
+
         public void RevealAndSendToBottom(int paramNum)
         {
             Select(paramNum);
@@ -3759,6 +3765,13 @@ namespace VanguardEngine
         {
             List<Card> cards = ValidCards(paramNum);
             return SendToBottom(cards);
+        }
+
+        public bool CanSendToBottom(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            return cards.Count > 0 && cards.Count >= GetMin(1);
         }
 
         public bool CanSendToBottom(string filter, List<int> locations, int min)

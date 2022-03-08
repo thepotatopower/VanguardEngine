@@ -1,49 +1,32 @@
--- Rondeau of Dusk Moon, Feltyrosa
+-- 宵闇月の輪舞曲 フェルティローザ
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnDriveCheck)
+	ability1.SetLocation(l.VC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
+	ability1.SetProperty(p.NotMandatory)
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.Exists({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Applicable, q.Race, r.Ghost, q.UnitType, u.Normal, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerVC, q.Other, o.This
+function Condition()
+	return obj.CanSuperiorCallToSpecificCircle({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal, q.Count, 1}, FL.FrontRow, FL.OpenCircle)
+end
+
+function Activation()
+	obj.Store(obj.SuperiorCallToSpecificCircle({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal, q.Count, 1}, FL.FrontRow, FL.OpenCircle))
+	if obj.Exists({q.Location, l.Stored}) and obj.CanPayCost("Cost") and obj.PayAdditionalCost() then
+		obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusDrive, 1, p.UntilEndOfBattle)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnDriveCheck, p.HasPrompt, p.CB, 1, p.CostNotRequired
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsVanguard() and obj.CanSuperiorCallToSpecificCircle(1, FL.OpenCircle, FL.FrontRow) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.SuperiorCallToSpecificCircle(1, FL.OpenCircle, FL.FrontRow)
-		if obj.ChoosesToPayCost() then
-			obj.AddUntilEndOfBattleValue(2, cs.BonusDrive, 1)
-		end
-	end
-	return 0
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
