@@ -1,4 +1,4 @@
--- MiMish アズハチル
+-- 真剣な眼差し イヴェッタ
 
 function RegisterAbilities()
 	-- cont
@@ -6,15 +6,13 @@ function RegisterAbilities()
 	ability1.SetDescription(1)
 	ability1.SetProperty(p.Friend)
 	ability1.SetTiming(a.Cont)
-	ability1.SetLocation(l.RC, l.VC)
+	ability1.SetLocation(l.RC)
 	ability1.SetActivation("Cont")
-	-- on ride
+	-- cont2
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
-	ability2.SetTiming(a.OnRide)
-	ability2.SetTrigger("OnRideTrigger")
-	ability2.SetCondition("OnRideCondition")
-	ability2.SetActivation("OnRide")
+	ability2.SetTiming(a.Cont)
+	ability2.SetActivation("Cont2")
 end
 
 function Cont()
@@ -31,18 +29,12 @@ function FriendFilter(id)
 	return obj.IsPlayer(id) and obj.IsSameColumn(id)
 end
 
-function OnRideTrigger()
-	return obj.WasRodeUponBy(obj.GetNameFromCardID("dlbt02_038"))
+function Cont2()
+	if obj.GetNumberOf("FriendExists", {l.Units}) > 0 then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 2000, p.Continuous)
+	end
 end
 
-function OnRideCondition()
-	return obj.CanSuperiorCall("SuperiorCallFilter", {l.Soul})
-end
-
-function SuperiorCallFilter(id)
-	return obj.IsApplicable(id)
-end
-
-function OnRide()
-	obj.SuperiorCall("SuperiorCallFilter", {l.Soul}, 1, 1)
+function FriendExists(id)
+	return obj.IsPlayer(id) and not obj.IsThis(id) and obj.HasCardState(id, cs.Friend)
 end

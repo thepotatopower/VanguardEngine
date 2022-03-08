@@ -1370,6 +1370,7 @@ namespace VanguardEngine
         public const int PlacedThisTurn = 41;
         public const int Friend = 42;
         public const int CanAttackGrade3OrGreaterVanguardFromBackRow = 43;
+        public const int CannotBeAttacked = 44;
     }
 
     public class Zone

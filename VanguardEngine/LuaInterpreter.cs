@@ -571,7 +571,10 @@ namespace VanguardEngine
         public void SetProperty(int property)
         {
             if (property == Property.OncePerTurn)
+            {
                 _oncePerTurn = true;
+                _isMandatory = false;
+            }
             else if (property == Property.Repeatable)
                 _repeatable = true;
             else if (property == Property.NotMandatory)
@@ -5179,6 +5182,11 @@ namespace VanguardEngine
         public int GradeOf(int tempID)
         {
             return _player1.Grade(tempID);
+        }
+
+        public bool GradeIs(int tempID, int grade)
+        {
+            return _player1.Grade(tempID) == grade;
         }
 
         public void Track(int tempID)

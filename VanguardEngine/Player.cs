@@ -1019,6 +1019,8 @@ namespace VanguardEngine
                     continue;
                 if (_field.GetUnit(i) == null)
                     continue;
+                if (CardStates.HasState(_field.GetUnit(i).tempID, CardState.CannotBeAttacked))
+                    continue;
                 if (CardStates.GetValues(Attacker.tempID, CardState.CannotAttackUnit).Contains(_field.GetUnit(i).tempID))
                     continue;
                 if (_field.GetRow(i) != 0)

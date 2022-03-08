@@ -26,7 +26,7 @@ function Cont1Filter(id)
 end
 
 function MakeFriendFilter(id)
-	return obj.IsThis(id) and obj.IsPlayer(id) and obj.IsSameColumn(id)
+	return obj.IsPlayer(id) and obj.IsSameColumn(id)
 end
 
 function Cont2()

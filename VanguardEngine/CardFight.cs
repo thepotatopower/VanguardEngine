@@ -1937,7 +1937,8 @@ namespace VanguardEngine
         public void AddAbilityTiming(int activation, int playerID, Card card)
         {
             List<Card> cards = new List<Card>();
-            cards.Add(card);
+            if (card != null)
+                cards.Add(card);
             AddAbilityTiming(activation, playerID, cards);
         }
 

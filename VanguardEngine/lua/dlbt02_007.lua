@@ -4,6 +4,7 @@ function RegisterAbilities()
 	-- cont
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
+	ability1.SetProperty(p.Friend)
 	ability1.SetTiming(a.Cont)
 	ability1.SetLocation(l.RC)
 	ability1.SetActivation("Cont")
@@ -28,7 +29,7 @@ function ContFilter(id)
 end
 
 function FriendFilter(id)
-	return obj.IsThis(id) and obj.IsPlayer(id) and obj.IsSameColumn(id)
+	return obj.IsPlayer(id) and obj.IsSameColumn(id)
 end
 
 function OnPlaceTrigger()
