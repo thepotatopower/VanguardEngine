@@ -89,12 +89,14 @@ namespace VanguardEngine
 
     public class Nation
     {
-        public const int KeterSanctuary = 0;
-        public const int DragonEmpire = 1;
-        public const int BrandtGate = 2;
-        public const int DarkStates = 3;
-        public const int Stoicheia = 4;
-        public const int LyricalMonasterio = 5;
+    	public const int NullNation = -1;
+    	public const int CrayElemental = 0;
+        public const int KeterSanctuary = 1;
+        public const int DragonEmpire = 2;
+        public const int BrandtGate = 3;
+        public const int DarkStates = 4;
+        public const int Stoicheia = 5;
+        public const int LyricalMonasterio = 6;
 
         public static string NationName(int name)
         {
@@ -148,6 +150,8 @@ namespace VanguardEngine
         public const int Meteorite = 8;
         public const int LeftDeityArms = 9;
         public const int RightDeityArms = 10;
+        public const int FoxArt = 11;
+
         public static bool IsSetOrder(int type)
         {
             if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song || type == OrderType.Meteorite)

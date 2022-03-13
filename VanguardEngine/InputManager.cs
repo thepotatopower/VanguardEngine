@@ -22,18 +22,24 @@ namespace VanguardEngine
         public List<Ability> _abilities = new List<Ability>();
         public List<Ability> _abilities2 = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
+        public List<List<Card>> cardSets = new List<List<Card>>();
         public string string_input;
         public int prompt;
         public int value;
-        public int int_value;
-        public int int_value2;
-        public int int_value3;
-        public bool bool_value;
+        //public int int_value;
+        //public int int_value2;
+        //public int int_value3;
+        //public bool bool_value;
+        public int _max = 0;
+        public int _min = 0;
+        public int _trueMin = 0;
         public Card card_input;
         public string _query;
         public string[] _list;
-        public List<int> _ints = new List<int>();
-        public List<int> _ints2 = new List<int>();
+        //public List<int> _ints = new List<int>();
+        //public List<int> _ints2 = new List<int>();
+        public List<int> _circles = new List<int>();
+        public List<int> _tempIDs = new List<int>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
         public EventHandler<CardEventArgs> OnChosen;
@@ -226,12 +232,12 @@ namespace VanguardEngine
         {
             _actingPlayer = actingPlayer;
             _query = query;
-            _ints.Clear();
-            _ints.AddRange(selectedCircles);
-            _ints2.Clear();
+            _circles.Clear();
+            _circles.AddRange(selectedCircles);
+            _tempIDs.Clear();
             card_input = card;
             if (canSelect != null)
-                _ints2.AddRange(canSelect);
+                _tempIDs.AddRange(canSelect);
             SelectCallLocation_Input();
             return int_input;
         }
@@ -240,7 +246,7 @@ namespace VanguardEngine
         {
             bool proceed = false;
             bool isEnemy = false;
-            if (_ints2.Count > 0 && !_actingPlayer.GetMyCircles().Contains(_ints2[0]))
+            if (_tempIDs.Count > 0 && !_actingPlayer.GetMyCircles().Contains(_tempIDs[0]))
                 isEnemy = true;
             while (!proceed)
             {
@@ -271,7 +277,7 @@ namespace VanguardEngine
                 }
                 if (isEnemy)
                     int_input = FL.SwitchSides(int_input);
-                if (!_ints.Contains(int_input) && ((_ints2.Count > 0 && _ints2.Contains(int_input)) || _ints2.Count == 0))
+                if (!_circles.Contains(int_input) && ((_tempIDs.Count > 0 && _tempIDs.Contains(int_input)) || _tempIDs.Count == 0))
                 {
                     proceed = true;
                 }
@@ -286,7 +292,7 @@ namespace VanguardEngine
             _actingPlayer = actingPlayer;
             intlist_input.Clear();
             intlist_input.AddRange(availableCircles);
-            int_value = count;
+            _max = count;
             SelectCircle_Input();
             return intlist_input;
         }
@@ -296,7 +302,7 @@ namespace VanguardEngine
             string output;
             int_input = -1;
             List<int> selectedCircles = new List<int>();
-            while (selectedCircles.Count < int_value)
+            while (selectedCircles.Count < _max)
             {
                 Log.WriteLine("Select a circle.");
                 for (int i = 0; i < intlist_input.Count; i++)
@@ -635,6 +641,15 @@ namespace VanguardEngine
             return SelectFromList(actingPlayer, cards, count, min, query, false);
         }
 
+        public List<int> SelectFromList(Player actingPlayer, List<List<Card>> cards, int count, int min, string query)
+        {
+            List<Card> allCards = new List<Card>();
+            foreach (List<Card> list in cards)
+                allCards.AddRange(list);
+            cardSets = cards;
+            return SelectFromList(actingPlayer, allCards, count, min, query);
+        }
+
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
         {
             int trueMin = min;
@@ -664,12 +679,12 @@ namespace VanguardEngine
                     else
                         _query += " " + query;
                     _query += " min: (" + min + ")";
-                    int_value = 1;
+                    _max = 1;
                     if (min > 0)
-                        int_value2 = 1;
+                        _min = 1;
                     else
-                        int_value2 = 0;
-                    int_value3 = trueMin;
+                        _min = 0;
+                    _trueMin = trueMin;
                     SelectFromList_Input();
                     if (intlist_input.Count == 0)
                         break;
@@ -695,11 +710,11 @@ namespace VanguardEngine
             }
             else if (sameName && count > 1)
             {
-                int_value = 1;
+                _max = 1;
                 if (min > 0)
-                    int_value2 = 1;
+                    _min = 1;
                 else
-                    int_value2 = 0;
+                    _min = 0;
                 SelectFromList_Input();
                 cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
                 temporaryList.Add(intlist_input[0]);
@@ -713,10 +728,34 @@ namespace VanguardEngine
                 min--;
                 intlist_input.Clear();
             }
-            if (count > 0 || min > 0)
+            if (cardSets.Count > 1)
             {
-                int_value = count;
-                int_value2 = min;
+                cardsToSelect.Clear();
+                List<int> selectedIDs = new List<int>();
+                while (selectedIDs.Count < min)
+                {
+                    _max = 1;
+                    _min = 1;
+                    cardsToSelect.Clear();
+                    foreach (List<Card> set in cardSets)
+                    {
+                        if (selectedIDs.Exists(id => set.Exists(card => card.tempID == id)))
+                            continue;
+                        cardsToSelect.AddRange(set);
+                    }
+                    SelectFromList_Input();
+                    selectedIDs.AddRange(intlist_input);
+                }
+                intlist_input.Clear();
+                intlist_input.AddRange(selectedIDs);
+            }
+            else
+            {
+                if (count > 0 || min > 0)
+                {
+                    _max = count;
+                    _min = min;
+                }
                 SelectFromList_Input();
             }
             intlist_input.AddRange(temporaryList);
@@ -729,14 +768,15 @@ namespace VanguardEngine
                     OnChosen(this, args);
                 }
             }
+            cardSets.Clear();
             return new List<int>(intlist_input);
         }
 
         protected virtual void SelectFromList_Input()
         {
             int selection;
-            int count = int_value;
-            int min = int_value2;
+            int count = _max;
+            int min = _min;
             intlist_input.Clear();
             for (int j = 0; j < count; j++)
             {

@@ -555,6 +555,7 @@ namespace VanguardEngine
 
         public int CreateToken(string tokenID)
         {
+            int newID = -1;
             Card template = null;
             foreach (Card card in _tokens)
             {
@@ -567,26 +568,25 @@ namespace VanguardEngine
             Card token = template.Clone();
             if (_removedTokens.Count > 0)
             {
-                int newID = _removedTokens[0];
+                newID = _removedTokens[0];
                 _removedTokens.RemoveAt(0);
                 token.tempID = newID;
-                _cardCatalog[newID] = token;
-                _cardLocations[newID] = null;
-                _previousCardLocations[newID] = null;
-                return newID;
             }
-            for (int i = 0; i < _cardCatalog.Length; i++)
+            else
             {
-                if (_cardCatalog[i] == null)
+                for (int i = 0; i < _cardCatalog.Length; i++)
                 {
-                    token.tempID = i;
-                    _cardCatalog[i] = token;
-                    _cardLocations[i] = new Tuple<Zone, int>(new Zone(this), -1);
-                    _previousCardLocations[i] = new Tuple<Zone, int>(new Zone(this), -1);
-                    return i;
+                    if (_cardCatalog[i] == null)
+                    {
+                        token.tempID = i;
+                        newID = token.tempID;
+                    }
                 }
             }
-            return -1;
+            _cardCatalog[newID] = token;
+            _cardLocations[newID] = new Tuple<Zone, int>(new Zone(this), -1);
+            _previousCardLocations[newID] = new Tuple<Zone, int>(new Zone(this), -1);
+            return newID;
         }
 
         public void RemoveToken(Card card)
@@ -1441,8 +1441,16 @@ namespace VanguardEngine
                 _field.Attacker = -1;
             if (_field.Attacked.Exists(c => c.tempID == card.tempID))
                 _field.Attacked.Remove(_field.Attacked.Find(c => c.tempID == card.tempID));
-            previousZone = _field.CardLocations[card.tempID].Item1;
-            _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
+            if (_field.CardLocations[card.tempID] != null)
+            {
+                previousZone = _field.CardLocations[card.tempID].Item1;
+                _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
+            }
+            else
+            {
+                previousZone = null;
+                _field.PreviousCardLocations[card.tempID] = null;
+            }
             List<Card> associatedCards = new List<Card>();
             bool tokenRemoved = false;
             if (previousZone != null)

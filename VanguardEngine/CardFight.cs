@@ -193,8 +193,8 @@ namespace VanguardEngine
             TriggerCheck(player1, player2, false);
             TriggerCheck(player2, player1, false);
             TriggerCheck(player2, player1, false);
-            //player1.SoulCharge(10);
-            //player2.SoulCharge(10);
+            player1.SoulCharge(10);
+            player2.SoulCharge(10);
             //player1.AbyssalDarkNight();
             //player2.AbyssalDarkNight();
             //player1.Mill(5);
@@ -622,6 +622,13 @@ namespace VanguardEngine
         }
 
         public List<Card> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
+        {
+            List<List<Card>> lists = new List<List<Card>>();
+            lists.Add(cardsToSelect);
+            return SuperiorCall(player1, player2, lists, max, min, circles, overDress, standing, free, differentRows);
+        }
+
+        public List<Card> SuperiorCall(Player player1, Player player2, List<List<Card>> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
         {
             List<int> selections;
             int selectedCircle = 0;
@@ -1987,10 +1994,10 @@ namespace VanguardEngine
             else if (activation == Activation.PlacedOnVC)
             {
                 List<Snapshot> temp = new List<Snapshot>();
-                if (playerID == 1 && _player1.GetSoul().Count > 0)
-                    temp.Add(_player1.GetSnapshot(_player1.GetSoul()[0].tempID));
+                if (playerID == 1 && _player1.GetOverloadedCircles().Count > 0)
+                    temp.Add(_player1.GetSnapshot(_player1.GetOverloadedCircles()[0].tempID));
                 else if (playerID == 2 && _player2.GetSoul().Count > 0)
-                    temp.Add(_player2.GetSnapshot(_player2.GetSoul()[0].tempID));
+                    temp.Add(_player2.GetSnapshot(_player2.GetOverloadedCircles()[0].tempID));
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
             }
             else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())

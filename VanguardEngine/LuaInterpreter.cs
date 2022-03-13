@@ -36,6 +36,7 @@ namespace VanguardEngine
         DynValue r;
         DynValue li;
         DynValue Prompt;
+        DynValue ot;
 
 
         public LuaInterpreter(string path, CardFight cf)
@@ -62,6 +63,7 @@ namespace VanguardEngine
             UserData.RegisterType<Snapshot>();
             UserData.RegisterType<Prompt>();
             UserData.RegisterType<Prompt>();
+            UserData.RegisterType<OrderType>();
             l = UserData.Create(new Location());
             a = UserData.Create(new Activation());
             q = UserData.Create(new Query());
@@ -76,6 +78,7 @@ namespace VanguardEngine
             r = UserData.Create(new Race());
             li = UserData.Create(this);
             Prompt = UserData.Create(new Prompt());
+            ot = UserData.Create(new OrderType());
         }
 
         public List<Ability> GetAbilities(Card card, Player player1, Player player2, bool player)
@@ -121,6 +124,7 @@ namespace VanguardEngine
                     script.Globals.Set("cs", cs);
                     script.Globals.Set("r", r);
                     script.Globals.Set("Prompt", Prompt);
+                    script.Globals.Set("ot", ot);
                     script.DoFile(filePath);
                     ability = new Ability(player1, player2, cardFight, card, _abilityID++);
                     success = ability.StoreAbility(script, i + 1, player);
@@ -152,6 +156,7 @@ namespace VanguardEngine
                 tempScript.Globals.Set("cs", cs);
                 tempScript.Globals.Set("r", r);
                 tempScript.Globals.Set("Prompt", Prompt);
+                tempScript.Globals.Set("ot", ot);
                 tempScript.DoFile(filePath);
                 tempScript.Call(tempScript.Globals["RegisterAbilities"]);
                 if (OrderType.IsSetOrder(card.orderType) && cardFight.GetAbility(GetID(), Activation.OnOrder) == null)
@@ -187,13 +192,21 @@ namespace VanguardEngine
             script.Globals.Set("cs", cs);
             script.Globals.Set("r", r);
             script.Globals.Set("Prompt", Prompt);
+            script.Globals.Set("ot", ot);
             if (currentFilePath == "")
                 script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
             else
                 script.DoFile(currentFilePath);
             script.Globals["NewAbility"] = (Func<int, Ability>)NewAbility;
             script.Globals["GiveAbility"] = (Func<int, int, Ability>)NewAbility;
-            Card card = cardFight._player1.GetCard(targetID);
+            Card card;
+            if (targetID < 0)
+            {
+                card = new Card();
+                card.originalOwner = targetID * -1;
+            }
+            else
+                card = cardFight._player1.GetCard(targetID);
             Ability ability;
             if (card.originalOwner == 1)
                 ability = new Ability(cardFight._player1, cardFight._player2, cardFight, card, _abilityID++);
@@ -3019,6 +3032,13 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsAttacked()
+        {
+            if (_player1.GetAttackedCards().Exists(card => card.tempID == _card.tempID))
+                return true;
+            return false;
+        }
+
         public bool IsAttackingUnit(int tempID)
         {
             return _player1.AttackingUnit() != null && tempID == _player1.AttackingUnit().tempID;
@@ -3305,6 +3325,52 @@ namespace VanguardEngine
                     _calledForCost.Add(card.tempID);
             }
             _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, false, standing, false, false));
+            return ConvertToTempIDs(_lastCalled);
+        }
+
+        public List<int> SuperiorCall(List<string> filters, List<int> locations, int max, int min, string tokenID, List<int> specifications, List<int> circles)
+        {
+           List<List<Card>> cardsToSelect = new List<List<Card>>();
+            int[] circlesToSelect;
+            if (circles == null)
+                circlesToSelect = new int[0];
+            else
+                circlesToSelect = circles.ToArray();
+            if (tokenID != "")
+            {
+                List<Card> tokens = new List<Card>();
+                for (int i = 0; i < max; i++)
+                {
+                    int token = _player1.CreateToken(tokenID);
+                    tokens.Add(_player1.GetCard(token));
+                    tokens[tokens.Count - 1].originalOwner = _player1._playerID;
+                }
+                cardsToSelect.Add(tokens);
+            }
+            foreach (string filter in filters)
+            {
+                cardsToSelect.Add(FilterCards(filter, locations));
+            }
+            if (specifications.Contains(Property.Convert))
+                circlesToSelect = _player1.ConvertFL(circlesToSelect);
+            if (circlesToSelect.Length > 0 && circlesToSelect[0] == -1)
+                circlesToSelect = null;
+            if (max == -1)
+                max = cardsToSelect.Count;
+            if (min == -1)
+                min = 0;
+            bool asRest = false;
+            if (specifications.Contains(Property.AsRest))
+                asRest = true;
+            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, false, !asRest, false, false));
+            foreach (var list in cardsToSelect)
+            {
+                foreach (var card in list)
+                {
+                    if (!_lastCalled.Contains(card) && card.unitType == UnitType.Token)
+                        _player1.Remove(card);
+                }
+            }
             return ConvertToTempIDs(_lastCalled);
         }
 
@@ -5573,6 +5639,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsOrderType(int tempID, int orderType)
+        {
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+            {
+                return card.orderType == orderType;
+            }
+            return false;
+        }
+
         public bool CanChoose(int tempID)
         {
             return IsPlayer(tempID) || !HasCardState(tempID, CardState.Resist);
@@ -5777,6 +5853,11 @@ namespace VanguardEngine
         public bool IsStored(int tempID)
         {
             return _stored.Contains(tempID);
+        }
+
+        public int GetPlayerAbilityID()
+        {
+            return _player1._playerID * -1;
         }
     }
 
@@ -6120,6 +6201,7 @@ namespace VanguardEngine
         public const int OnRetire = -42;
         public const int OnSoulCharge = -43;
         public const int OnArmed = -44;
+        public const int Glitter = -45;
     }
 
     public class Location
@@ -6309,6 +6391,10 @@ namespace VanguardEngine
         public const int Auto = 34;
         public const int Powerful = 35;
         public const int Friend = 36;
+        public const int Convert = 37;
+        public const int AsRest = 38;
+        public const int IsGlitter = 39;
+        public const int Glitter = 40;
     }
 
     public class Prompt

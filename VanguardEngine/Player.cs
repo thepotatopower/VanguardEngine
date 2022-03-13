@@ -2537,6 +2537,12 @@ namespace VanguardEngine
                 _field.RemoveCard(PlayerTrigger.Index(0));
         }
 
+        public void Remove(Card card)
+        {
+            if (card != null)
+                _field.RemoveCard(card);
+        }
+
         public List<Card> GetRemoved()
         {
             List<Card> cards = new List<Card>();
