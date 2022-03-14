@@ -91,6 +91,13 @@ namespace VanguardEngine
             return true;
         }
 
+        public int CreateToken(Player player1, Player player2, string tokenID)
+        {
+            int token = player1.CreateToken(tokenID);
+            _abilities.AddAbilities(token, luaInterpreter.GetAbilities(player1.GetCard(token), player1, player2, true));
+            return token;
+        }
+
         public void LoadConfigFile(string filename)
         {
             System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -1276,6 +1283,8 @@ namespace VanguardEngine
             //        canActivate.Add(ability);
             //}
             //return canActivate;
+            while (abilities.Exists(ability => !ability.CanActivate()))
+                abilities.Remove(abilities.Find(ability => !ability.CanActivate()));
             return abilities;
         }
 

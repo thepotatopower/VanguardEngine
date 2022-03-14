@@ -3298,39 +3298,27 @@ namespace VanguardEngine
 
         public List<int> SuperiorCall(List<Card> cards, int max, int min, bool standing, string tokenID, bool convert, List<int> circles)
         {
-            List<Card> cardsToSelect = cards;
-            int[] circlesToSelect;
-            if (circles == null)
-                circlesToSelect = new int[0];
-            else
-                circlesToSelect = circles.ToArray();
-            if (tokenID != "")
-            {
-                cardsToSelect = new List<Card>();
-                int token = _player1.CreateToken(tokenID);
-                cardsToSelect.Add(_player1.GetCard(token));
-                cardsToSelect[0].originalOwner = _player1._playerID;
-            }
+            List<List<Card>> cardSets = new List<List<Card>>();
+            cardSets.Add(cards);
+            List<int> specifications = new List<int>();
+            if (!standing)
+                specifications.Add(Property.AsRest);
             if (convert)
-                circlesToSelect = _player1.ConvertFL(circlesToSelect);
-            if (circlesToSelect.Length > 0 && circlesToSelect[0] == -1)
-                circlesToSelect = null;
-            if (max == -1)
-                max = cardsToSelect.Count;
-            if (min == -1)
-                min = 0;
-            if (IsPayingCost())
-            {
-                foreach (Card card in cardsToSelect)
-                    _calledForCost.Add(card.tempID);
-            }
-            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, false, standing, false, false));
-            return ConvertToTempIDs(_lastCalled);
+                specifications.Add(Property.Convert);
+            return SuperiorCall(cardSets, max, min, tokenID, specifications, circles);
         }
 
         public List<int> SuperiorCall(List<string> filters, List<int> locations, int max, int min, string tokenID, List<int> specifications, List<int> circles)
         {
-           List<List<Card>> cardsToSelect = new List<List<Card>>();
+            List<List<Card>> cardSets = new List<List<Card>>();
+            foreach (string filter in filters)
+                cardSets.Add(FilterCards(filter, locations));
+            return SuperiorCall(cardSets, max, min, tokenID, specifications, circles);
+        }
+
+        public List<int> SuperiorCall(List<List<Card>> cardSets, int max, int min, string tokenID, List<int> specifications, List<int> circles)
+        {
+            List<List<Card>> cardsToSelect = cardSets;
             int[] circlesToSelect;
             if (circles == null)
                 circlesToSelect = new int[0];
@@ -3341,15 +3329,11 @@ namespace VanguardEngine
                 List<Card> tokens = new List<Card>();
                 for (int i = 0; i < max; i++)
                 {
-                    int token = _player1.CreateToken(tokenID);
+                    int token = _cardFight.CreateToken(_player1, _player2, tokenID);
                     tokens.Add(_player1.GetCard(token));
                     tokens[tokens.Count - 1].originalOwner = _player1._playerID;
                 }
                 cardsToSelect.Add(tokens);
-            }
-            foreach (string filter in filters)
-            {
-                cardsToSelect.Add(FilterCards(filter, locations));
             }
             if (specifications.Contains(Property.Convert))
                 circlesToSelect = _player1.ConvertFL(circlesToSelect);
@@ -3728,7 +3712,7 @@ namespace VanguardEngine
             if (!HasCount(paramNum) && !HasMin(paramNum))
                 _cardFight.Retire(_player1, _player2, _player1.ConvertToTempIDs(canRetire));
             else
-                _cardFight.SelectCardToRetire(_player1, _player2, canRetire, _params[paramNum].Counts[0], GetMin(paramNum)); 
+                _cardFight.SelectCardToRetire(_player1, _player2, canRetire, GetCount(paramNum), GetMin(paramNum)); 
         }
 
         public bool CanBind(int paramNum)
@@ -5858,6 +5842,16 @@ namespace VanguardEngine
         public int GetPlayerAbilityID()
         {
             return _player1._playerID * -1;
+        }
+
+        public int GetPower(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            int power = 0;
+            foreach (Card card in cards)
+                power += _player1.GetPower(card.tempID);
+            return power;
         }
     }
 

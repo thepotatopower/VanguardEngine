@@ -2949,7 +2949,9 @@ namespace VanguardEngine
 
         public int CreateToken(string tokenID)
         {
-            return _field.CreateToken(tokenID);
+            int token = _field.CreateToken(tokenID);
+            _field.CardCatalog[token].originalOwner = _playerID;
+            return token;
         }
 
         public bool CanCB(int count)
