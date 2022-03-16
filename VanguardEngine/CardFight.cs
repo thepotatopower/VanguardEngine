@@ -1520,18 +1520,18 @@ namespace VanguardEngine
             player1.CounterBlast(cardsToCB);
         }
 
-        public void SoulBlast(Player player1, Player player2, List<Card> canSB, int count)
+        public List<int> SoulBlast(Player player1, Player player2, List<Card> canSB, int count)
         {
             if (player1.IsAlchemagic() && (player1.AlchemagicFreeSBAvailable() || player1.AlchemagicFreeSBActive()))
             {
                 if (!player1.CanSB(count) || player1.AlchemagicFreeSBActive() || _inputManager.YesNo(player1, "Skip Soul Blast cost?"))
                 {
                     player1.UsedAlchemagicFreeSB();
-                    return;
+                    return new List<int>();
                 }
             }
             List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, count, "to Soul Blast.");
-            player1.SoulBlast(cardsToSB);
+            List<int> soulBlasted = player1.SoulBlast(cardsToSB);
             foreach (int tempID in cardsToSB)
             {
                 Card card = _player1.GetCard(tempID);
@@ -1544,6 +1544,7 @@ namespace VanguardEngine
                 ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
                 actionLogs[Location.SoulBlasted].Add(actionLog);
             }
+            return soulBlasted;
         }
 
         public void CounterCharge(Player player1, List<Card> canCC, int count)
@@ -1552,9 +1553,9 @@ namespace VanguardEngine
             player1.CounterCharge(cardsToCharge);
         }
 
-        public void SoulCharge(Player player1, Player player2, int count)
+        public List<int> SoulCharge(Player player1, Player player2, int count)
         {
-            player1.SoulCharge(count);
+            return player1.SoulCharge(count);
         }
 
         public List<int> Search(Player player1, Player player2, List<Card> canSearch, int max, int min)

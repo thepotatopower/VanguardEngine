@@ -22,5 +22,5 @@ function Activation()
 end
 
 function Filter(id)
-	return obj.IsUnitType(id, u.Normal) and (obj.NameContains(id, obj.LoadName("Stealth")) or obj.HasProperty(id, p.IsGlitter))
+	return obj.IsUnitType(id, u.Normal) and (obj.NameContains(id, obj.LoadName("Stealth")) or obj.HasProperty(id, p.Glitter) or obj.HasProperty(id, p.IsGlitter))
 end

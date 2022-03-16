@@ -40,6 +40,7 @@ namespace VanguardEngine
         public Card Clone()
         {
             Card card = new Card();
+            card.clan = clan;
             card.critical = critical;
             card.effect = effect;
             card.format = format;
@@ -204,5 +205,12 @@ namespace VanguardEngine
     public class Names
     {
         public const string Eugene = "Heavy Artillery of Dust Storm, Eugene";
+    }
+
+    public class Clan
+    {
+    	public const int RoyalPaladin = 1;
+    	public const int ShadowPaladin = 2;
+    	public const int Kagero = 3;
     }
 }

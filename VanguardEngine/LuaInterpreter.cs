@@ -37,6 +37,7 @@ namespace VanguardEngine
         DynValue li;
         DynValue Prompt;
         DynValue ot;
+        DynValue c;
 
 
         public LuaInterpreter(string path, CardFight cf)
@@ -64,6 +65,7 @@ namespace VanguardEngine
             UserData.RegisterType<Prompt>();
             UserData.RegisterType<Prompt>();
             UserData.RegisterType<OrderType>();
+            UserData.RegisterType<Clan>();
             l = UserData.Create(new Location());
             a = UserData.Create(new Activation());
             q = UserData.Create(new Query());
@@ -79,6 +81,7 @@ namespace VanguardEngine
             li = UserData.Create(this);
             Prompt = UserData.Create(new Prompt());
             ot = UserData.Create(new OrderType());
+            c = UserData.Create(new Clan());
         }
 
         public List<Ability> GetAbilities(Card card, Player player1, Player player2, bool player)
@@ -125,6 +128,7 @@ namespace VanguardEngine
                     script.Globals.Set("r", r);
                     script.Globals.Set("Prompt", Prompt);
                     script.Globals.Set("ot", ot);
+                    script.Globals.Set("c", c);
                     script.DoFile(filePath);
                     ability = new Ability(player1, player2, cardFight, card, _abilityID++);
                     success = ability.StoreAbility(script, i + 1, player);
@@ -157,6 +161,7 @@ namespace VanguardEngine
                 tempScript.Globals.Set("r", r);
                 tempScript.Globals.Set("Prompt", Prompt);
                 tempScript.Globals.Set("ot", ot);
+                tempScript.Globals.Set("c", c);
                 tempScript.DoFile(filePath);
                 tempScript.Call(tempScript.Globals["RegisterAbilities"]);
                 if (OrderType.IsSetOrder(card.orderType) && cardFight.GetAbility(GetID(), Activation.OnOrder) == null)
@@ -193,6 +198,7 @@ namespace VanguardEngine
             script.Globals.Set("r", r);
             script.Globals.Set("Prompt", Prompt);
             script.Globals.Set("ot", ot);
+            script.Globals.Set("c", c);
             if (currentFilePath == "")
                 script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
             else
@@ -3436,15 +3442,15 @@ namespace VanguardEngine
             return _player1.CBUsed();
         }
 
-        public void SoulBlast(int count)
+        public List<int> SoulBlast(int count)
         {
-            SoulBlast(count, count);
+            return SoulBlast(count, count);
         }
 
-        public void SoulBlast(int count, int min)
+        public List<int> SoulBlast(int count, int min)
         {
             List<Card> canSB = _player1.GetSoul();
-            _cardFight.SoulBlast(_player1, _player2, canSB, count);
+            return _cardFight.SoulBlast(_player1, _player2, canSB, count);
         }
 
         public void SpecificSoulBlast(List<object> param)
@@ -3487,9 +3493,9 @@ namespace VanguardEngine
             return false;
         }
 
-        public void SoulCharge(int count)
+        public List<int> SoulCharge(int count)
         {
-            _cardFight.SoulCharge(_player1, _player2, count);
+            return _cardFight.SoulCharge(_player1, _player2, count);
         }
 
         public bool SoulChargedThisTurn()
@@ -5374,6 +5380,22 @@ namespace VanguardEngine
                 return false;
         }
 
+        public bool SourceNameContains(string name)
+        {
+            AbilityTimingData data = null;
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.Item1, _player1._playerID);
+            if (list.Count > 0 && list.Count >= _timingCount.Item2)
+                data = list[_timingCount.Item2 - 1];
+            else
+                return false;
+            if (data.abilitySource != null && data.abilitySource.name.Contains(name) &&
+                    _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID &&
+                    data.GetRelevantSnapshots(0).Exists(snapshot => snapshot.tempID == _card.tempID))
+                return true;
+            else
+                return false;
+        }
+
         public List<int> ConvertToTempIDs(List<Card> cards)
         {
             List<int> tempIDs = new List<int>();
@@ -5832,6 +5854,8 @@ namespace VanguardEngine
             {
                 snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
             }
+            else if (location == Location.EnemyFrontRow)
+                currentPool.AddRange(_player2.GetPlayerFrontRow());
         }
 
         public bool IsStored(int tempID)
@@ -5852,6 +5876,14 @@ namespace VanguardEngine
             foreach (Card card in cards)
                 power += _player1.GetPower(card.tempID);
             return power;
+        }
+
+        public bool IsClan(int tempID, int clan)
+        {
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+                return card.clan == clan;
+            return false;
         }
     }
 
@@ -6273,6 +6305,7 @@ namespace VanguardEngine
         public const int Units = 72;
         public const int SoulBlasted = 73;
         public const int SungThisTurn = 74;
+        public const int EnemyFrontRow = 75;
     }
 
     class Query

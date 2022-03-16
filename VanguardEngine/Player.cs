@@ -3011,12 +3011,15 @@ namespace VanguardEngine
             return false;
         }
 
-        public void SoulBlast(List<int> cardsToSB)
+        public List<int> SoulBlast(List<int> cardsToSB)
         {
+            List<int> soulBlasted = new List<int>();
             foreach (int tempID in cardsToSB)
             {
                 PlayerDrop.Add(_field.CardCatalog[tempID]);
+                soulBlasted.Add(tempID);
             }
+            return soulBlasted;
         }
 
         public void CounterCharge(List<int> cardsToCharge)
@@ -3027,10 +3030,11 @@ namespace VanguardEngine
             }
         }
 
-        public void SoulCharge(int count)
+        public List<int> SoulCharge(int count)
         {
             Log.WriteLine("Soul Charging " + count + " card(s)!");
             _soulChargedThisTurn = true;
+            List<int> soulCharged = new List<int>();
             for (int i = 0; i < count && PlayerDeck.GetCards().Count > 0; i++)
             {
                 Card card = PlayerDeck.Index(0);
@@ -3043,7 +3047,9 @@ namespace VanguardEngine
                     args.playerID = _playerID;
                     OnAbilityTiming(this, args);
                 }
+                soulCharged.Add(card.tempID);
             }
+            return soulCharged;
         }
 
         public bool SoulChargedThisTurn()
