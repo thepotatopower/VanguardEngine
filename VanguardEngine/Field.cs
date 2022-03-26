@@ -1109,9 +1109,11 @@ namespace VanguardEngine
         Dictionary<int, List<Tuple<int, int>>> _continuous = new Dictionary<int, List<Tuple<int, int>>>();
         //tempID, cardState, value, abilityID
         Dictionary<Tuple<int, int>, List<Tuple<int, int>>> _continuousValues = new Dictionary<Tuple<int, int>, List<Tuple<int, int>>>();
+        Dictionary<Tuple<int, int>, List<Tuple<string, int>>> _continuousStrings = new Dictionary<Tuple<int, int>, List<Tuple<string, int>>>();
         Dictionary<int, List<int>> _untilEndOfTurn = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfTurnValues = new Dictionary<Tuple<int, int>, List<int>>();
         Dictionary<int, List<Tuple<int, int>>> _untilEndOfTurnAbilities = new Dictionary<int, List<Tuple<int, int>>>();
+        Dictionary<Tuple<int, int>, List<string>> _untilEndOfTurnStrings = new Dictionary<Tuple<int, int>, List<string>>();
         Dictionary<int, List<int>> _untilEndOfNextTurn = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> _untilEndOfBattle = new Dictionary<int, List<int>>();
         Dictionary<Tuple<int, int>, List<int>> _untilEndOfBattleValues = new Dictionary<Tuple<int, int>, List<int>>();
@@ -1133,6 +1135,16 @@ namespace VanguardEngine
                 _continuousValues[tuple] = new List<Tuple<int, int>>();
             if (!_continuousValues[tuple].Exists(existingTuple => existingTuple.Item2 == newTuple.Item2))
             _continuousValues[tuple].Add(newTuple);
+        }
+
+        public void AddContinuousValue(int tempID, int state, string value, int abilityID)
+        {
+            Tuple<string, int> newTuple = new Tuple<string, int>(value, abilityID);
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_continuousStrings.ContainsKey(tuple))
+                _continuousStrings[tuple] = new List<Tuple<string, int>>();
+            if (!_continuousStrings[tuple].Exists(existingTuple => existingTuple.Item2 == newTuple.Item2))
+                _continuousStrings[tuple].Add(newTuple);
         }
 
         public void RefreshContinuousStates()
@@ -1159,6 +1171,18 @@ namespace VanguardEngine
             _untilEndOfTurnValues[tuple].Add(value);
         }
 
+        public void IncrementUntilEndOfTurnValue(int tempID, int state, int value)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_untilEndOfTurnValues.ContainsKey(tuple))
+            {
+                _untilEndOfTurnValues[tuple] = new List<int>();
+                _untilEndOfTurnValues[tuple].Add(value);
+            }
+            else
+                _untilEndOfTurnValues[tuple][0] += value;
+        }
+
         public void AddUntilEndOfTurnAbility(int tempID, int abilityTempID, int activationNumber)
         {
             Tuple<int, int> tuple = new Tuple<int, int>(abilityTempID, activationNumber);
@@ -1174,6 +1198,14 @@ namespace VanguardEngine
                 _untilEndOfNextTurn[tempID] = new List<int>();
             if (!_untilEndOfNextTurn[tempID].Contains(state))
                 _untilEndOfNextTurn[tempID].Add(state);
+        }
+
+        public void AddUntilEndOfTurnValue(int tempID, int state, string value)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            if (!_untilEndOfTurnStrings.ContainsKey(tuple))
+                _untilEndOfTurnStrings[tuple] = new List<string>();
+            _untilEndOfTurnStrings[tuple].Add(value);
         }
 
         public void AddUntilEndOfBattleState(int tempID, int state)
@@ -1246,6 +1278,23 @@ namespace VanguardEngine
             if (_untilEndOfBattleValues.ContainsKey(tuple))
             {
                 values.AddRange(_untilEndOfBattleValues[tuple]);
+            }
+            return values;
+        }
+
+        public List<string> GetStrings(int tempID, int state)
+        {
+            Tuple<int, int> tuple = new Tuple<int, int>(tempID, state);
+            List<string> values = new List<string>();
+            if (_continuousStrings.ContainsKey(tuple))
+            {
+                foreach (Tuple<string, int> value in _continuousStrings[tuple])
+                    values.Add(value.Item1);
+            }
+            if (_untilEndOfTurnStrings.ContainsKey(tuple))
+            {
+                foreach (string value in _untilEndOfTurnStrings[tuple])
+                    values.Add(value);
             }
             return values;
         }
@@ -1371,6 +1420,10 @@ namespace VanguardEngine
         public const int Friend = 42;
         public const int CanAttackGrade3OrGreaterVanguardFromBackRow = 43;
         public const int CannotBeAttacked = 44;
+        public const int DriveCannotDecrease = 45;
+        public const int PersonaRideIfNameContains = 46;
+        public const int RiddenFrom = 47;
+        public const int NumOfAttacks = 48;
     }
 
     public class Zone
@@ -1937,6 +1990,7 @@ namespace VanguardEngine
         public readonly string cardID;
         public readonly int grade;
         public readonly Snapshot abilitySource;
+        public readonly List<Snapshot> relevantSnapshots = new List<Snapshot>();
 
         public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
         {
@@ -1961,6 +2015,20 @@ namespace VanguardEngine
             cardID = _cardID;
             grade = _grade;
             abilitySource = _abilitySource;
+        }
+
+        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource, List<Snapshot> _relevantSnapshots)
+        {
+            tempID = _tempID;
+            location = _location;
+            previousLocation = _previousLocation;
+            circle = _circle;
+            name = _name;
+            fieldID = _fieldID;
+            cardID = _cardID;
+            grade = _grade;
+            abilitySource = _abilitySource;
+            relevantSnapshots.AddRange(_relevantSnapshots);
         }
     }
 

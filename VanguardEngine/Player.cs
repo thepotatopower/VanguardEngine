@@ -83,7 +83,7 @@ namespace VanguardEngine
         protected Card EnemyWorld = null;
         public PlayerStates MyStates;
         public PlayerStates EnemyStates;
-        public CardStates CardStates;
+        protected CardStates CardStates;
 
         int PlayerFrontLeft;
         int PlayerBackLeft;
@@ -1651,6 +1651,25 @@ namespace VanguardEngine
             _lastPlacedOnVC.Clear();
             _lastRidden.Add(_field.GetUnit(PlayerVanguard));
             bool personaRide = false;
+            Card rodeFrom = _field.GetUnit(PlayerVanguard);
+            if (_field.GetUnit(PlayerVanguard).personaRide == 1)
+            {
+                if (card.name == _field.GetUnit(PlayerVanguard).name)
+                    personaRide = true;
+                else if (_field.CardStates.HasState(_field.GetUnit(PlayerVanguard).tempID, CardState.UniversalPersonaRide))
+                    personaRide = true;
+                else
+                {
+                    foreach (string name in _field.CardStates.GetStrings(_field.GetUnit(PlayerVanguard).tempID, CardState.PersonaRideIfNameContains))
+                    {
+                        if (card.name.Contains(name))
+                        {
+                            personaRide = true;
+                            break;
+                        }
+                    }
+                }
+            }
             if ((card.name == _field.GetUnit(PlayerVanguard).name || _field.CardStates.HasState(_field.GetUnit(PlayerVanguard).tempID, CardState.UniversalPersonaRide)) && 
                 _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
@@ -1666,6 +1685,7 @@ namespace VanguardEngine
             else
                 Log.WriteLine("---------\nRide!! " + _field.GetUnit(PlayerVanguard).name + "!");
             _lastPlacedOnVC.Add(card);
+            _field.CardStates.AddUntilEndOfTurnValue(card.tempID, CardState.RiddenFrom, rodeFrom.name);
             _riddenThisTurn = true;
         }
 
@@ -1980,6 +2000,7 @@ namespace VanguardEngine
                 MyStates.AddUntilEndOfTurnValue(PlayerState.NumOfAttacks, 1);
             else
                 MyStates.AddUntilEndOfTurnValue(PlayerState.NumOfAttacks, numOfAttacks + 1);
+            _field.CardStates.IncrementUntilEndOfTurnValue(Attacker.tempID, CardState.NumOfAttacks, 1);
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
@@ -3321,6 +3342,7 @@ namespace VanguardEngine
             _unitsCalledThisTurn.Clear();
             _unitsCalledFromHandThisTurn.Clear();
             _riddenThisTurn = false;
+            _field.CardStates.EndTurn();
             //for (int i = 0; i < _field.CirclePower.Length; i++)
             //    _field.CirclePower[i] = 0;
             //for (int i = 0; i < _field.CircleCritical.Length; i++)
@@ -3344,6 +3366,43 @@ namespace VanguardEngine
         {
             MyStates.RefreshContinuousStates();
             _field.CardStates.RefreshContinuousStates();
+        }
+
+        public bool HasCardState(int tempID, int state)
+        {
+            return _field.CardStates.HasState(tempID, state);
+        }
+
+        public void AddCardState(int tempID, int state, int abilityID, int duration)
+        {
+            if (duration == Property.UntilEndOfBattle)
+                _field.CardStates.AddUntilEndOfBattleState(tempID, state);
+            else if (duration == Property.UntilEndOfTurn)
+                _field.CardStates.AddUntilEndOfTurnState(tempID, state);
+            else if (duration == Property.Continuous)
+                _field.CardStates.AddContinuousState(tempID, state, abilityID);
+        }
+
+        public void AddCardValue(int tempID, int state, int value, int abilityID, int duration)
+        {
+            if (state == CardState.BonusDrive && value < 0 && _field.CardStates.HasState(tempID, CardState.DriveCannotDecrease))
+                return;
+            if (duration == Property.UntilEndOfBattle)
+                _field.CardStates.AddUntilEndOfBattleValue(tempID, state, value);
+            else if (duration == Property.UntilEndOfTurn)
+                _field.CardStates.AddUntilEndOfTurnValue(tempID, state, value);
+            else if (duration == Property.Continuous)
+                _field.CardStates.AddContinuousValue(tempID, state, value, abilityID);
+        }
+
+        public void AddCardValue(int tempID, int state, string value, int abilityID, int duration)
+        {
+            //if (duration == Property.UntilEndOfBattle)
+            //    _field.CardStates.AddUntilEndOfBattleValue(tempID, state, value);
+            if (duration == Property.UntilEndOfTurn)
+                _field.CardStates.AddUntilEndOfTurnValue(tempID, state, value);
+            else if (duration == Property.Continuous)
+                _field.CardStates.AddContinuousValue(tempID, state, value, abilityID);
         }
 
         public void AllAbilitiesResolved()
@@ -3919,6 +3978,19 @@ namespace VanguardEngine
         public List<Card> GetSuccessfullyRetired()
         {
             return new List<Card>(_successfullyRetired);
+        }
+
+        public List<string> GetCardStateStrings(int tempID, int cardState)
+        {
+            return _field.CardStates.GetStrings(tempID, cardState);
+        }
+
+        public int GetCardValue(int tempID, int cardState)
+        {
+            List<int> values = _field.CardStates.GetValues(tempID, cardState);
+            if (values.Count > 0)
+                return values[0];
+            return -1;
         }
     }
 

@@ -256,7 +256,6 @@ namespace VanguardEngine
                 PerformCheckTiming(player1, player2);
                 player1.EndTurn();
                 player2.EndTurn();
-                player1.CardStates.EndTurn();
                 player1.IncrementTurn();
                 _abilities.EndTurn();
                 actionLogs.Clear();
@@ -386,7 +385,7 @@ namespace VanguardEngine
                     if (player1.CanRideFromRideDeck())
                     {
                         if (player1.MyStates.HasState(PlayerState.SoulBlastForRideDeck) && player1.GetSoul().Count > 0 && _inputManager.YesNo(player1, "Soul Blast 1 instead of discarding card?"))
-                            SoulBlast(player1, player2, player1.GetSoul(), 1);
+                            SoulBlast(player1, player2, player1.GetSoul(), 1, 1);
                         else if (RideDeckDiscardCostReplaced(player1)) ;
                         else if (player1.MyStates.GetStrings(PlayerState.CanRideFromRideDeckWithoutDiscard).Contains(player1.GetRideDeck().Find(card => card.OriginalGrade() == player1.Grade(player1.Vanguard().tempID) + 1).id) &&
                             (_player1.GetHand().Count == 0 || _inputManager.YesNo(player1, "Skip discard cost?"))) ;
@@ -431,7 +430,8 @@ namespace VanguardEngine
         {
             List<int> cardsToDiscard = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "to discard.");
             player1.Discard(cardsToDiscard);
-            AddAbilityTiming(Activation.OnDiscard, player1._playerID, player1.GetLastDiscarded());
+            foreach (Card card in player1.GetLastDiscarded())
+                AddAbilityTiming(Activation.OnDiscard, player1._playerID, card);
         }
 
         public void MainPhaseMenu(Player player1, Player player2)
@@ -885,7 +885,7 @@ namespace VanguardEngine
                         PerformCheckTiming(player1, player2);
                     }
                 }
-                if (player1.GetAttacker() != null && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck() || player1.CardStates.HasState(player1.GetAttacker().tempID, CardState.CanDriveCheck)))
+                if (player1.GetAttacker() != null && (player1.AttackerIsVanguard() || player1.RearguardCanDriveCheck() || player1.HasCardState(player1.GetAttacker().tempID, CardState.CanDriveCheck)))
                 {
                     if (player1 == _player1)
                         Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 1.");
@@ -1339,7 +1339,7 @@ namespace VanguardEngine
                 }
                 else if (selection == 2)
                 {
-                    SoulBlast(player1, player2, player1.GetSoul(), 1);
+                    SoulBlast(player1, player2, player1.GetSoul(), 1, 1);
                     SuperiorCall(player1, player2, cards, 1, 0, null, false, true, true, false);
                 }
             }
@@ -1520,7 +1520,7 @@ namespace VanguardEngine
             player1.CounterBlast(cardsToCB);
         }
 
-        public List<int> SoulBlast(Player player1, Player player2, List<Card> canSB, int count)
+        public List<int> SoulBlast(Player player1, Player player2, List<Card> canSB, int count, int min)
         {
             if (player1.IsAlchemagic() && (player1.AlchemagicFreeSBAvailable() || player1.AlchemagicFreeSBActive()))
             {
@@ -1530,7 +1530,7 @@ namespace VanguardEngine
                     return new List<int>();
                 }
             }
-            List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, count, "to Soul Blast.");
+            List<int> cardsToSB = _inputManager.SelectFromList(player1, canSB, count, min, "to Soul Blast.");
             List<int> soulBlasted = player1.SoulBlast(cardsToSB);
             foreach (int tempID in cardsToSB)
             {
@@ -1545,6 +1545,31 @@ namespace VanguardEngine
                 actionLogs[Location.SoulBlasted].Add(actionLog);
             }
             return soulBlasted;
+        }
+
+        public void GenerateActionLog(int playerID, Card card, List<Card> relevantCards)
+        {
+            List<Snapshot> relevantSnapshots = new List<Snapshot>();
+            foreach (Card c in relevantCards)
+                relevantSnapshots.Add(_player1.GetSnapshot(c.tempID));
+            GenerateActionLog(playerID, card, relevantSnapshots);
+        }
+
+        public void GenerateActionLog(int playerID, Card card, List<Snapshot> relevantSnapshots)
+        {
+            Snapshot abilitySnapshot = null;
+            Player player;
+            if (playerID == 1)
+                player = _player1;
+            else
+                player = _player2;
+            if (_currentAbility != null)
+                abilitySnapshot = player.GetSnapshot(_currentAbility.GetCard().tempID);
+            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot, relevantSnapshots);
+            if (!actionLogs.ContainsKey(Location.SoulBlasted))
+                actionLogs[Location.SoulBlasted] = new List<ActionLog>();
+            ActionLog actionLog = new ActionLog(playerID, snapshot);
+            actionLogs[Location.SoulBlasted].Add(actionLog);
         }
 
         public void CounterCharge(Player player1, List<Card> canCC, int count)
@@ -2000,6 +2025,10 @@ namespace VanguardEngine
                 else
                     temp.Add(_player2.GetSnapshot(_player2.Vanguard().tempID));
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
+                if (cards.Count > 0)
+                {
+                    GenerateActionLog(playerID, cards[0], temp);
+                }
             }
             else if (activation == Activation.PlacedOnVC)
             {
