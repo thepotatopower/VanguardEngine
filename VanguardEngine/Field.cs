@@ -221,7 +221,7 @@ namespace VanguardEngine
             get => _player2RideDeck;
         }
 
-        public Zone GC
+        public GuardianCircle GC
         {
             get => _GC;
         }
@@ -856,6 +856,7 @@ namespace VanguardEngine
 
         public override Card AddRide(Card card)
         {
+            _soul.Add(_cards[0]);
             base.AddRide(card);
             return card;
         }
@@ -1017,6 +1018,8 @@ namespace VanguardEngine
                 _untilEndOfTurnValues[state] = new List<int>();
                 _untilEndOfTurnValues[state].Add(0);
             }
+            else if (_untilEndOfTurnValues[state].Count == 0)
+                _untilEndOfTurnValues[state].Add(0);
             _untilEndOfTurnValues[state][0] += value;
             if (_untilEndOfTurnValues[state][0] < 0)
                 _untilEndOfTurnValues[state][0] = 0;
@@ -1179,8 +1182,9 @@ namespace VanguardEngine
                 _untilEndOfTurnValues[tuple] = new List<int>();
                 _untilEndOfTurnValues[tuple].Add(value);
             }
-            else
-                _untilEndOfTurnValues[tuple][0] += value;
+            else if (_untilEndOfTurnValues[tuple].Count == 0)
+                _untilEndOfTurnValues[tuple].Add(0);
+            _untilEndOfTurnValues[tuple][0] += value;
         }
 
         public void AddUntilEndOfTurnAbility(int tempID, int abilityTempID, int activationNumber)
@@ -1720,7 +1724,7 @@ namespace VanguardEngine
 
     public class GuardianCircle : Zone
     {
-        Dictionary<Card, Soul> _souls = new Dictionary<Card, Soul>();
+        Dictionary<Card, OriginalDress> _originalDresses = new Dictionary<Card, OriginalDress>();
         Card cardBeingRemoved = null;
 
         public GuardianCircle(Field field) : base(field)
@@ -1730,11 +1734,10 @@ namespace VanguardEngine
 
         protected override void HandleAssociatedCards(Card card, List<Card> associatedCards)
         {
-            if (!_souls.ContainsKey(card))
-                _souls[card] = new Soul(_field, _FL);
+            _originalDresses[card] = new OriginalDress(_field, _FL);
             foreach (Card c in associatedCards)
             {
-                _souls[card].Add(c);
+                _originalDresses[card].Add(c);
             }
             associatedCards.Clear();
         }
@@ -1754,9 +1757,9 @@ namespace VanguardEngine
 
         protected override List<Card> AssociatedCards()
         {
-            if (cardBeingRemoved != null && _souls.ContainsKey(cardBeingRemoved))
+            if (cardBeingRemoved != null && _originalDresses.ContainsKey(cardBeingRemoved))
             {
-                return _souls[cardBeingRemoved].GetCards();
+                return _originalDresses[cardBeingRemoved].GetCards();
             }
             return new List<Card>();
         }
@@ -1770,6 +1773,13 @@ namespace VanguardEngine
         {
             cardBeingRemoved = card;
             return base.Remove(card);
+        }
+
+        public List<Card> GetOriginalDresses(Card card)
+        {
+            if (_originalDresses.ContainsKey(card))
+                return _originalDresses[card].GetCards();
+            return new List<Card>();
         }
     }
 

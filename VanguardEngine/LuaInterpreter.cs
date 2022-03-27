@@ -2172,7 +2172,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (_player1.GetAttacker().tempID == card.tempID)
+                            if (_player1.GetAttacker() != null && _player1.GetAttacker().tempID == card.tempID)
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -3194,6 +3194,11 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsOverDress()
+        {
+            return InOverDress();
+        }
+
         public bool IsOverDress(int tempID)
         {
             return _player1.IsOverDress(tempID);
@@ -3371,7 +3376,7 @@ namespace VanguardEngine
                 }
                 cardsToSelect.Add(tokens);
             }
-            //if (specifications.Contains(Property.Convert))
+            if (!specifications.Contains(Property.DoNotConvert))
                 circlesToSelect = _player1.ConvertFL(circlesToSelect);
             if (circlesToSelect.Length > 0 && circlesToSelect[0] == -1)
                 circlesToSelect = null;
@@ -3382,7 +3387,10 @@ namespace VanguardEngine
             bool asRest = false;
             if (specifications.Contains(Property.AsRest))
                 asRest = true;
-            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, false, !asRest, false, false));
+            bool superiorOverDress = false;
+            if (specifications.Contains(Property.SuperiorOverDress))
+                superiorOverDress = true;
+            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, superiorOverDress, !asRest, false, false));
             foreach (var list in cardsToSelect)
             {
                 foreach (var card in list)
@@ -5660,6 +5668,11 @@ namespace VanguardEngine
             return tempID == _card.tempID;
         }
 
+        public bool IsThisFieldID(int tempID)
+        {
+            return tempID == _card.tempID && IsSameZone();
+        }
+
         public bool IsPlayer(int tempID)
         {
             Card card = _player1.GetCard(tempID);
@@ -6525,6 +6538,8 @@ namespace VanguardEngine
         public const int IsGlitter = 39;
         public const int Glitter = 40;
         public const int UntilEndOfNextTurn = 41;
+        public const int SuperiorOverDress = 42;
+        public const int DoNotConvert = 43;
     }
 
     public class Prompt

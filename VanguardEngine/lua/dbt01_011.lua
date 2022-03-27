@@ -1,49 +1,37 @@
--- Vairina Arcs
+-- ヴェルリーナ・アルクス
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
+	-- overDress requirement
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetOverDress("IsOverDressTarget")
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Name, "Trickstar"
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	end
+function Condition()
+	return obj.IsOverDress()
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OverDress, 1
-	elseif n == 2 then
-		return a.PlacedOnRC, p.HasPrompt, p.CB, 1
-	end
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function CheckCondition(n)
-	if n == 2 then
-		if obj.LastPlacedOnRC() and obj.InOverDress() then
-			return true
-		end
-	end
-	return false
+function Activation()
+	obj.Draw(2)
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end
 
-function CanFullyResolve(n)
-	if n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 2 then
-		obj.Draw(2)
-		obj.AddTempPower(2, 5000)
-	end
-	return 0
+function IsOverDressTarget(id)
+	return obj.IsName(id, obj.GetNameFromCardID("dsd01_009"))
 end

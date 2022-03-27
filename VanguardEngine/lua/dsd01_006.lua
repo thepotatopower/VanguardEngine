@@ -20,7 +20,7 @@ function isOverDressTarget(id)
 end
 
 function Trigger()
-	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.Attacking, q.Other, o.OverDress}) and obj.Exists({q.Location, l.EnemyVC, q.Other, o.Attacked})
+	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.Attacking, q.Other, o.OverDress, q.Other, o.ThisFieldID}) and obj.Exists({q.Location, l.EnemyVC, q.Other, o.Attacked})
 end
 
 function Activation()

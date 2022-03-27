@@ -40,7 +40,13 @@ namespace VanguardEngine
         {
             using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
             {
-                return cnn.Query<Card>(query, new DynamicParameters()).ToList();
+                var output = cnn.Query<Card>(query, new DynamicParameters()).ToList();
+                foreach (Card card in output)
+                {
+                    if (card.effect == "")
+                        card.effect = card.text;
+                }
+                return output;
             }
         }
 

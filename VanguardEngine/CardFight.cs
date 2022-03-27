@@ -45,6 +45,9 @@ namespace VanguardEngine
         int _clientNumber = 0;
         string _connectionString;
         public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
+        int _initialDamage = 2;
+        int _initialSoul = 0;
+        int _initialDrop = 0;
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, int clientNumber)
         {
@@ -89,6 +92,21 @@ namespace VanguardEngine
                 //_abilities.AddAbilities(deck2[i].tempID, luaInterpreter.GetAbilities(deck2[i], _player1, _player2, false));
             }
             return true;
+        }
+
+        public void SetInitialDamage(int damage)
+        {
+            _initialDamage = damage;
+        }
+
+        public void SetInitialSoul(int soul)
+        {
+            _initialSoul = soul;
+        }
+
+        public void SetInitialDrop(int drop)
+        {
+            _initialDrop = drop;
         }
 
         public int CreateToken(Player player1, Player player2, string tokenID)
@@ -196,16 +214,21 @@ namespace VanguardEngine
             _turn = 1;
             _phase = 0;
             _actingPlayer = player1;
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player1, player2, false);
-            TriggerCheck(player2, player1, false);
-            TriggerCheck(player2, player1, false);
-            player1.SoulCharge(10);
-            player2.SoulCharge(10);
-            //player1.AbyssalDarkNight();
-            //player2.AbyssalDarkNight();
-            //player1.Mill(5);
-            //player2.Mill(5);
+            for (int i = 0; i < _initialDamage; i++)
+            {
+                TriggerCheck(player1, player2, false);
+                TriggerCheck(player2, player1, false);
+            }
+            for (int i = 0; i < _initialSoul; i++)
+            {
+                player1.SoulCharge(10);
+                player2.SoulCharge(10);
+            }
+            for (int i = 0; i < _initialDrop; i++)
+            {
+                player1.Mill(5);
+                player2.Mill(5);
+            }
             while (true)
             {
                 _actingPlayer = player1;
@@ -521,16 +544,12 @@ namespace VanguardEngine
                     input = _inputManager.int_input2;
                     canSelect.AddRange(player1.GetAvailableCircles(input));
                     location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
-                    if (_abilities.CanOverDress(input, location))
+                    if (_abilities.CanOverDress(input, location) && _inputManager.YesNo(player1, "Perform overDress?"))
                     {
-                        //Log.WriteLine("Perform overDress?");
-                        if (_inputManager.YesNo(player1, "Perform overDress?"))
-                        {
-                            Call(player1, player2, location, input, true);
-                            continue;
-                        }
+                        Call(player1, player2, location, input, true);
                     }
-                    Call(player1, player2, location, input, false);
+                    else
+                        Call(player1, player2, location, input, false);
                 }
                 else if (selection == MainPhaseAction.MoveRearguard) //move specific column (for use outside of console only)
                 {
@@ -1450,12 +1469,15 @@ namespace VanguardEngine
 
         public void MarkedForRetire(object sender, CardEventArgs e)
         {
-            if (e.playerID == 1 && e.card.OriginalGrade() % 2 == 0 && _player1.MyStates.HasState(PlayerState.RetiredEvenGradeUnitsCanBeAddedToSoul) && _inputManager.YesNo(_player1, "Add " + e.card.name + " to soul?"))
-                _player1.FinalizeRetire(e.card.tempID, true);
-            else if (e.playerID == 2 && e.card.OriginalGrade() % 2 == 0 && _player1.MyStates.HasState(PlayerState.RetiredEvenGradeUnitsCanBeAddedToSoul) && _inputManager.YesNo(_player2, "Add " + e.card.name + " to soul?"))
-                _player2.FinalizeRetire(e.card.tempID, true);
+            Player player;
+            if (e.card.originalOwner == 1)
+                player = _player1;
             else
-                _player1.FinalizeRetire(e.card.tempID, false);
+                player = _player2;
+            if (e.card.OriginalGrade() % 2 == 0 && player.MyStates.HasState(PlayerState.RetiredEvenGradeUnitsCanBeAddedToSoul) && _inputManager.YesNo(player, "Add " + e.card.name + " to soul?"))
+                player.FinalizeRetire(e.card.tempID, true);
+            else
+                player.FinalizeRetire(e.card.tempID, false);
         }
 
         public void AllAbilitiesResolved()

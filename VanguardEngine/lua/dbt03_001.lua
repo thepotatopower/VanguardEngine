@@ -4,7 +4,7 @@ function RegisterAbilities()
 	-- overDress requirement
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetOverDress("isOverDressTarget")
+	ability1.SetOverDress("IsOverDressTarget")
 	-- continuous ability
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
@@ -22,7 +22,7 @@ function RegisterAbilities()
 	ability3.SetActivation("OnAttack")
 end
 
-function isOverDressTarget(id)
+function IsOverDressTarget(id)
 	return obj.IsRearguard(id) and obj.IsOverDress(id) 
 end
 

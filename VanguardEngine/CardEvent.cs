@@ -26,6 +26,7 @@ namespace VanguardEngine
         public bool b { get; set; }
         public Tuple<int, int> previousLocation { get; set; }
         public Tuple<int, int> currentLocation { get; set; }
+        public RecordedUnitValue recordedUnitValue { get; set; }
 
         public string message { get; set; }
         //public int FL { get; set; }

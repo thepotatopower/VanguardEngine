@@ -1,68 +1,64 @@
--- Vairina Erger
+-- ヴェルリーナ・エルガー
 
-function NumberOfAbilities()
-	return 3
+function RegisterAbilities()
+	-- overdress
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetOverDress("IsOverDressTarget")
+	-- on battle ends
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnBattleEnds)
+	ability2.SetLocation(l.Hand)
+	ability2.SetTrigger("Trigger")
+	ability2.SetCondition("Condition")
+	ability2.SetCost("Cost")
+	ability2.SetCanFullyResolve("CanFullyResolve")
+	ability2.SetActivation("Activation")
+	-- cont
+	local ability3 = NewAbility(GetID())
+	ability3.SetDescription(3)
+	ability3.SetTiming(a.Cont)
+	ability3.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 4
+function IsOverDressTarget(id)
+	return obj.IsName(id, obj.GetNameFromCardID("dsd01_009"))
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Name, "Trickstar"
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Name, "Trickstar", q.Other, o.Attacking, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Location, l.GC, q.Other, o.This
-	elseif n == 4 then
-		return q.Location, l.PlayerHand, q.Other, o.This, q.Count, 1
+function Trigger()
+	return obj.Exists({q.Location, l.PlayerUnits, q.Name, obj.GetNameFromCardID("dsd01_009"), q.Other, o.Attacking}) and
+	obj.Exists({q.Location, l.EnemyVC, q.Other, o.Attacked})
+end
+
+function Condition()
+	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dsd01_001")})
+end
+
+function Cost(check)
+	if check then return obj.CanSB(2) end
+	obj.SoulBlast(2)
+end
+
+function CanFullyResolve()
+	return obj.IsSameZone() and obj.Exists({q.Location, l.PlayerUnits, q.Name, obj.GetNameFromCardID("dsd01_009"), q.Other, o.Attacking})
+end
+
+function Activation()
+	local circle = obj.GetCircle({q.Location, l.PlayerUnits, q.Name, obj.GetNameFromCardID("dsd01_009"), q.Other, o.Attacking})
+	if circle >= 0 then
+		obj.SuperiorCall({"Filter"}, {l.Hand}, 1, 1, "", {p.SuperiorOverDress, p.DoNotConvert}, {circle})
 	end
+	obj.CounterCharge(1)
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OverDress, 1
-	elseif n == 2 then
-		return a.OnBattleEnds, p.HasPrompt, p.SB, 2
-	elseif n == 3 then
-		return a.Cont, p.HasPrompt, p.IsMandatory
-	end
+function Filter(id)
+	return obj.IsThisFieldID(id)
 end
 
-function CheckCondition(n)
-	if n == 2 then
-		if obj.Exists(4) and obj.Exists(2) and obj.TargetIsEnemyVanguard() and obj.VanguardIs("Chakrabarthi Divine Dragon, Nirvana") then
-			return true
-		end
-	elseif n == 3 then
-		if obj.IsRearguard() or obj.IsGuardian() then
-			return true
-		end
+function Cont()
+	if obj.IsOverDress() then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 10000, p.Continuous)
+		obj.AddCardValue({q.Other, o.This}, cs.BonusShield, 10000, p.Continuous)
 	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	elseif n == 3 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 2 then
-		obj.SuperiorOverDress(4, 2)
-		obj.CounterCharge(1)
-	elseif n == 3 then
-		if obj.InOverDress() then
-			obj.SetAbilityPower(3, 10000)
-			obj.SetAbilityShield(3, 10000)
-		end
-	end
-	return 0
 end

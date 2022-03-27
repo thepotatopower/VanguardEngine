@@ -233,8 +233,9 @@ namespace VanguardEngine
                             _recordedUnitValues[i] = new RecordedUnitValue(CalculatePowerOfUnit(i), Critical(_field.GetUnit(i).tempID));
                         CardEventArgs args = new CardEventArgs();
                         args.circle = i;
-                        args.currentPower = _recordedUnitValues[i].currentPower;
-                        args.currentCritical = _recordedUnitValues[i].currentCritical;
+                        //args.currentPower = _recordedUnitValues[i].currentPower;
+                        //args.currentCritical = _recordedUnitValues[i].currentCritical;
+                        args.recordedUnitValue = _recordedUnitValues[i];
                         if (OnUnitValueChanged != null)
                             OnUnitValueChanged(this, args);
                     }
@@ -3765,6 +3766,8 @@ namespace VanguardEngine
                 if (card.tempID == tempID && IsRearguard(card.tempID) && _field.GetSoul(GetCircle(card)).Count > 0)
                     return true;
             }
+            if (_field.GC.GetOriginalDresses(_field.CardCatalog[tempID]).Count > 0)
+                return true;
             return false;
         }
 
