@@ -1,60 +1,37 @@
--- Heavenly Bow of Edifying Guidance, Refuerzos
+-- 唱導の天弓 レフェルソス
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- cont
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.RC)
+	ability1.SetActivation("Cont")
+	-- on stand
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnStand)
+	ability2.SetLocation(l.BackRowRC)
+	ability2.SetProperty(p.OncePerTurn)
+	ability2.SetTrigger("Trigger")
+	ability2.SetCondition("Condition")
+	ability2.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This, q.Other, o.Resting, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.LastStood, q.Other, o.NotThis, q.Count, 1
+function Cont()
+	if obj.PersonaRode() then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusSkills, s.Boost, p.Continuous)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.Cont, p.HasPrompt, p.IsMandatory
-	elseif n == 2 then
-		return a.OnStand, p.HasPrompt, p.IsMandatory, p.OncePerTurn
-	end
+function Trigger()
+	return obj.Exists({q.Location, l.PlayerUnits, q.Other, o.Applicable, q.Other, o.NotThisFieldID})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsBackRowRearguard() and obj.Exists(2) and obj.Exists(3) then
-			return true
-		end
-	end
-	return false
+function Condition()
+	return obj.Exists({q.Location, l.PlayerUnits, q.Other, o.Resting, q.Other, o.ThisFieldID})
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.PersonaRode() then
-			obj.AddSkill(1, s.Boost)
-		end
-	elseif n == 2 then
-		obj.Stand(2)
-	end
-	return 0
+function Activation()
+	obj.Stand({q.Other, o.ThisFieldID})
 end

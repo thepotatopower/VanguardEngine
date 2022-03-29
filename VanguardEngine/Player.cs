@@ -3183,11 +3183,16 @@ namespace VanguardEngine
             PlayerRevealed.Clear();
         }
 
-        public void LookAtTopOfDeck(int count)
+        public void LookAtTopOfDeck(int count, bool player)
         {
             PlayerLooking.Clear();
-            for (int i = 0; i < count && PlayerDeck.GetCards().Count > i; i++)
-                PlayerLooking.Add(PlayerDeck.Index(i));
+            Zone deck;
+            if (player)
+                deck = PlayerDeck;
+            else
+                deck = EnemyDeck;
+            for (int i = 0; i < count && deck.GetCards().Count > i; i++)
+                PlayerLooking.Add(deck.Index(i));
         }
 
         public void RearrangeOnTop(List<int> tempIDs)
@@ -3547,6 +3552,65 @@ namespace VanguardEngine
                 circles.Add(PlayerFrontLeft);
             }
             return circles;
+        }
+
+        public List<int> GetAvailableCircles(List<int> circles)
+        {
+            List<int> available = new List<int>();
+            List<int> temp = new List<int>();
+            available.AddRange(GetMyCircles());
+            available.AddRange(GetEnemyCircles());
+            if (circles.Contains(FL.FrontRow))
+            {
+                List<int> frontRow = new List<int>();
+                frontRow.Add(FL.PlayerFrontRight);
+                frontRow.Add(FL.PlayerFrontLeft);
+                frontRow.Add(FL.EnemyFrontRight);
+                frontRow.Add(FL.EnemyFrontLeft);
+                frontRow.Add(FL.PlayerVanguard);
+                frontRow.Add(FL.EnemyVanguard);
+                foreach (int circle in available)
+                {
+                    if (frontRow.Contains(circle))
+                        temp.Add(circle);
+                }
+                available.Clear();
+                available.AddRange(temp);
+                temp.Clear();
+            }
+            if (circles.Contains(FL.OpenCircle))
+            {
+                List<int> openCircles = new List<int>();
+                openCircles.AddRange(GetOpenCircles(true));
+                openCircles.AddRange(GetOpenCircles(false));
+                foreach (int circle in available)
+                {
+                    if (openCircles.Contains(circle))
+                        temp.Add(circle);
+                }
+                available.Clear();
+                available.AddRange(temp);
+                temp.Clear();
+            }
+            if (circles.Contains(FL.EnemyCircle))
+            {
+                List<int> enemy = new List<int>();
+                enemy.Add(EnemyBackCenter);
+                enemy.Add(EnemyBackLeft);
+                enemy.Add(EnemyBackRight);
+                enemy.Add(EnemyFrontLeft);
+                enemy.Add(EnemyFrontRight);
+                enemy.Add(EnemyVanguard);
+                foreach (int circle in available)
+                {
+                    if (enemy.Contains(circle))
+                        temp.Add(circle);
+                }
+                available.Clear();
+                available.AddRange(temp);
+                temp.Clear();
+            }
+            return available;
         }
 
         public List<int> GetMyCircles()

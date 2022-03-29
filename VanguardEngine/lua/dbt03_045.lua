@@ -12,7 +12,7 @@ function RegisterAbilities()
 end
 
 function Trigger()
-	return obj.Exists({q.Location, l.Applicable, q.UnitType, u.Trigger})
+	return obj.Exists({q.Location, l.Applicable, q.UnitType, u.Trigger, q.Other, o.Player})
 end
 
 function Cost(check)

@@ -2765,6 +2765,12 @@ namespace VanguardEngine
             return availableCircles;
         }
 
+        public void ChooseMoveEnemyRearguard(List<object> param, List<int> circles)
+        {
+            SetParam(param, 1);
+            ChooseMoveEnemyRearguard(1, circles);
+        }
+
         public void ChooseMoveEnemyRearguard(int paramNum, List<int> circles)
         {
             if (circles.Count == 0)
@@ -4010,7 +4016,7 @@ namespace VanguardEngine
             if (!HasCount(paramNum) && !HasMin(paramNum))
                 return _player1.Rest(_player1.ConvertToTempIDs(canRest));
             else
-                return _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), true);
+                return _cardFight.Rest(_player1, _player2, canRest, GetCount(paramNum), GetMin(paramNum), true);
         }
 
         public void Rest(List<object> param)
@@ -4088,7 +4094,12 @@ namespace VanguardEngine
 
         public void LookAtTopOfDeck(int count)
         {
-            _player1.LookAtTopOfDeck(count);
+            _player1.LookAtTopOfDeck(count, true);
+        }
+
+        public void LookAtTopOfEnemyDeck(int count)
+        {
+            _player1.LookAtTopOfDeck(count, false);
         }
 
         public void RearrangeOnTop(List<object> param)

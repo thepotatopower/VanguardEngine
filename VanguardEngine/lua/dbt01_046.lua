@@ -56,7 +56,7 @@ function Activate(n)
 		obj.RearrangeOnTop(1)
 	elseif n == 2 then
 		obj.LookAtTopOfDeck(1)
-		obj.Select(3, "Choose card to put on top of deck.")
+		obj.ChooseSendToTop(3)
 		if obj.GetNumberOf(4) > 0 then
 			obj.SendToTop(4)
 		else

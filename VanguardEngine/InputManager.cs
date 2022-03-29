@@ -289,6 +289,8 @@ namespace VanguardEngine
 
         public virtual List<int> SelectCircle(Player actingPlayer, List<int> availableCircles, int count)
         {
+            if (availableCircles.Count == 0)
+                return new List<int>();
             _actingPlayer = actingPlayer;
             intlist_input.Clear();
             intlist_input.AddRange(availableCircles);
@@ -895,6 +897,7 @@ namespace VanguardEngine
         public const int Heal = 15;
         public const int MoveRearguardFreeSwap = 16;
         public const int ActivateAbilityFromDrop = 17;
+        public const int ActivateAbilityFromSoul = 18;
     }
 
     public class BattlePhaseAction

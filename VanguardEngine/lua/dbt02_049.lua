@@ -10,13 +10,13 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 2
+		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3, q.Count, 2
 	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 3
+		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3, q.Count, 3
 	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 4
+		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3, q.Count, 4
 	elseif n == 4 then
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 1
+		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Grade, 3, q.Count, 1
 	elseif n == 5 then
 		return q.Location, l.PlayerVC, q.Count, 1
 	end

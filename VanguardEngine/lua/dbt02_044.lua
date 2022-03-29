@@ -53,8 +53,7 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.LookAtTopOfDeck(2)
-		obj.Select(1)
-		obj.RearrangeOnTop(2)
+		obj.ChooseSendToTop(1)
 		obj.RearrangeOnBottom(3)
 		obj.EndSelect()
 	elseif n == 2 then

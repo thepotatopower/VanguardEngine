@@ -1,46 +1,23 @@
--- Crossrock Dragon
+-- クロースロック・ドラゴン
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
+	ability1.SetProperty(p.NotMandatory)
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.EnemyRC, q.Count, 1, q.Other, o.CanChoose
-	elseif n == 2 then
-		return q.Location, l.FrontRowEnemyRC
-	end
+function Condition()
+	return obj.Exists({q.Location, l.EnemyRC, q.Other, o.CanChoose})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnRC, p.HasPrompt
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.LastPlacedOnRC() and obj.Exists(1) and obj.OpenCirclesExist(2) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.ChooseMoveEnemyRearguard(1, obj.OpenCircles(2))
-	end
-	return 0
+function Activation()
+	obj.ChooseMoveEnemyRearguard({q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1}, {FL.OpenCircle, FL.FrontRow, FL.EnemyCircle})
 end

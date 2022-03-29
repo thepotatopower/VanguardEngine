@@ -611,6 +611,20 @@ namespace VanguardEngine
                         ActivateACT(player1, ACTs[selectedAbility]);
                     }
                 }
+                else if (selection == MainPhaseAction.ActivateAbilityFromSoul)
+                {
+                    List<Ability> ACTs = new List<Ability>();
+                    foreach (Ability ability in GetACTAbilities(player1))
+                    {
+                        if (player1.GetSoul().Exists(card => card.tempID == ability.GetID()))
+                            ACTs.Add(ability);
+                    }
+                    int selectedAbility = _inputManager.SelectAbility(player1, ACTs);
+                    if (selectedAbility != ACTs.Count)
+                    {
+                        ActivateACT(player1, ACTs[selectedAbility]);
+                    }
+                }
                 else if (selection == MainPhaseAction.SoulCharge)
                 {
                     player1.SoulCharge(1);
@@ -1631,9 +1645,9 @@ namespace VanguardEngine
             player1.Stand(toStand);
         }
 
-        public List<int> Rest(Player player1, Player player2, List<Card> canRest, int count, bool select)
+        public List<int> Rest(Player player1, Player player2, List<Card> canRest, int count, int min, bool select)
         {
-            List<int> cardsToRest = _inputManager.SelectFromList(player1, canRest, count, count, "to rest.");
+            List<int> cardsToRest = _inputManager.SelectFromList(player1, canRest, count, min, "to rest.");
             return player1.Rest(cardsToRest);
         }
 
@@ -1802,8 +1816,9 @@ namespace VanguardEngine
         public void ChooseMoveEnemyRearguard(Player player1, List<Card> cardsToSelect, List<int> availableCircles)
         {
             int selection = _inputManager.SelectFromList(player1, cardsToSelect, 1, 1, "to switch places.")[0];
-            int selection2 = _inputManager.SelectCircle(player1, availableCircles, 1)[0];
-            player1.MoveRearguardSpecific(selection, selection2);
+            List<int> selections = _inputManager.SelectCircle(player1, player1.GetAvailableCircles(availableCircles), 1);
+            if (selections.Count > 0)
+                player1.MoveRearguardSpecific(selection, selections[0]);
         }
 
         public void ChooseMoveRearguard(Player player, List<Card> cardsToSelect, List<int> availableCircles)
