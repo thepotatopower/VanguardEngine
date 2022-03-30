@@ -3092,8 +3092,7 @@ namespace VanguardEngine
                 Reveal(list);
                 list.Clear();
             }
-            if (addedFromDeck)
-                Shuffle();
+            Shuffle();
         }
 
         public void Stand(List<int> cardsToStand)

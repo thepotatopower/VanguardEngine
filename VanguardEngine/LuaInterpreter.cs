@@ -4897,6 +4897,19 @@ namespace VanguardEngine
             return _cardFight.SelectOption(_player1, list);
         }
 
+        public int SelectOption(params List<string>[] list)
+        {
+            List<string> options = new List<string>();
+            foreach (List<string> option in list)
+            {
+                if (option.Count == 3 && CanPayCost(option[0]))
+                    options.Add(option[2]);
+                else if (option.Count == 1)
+                    options.Add(option[0]);
+            }
+            return _cardFight.SelectOption(_player1, options.ToArray());
+        }
+
         public bool YesNo(string query)
         {
             return _cardFight.YesNo(_player1, query);
@@ -5462,6 +5475,11 @@ namespace VanguardEngine
         public bool SourceIsPlayerAbility()
         {
             return data != null && data.abilitySource != null && _player1.GetCard(data.abilitySource.tempID).originalOwner == _player1._playerID;
+        }
+
+        public bool SourceIsAbility()
+        {
+            return data != null && data.abilitySource != null;
         }
 
         public bool SourceIsVanguardAbility()

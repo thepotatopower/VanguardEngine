@@ -152,10 +152,12 @@ namespace VanguardEngine
         public const int LeftDeityArms = 9;
         public const int RightDeityArms = 10;
         public const int FoxArt = 11;
+        public const int Research = 12;
 
         public static bool IsSetOrder(int type)
         {
-            if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song || type == OrderType.Meteorite)
+            if (type == OrderType.Set || type == OrderType.Prison || type == OrderType.World || type == OrderType.Song || type == OrderType.Meteorite
+                || type == OrderType.Research)
                 return true;
             return false;
         }

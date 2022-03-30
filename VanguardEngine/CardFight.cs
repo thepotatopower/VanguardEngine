@@ -1855,6 +1855,11 @@ namespace VanguardEngine
             return _inputManager.SelectOption(player, list);
         }
 
+        public int SelectOption(Player player, List<string>[] list)
+        {
+            return _inputManager.SelectOption(player, list);
+        }
+
         public int SelectColumn(Player player)
         {
             return _inputManager.SelectColumn(player);

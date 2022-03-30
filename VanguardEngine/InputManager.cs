@@ -809,6 +809,20 @@ namespace VanguardEngine
             return int_input;
         }
 
+        public int SelectOption(Player actingPlayer, params List<string>[] list)
+        {
+            //_actingPlayer = actingPlayer;
+            //List<string> options = new List<string>();
+            //foreach (List<string> option in list)
+            //{
+            //    if (option.Count == 3)
+            //        options.Add(
+            //}
+            //SelectOption_Input();
+            //return int_input;
+            return 1;
+        }
+
         protected virtual void SelectOption_Input()
         {
             int selection;
