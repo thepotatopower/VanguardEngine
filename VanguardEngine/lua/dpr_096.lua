@@ -9,7 +9,6 @@ function RegisterAbilities()
 	ability1.SetTrigger("Trigger")
 	ability1.SetCost("Cost")
 	ability1.SetCanFullyResolve("CanFullyResolve")
-	ability1.SetCondition("Condition")
 	ability1.SetActivation("Activation")
 end
 

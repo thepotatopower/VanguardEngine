@@ -720,8 +720,11 @@ namespace VanguardEngine
                 AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
             else
                 AddAbilityTiming(Activation.PlacedOnRCOtherThanFromHand, player1._playerID, player1.GetLastPlacedOnRCOtherThanFromHand(), player1.IsAlchemagic());
-            if (sc == 2)
-                AddAbilityTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetLastPlacedOnRCFromPrison(), player1.IsAlchemagic());
+            if (free)
+            {
+                foreach (Card card in player1.GetLastPlacedOnRCFromPrison())
+                    AddAbilityTiming(Activation.PlacedOnRCFromPrison, player1._playerID, card);
+            }
             player1.DoneCalling();
             return lastPlacedOnRC;
         }
@@ -1083,19 +1086,19 @@ namespace VanguardEngine
             _player2.Resist(tempID, abilityID);
         }
 
-        public void AddAbilitiesToQueue(Player player1)
+        public void AddAbilitiesToQueue(Player player)
         {
             List<Card> cards = new List<Card>();
             List<Ability> abilities = new List<Ability>();
             AbilityTiming abilityTiming;
             List<AbilityTimingCount> abilityQueue = null;
-            if (_player1 == player1)
+            if (_player1 == player)
                 abilityQueue = _player1AbilityQueue;
-            else if (_player2 == player1)
+            else if (_player2 == player)
                 abilityQueue = _player2AbilityQueue;
             foreach (int activation in _abilityTimings.GetActivations())
             {
-                abilityTiming = _abilityTimings.GetAbilityTiming(activation, player1._playerID);
+                abilityTiming = _abilityTimings.GetAbilityTiming(activation, player._playerID);
                 if (abilityTiming == null)
                     continue;
                 foreach (int key in abilityTiming.GetTimingCounts().Keys)
@@ -1103,24 +1106,24 @@ namespace VanguardEngine
                     for (int i = 1; i <= abilityTiming.GetTimingCounts()[key]; i++)
                     {
                         cards.Clear();
-                        cards.Add(player1.GetTrigger(C.Player));
+                        cards.Add(player.GetTrigger(C.Player));
                         abilities.AddRange(_abilities.GetAbilities(activation, cards, new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetActiveUnits(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetHand(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetDrop(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetSoul(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetOverloadedCircles(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetActiveUnits(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetHand(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetDrop(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetSoul(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetOverloadedCircles(), new Tuple<int, int>(key, i)));
                         cards.Clear();
-                        foreach (Card card in player1.GetGC())
+                        foreach (Card card in player.GetGC())
                         {
-                            if (card.originalOwner == player1._playerID)
+                            if (card.originalOwner == player._playerID)
                                 cards.Add(card);
                         }
                         abilities.AddRange(_abilities.GetAbilities(activation, cards, new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetPlayerOrder(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetBind(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetRemoved(), new Tuple<int, int>(key, i)));
-                        abilities.AddRange(_abilities.GetAbilities(activation, player1.GetArms(player1.Vanguard().tempID), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetPlayerOrder(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetBind(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetRemoved(), new Tuple<int, int>(key, i)));
+                        abilities.AddRange(_abilities.GetAbilities(activation, player.GetArms(player.Vanguard().tempID), new Tuple<int, int>(key, i)));
                         foreach (AbilityTimingCount ability in abilityTiming.GetActivatedAbilities(key))
                         {
                             if (ability.timingCount.Item1 == key && ability.timingCount.Item2 == i && abilities.Contains(ability.ability))
@@ -1368,12 +1371,12 @@ namespace VanguardEngine
                 if (selection == 1)
                 {
                     CounterBlast(player1, player2, 1, 1);
-                    SuperiorCall(player1, player2, cards, 2, 0, null, false, true, true, false);
+                    SuperiorCall(player1, player2, cards, 2, 2, null, false, true, true, false);
                 }
                 else if (selection == 2)
                 {
                     SoulBlast(player1, player2, player1.GetSoul(), 1, 1);
-                    SuperiorCall(player1, player2, cards, 1, 0, null, false, true, true, false);
+                    SuperiorCall(player1, player2, cards, 1, 1, null, false, true, true, false);
                 }
             }
         }
@@ -1428,7 +1431,7 @@ namespace VanguardEngine
             List<AbilityTimingCount> canActivate = new List<AbilityTimingCount>();
             foreach (AbilityTimingCount ability in abilities)
             {
-                if (ability.ability.CanActivate() && ability.ability.CanPayCost())
+                if (ability.ability.GetPlayer1() == player && ability.ability.CanActivate() && ability.ability.CanPayCost())
                     canActivate.Add(ability);
             }
             if (canActivate.Count == 0)
@@ -1574,7 +1577,7 @@ namespace VanguardEngine
                 Snapshot abilitySnapshot = null;
                 if (_currentAbility != null)
                     abilitySnapshot = player1.GetSnapshot(_currentAbility.GetCard().tempID);
-                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot);
+                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot);
                 if (!actionLogs.ContainsKey(Location.SoulBlasted))
                     actionLogs[Location.SoulBlasted] = new List<ActionLog>();
                 ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
@@ -1601,7 +1604,7 @@ namespace VanguardEngine
                 player = _player2;
             if (_currentAbility != null)
                 abilitySnapshot = player.GetSnapshot(_currentAbility.GetCard().tempID);
-            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot, relevantSnapshots);
+            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot, relevantSnapshots);
             if (!actionLogs.ContainsKey(Location.SoulBlasted))
                 actionLogs[Location.SoulBlasted] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(playerID, snapshot);
@@ -1774,7 +1777,7 @@ namespace VanguardEngine
                 AddAbilityTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
             }
             Card card = _player1.GetCard(tempID);
-            Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, card.name, -1, card.id, -1, null);
+            Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, null);
             if (!actionLogs.ContainsKey(Location.PlayedOrdersThisTurn))
                 actionLogs[Location.PlayedOrdersThisTurn] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
@@ -1979,7 +1982,7 @@ namespace VanguardEngine
             ability.Activate(Activation.OnSing, null);
             player.Flip(selectedCards, false);
             player.MyStates.AddUntilEndOfTurnState(PlayerState.VanguardHasSungSongThisTurn);
-            Snapshot snapshot = new Snapshot(ability.GetCard().tempID, -1, -1, -1, ability.GetCard().name, -1, ability.GetCard().id, -1, null);
+            Snapshot snapshot = new Snapshot(ability.GetCard().tempID, -1, -1, -1, -1, -1, ability.GetCard().name, -1, ability.GetCard().id, -1, null);
             if (!actionLogs.ContainsKey(Location.SungThisTurn))
                 actionLogs[Location.SungThisTurn] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(player._playerID, snapshot);

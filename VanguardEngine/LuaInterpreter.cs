@@ -5451,6 +5451,8 @@ namespace VanguardEngine
                     continue;
                 if (_movedFrom.Count > 0 && !_movedFrom.Contains(snapshot.previousLocation))
                     continue;
+                if (_movedTo.Contains(Location.Player) && snapshot.ownerOfLocation != _player1._playerID)
+                    continue;
                 cards.Add(_player1.GetCard(snapshot.tempID));
             }
             return cards;
@@ -6450,6 +6452,7 @@ namespace VanguardEngine
         public const int SoulBlasted = 73;
         public const int SungThisTurn = 74;
         public const int EnemyFrontRow = 75;
+        public const int Player = 76;
     }
 
     class Query

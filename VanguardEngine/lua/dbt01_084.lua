@@ -1,59 +1,33 @@
--- Cardinal Noid, Routis
-
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on place
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnVC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
+	-- cont
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.Cont)
+	ability2.SetLocation(l.RC)
+	ability2.SetActivation("Cont")
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Deck, q.Other, o.World, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function Condition()
+	return obj.Exists({q.Location, l.Deck, q.Other, o.World, q.Count, 1})
+end
+
+function Activation()
+	obj.Search({q.Location, l.Deck, q.Other, o.World, q.Count, 1, q.Min, 0})
+end
+
+function Cont()
+	if obj.IsAttackingUnit() or obj.IsBooster() and (obj.IsDarkNight() or obj.IsAbyssalDarkNight()) then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 2000, p.Continuous)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnVC, p.HasPrompt, p.IsMandatory
-	elseif n == 2 then
-		return a.Cont, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.LastPlacedOnVC() and obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Search(1)
-		obj.Shuffle()
-	elseif n == 2 then
-		if (obj.IsAttackingUnit() or obj.IsBooster()) and (obj.IsDarkNight() or obj.IsAbyssalDarkNight()) then
-			obj.SetAbilityPower(2, 2000)
-		end
-	end
-	return 0
 end

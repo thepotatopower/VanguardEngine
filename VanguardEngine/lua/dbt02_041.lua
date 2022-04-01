@@ -1,50 +1,29 @@
--- Whimsical Machine Beast, Bugmotor
+-- 奇想機獣 バグモーター
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.RC)
+	ability1.SetCondition("Condition")
+	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
+function Condition()
+	return not obj.Exists({q.Location, l.PlayerPrisoners, q.Count, 2})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerPrisoners, q.Count, 1, q.Other, o.OrLess
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This, q.Other, o.Standing, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.EnemyDrop, q.Other, o.Unit, q.Count, 1
-	end
+function Cost(check)
+	if check then return obj.CanRest({q.Other, o.This}) end
+	obj.Rest({q.Other, o.This})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnACT, p.HasPrompt, p.Rest, 2
-	end
+function CanFullyResolve()
+	return obj.HasPrison() and obj.Exists({q.Location, l.EnemyDrop})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.HasPrison() and obj.Exists(3) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.ChooseImprison(3)
-	end
-	return 0
+function Activation()
+	obj.ChooseImprison({q.Location, l.EnemyDrop, q.Other, o.Unit, q.Count, 1})
 end

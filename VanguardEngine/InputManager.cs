@@ -654,6 +654,7 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
         {
+            intlist_input.Clear();
             int trueMin = min;
             List<int> temporaryList = new List<int>();
             _query = query;
@@ -758,7 +759,13 @@ namespace VanguardEngine
                     _max = count;
                     _min = min;
                 }
-                SelectFromList_Input();
+                if (count == min && cards.Count == count)
+                {
+                    foreach (Card card in cards)
+                        intlist_input.Add(card.tempID);
+                }
+                else
+                    SelectFromList_Input();
             }
             intlist_input.AddRange(temporaryList);
             foreach (int tempID in intlist_input)

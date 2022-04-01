@@ -408,62 +408,62 @@ namespace VanguardEngine
             List<Card> cards = new List<Card>();
             List<Card> cards2 = new List<Card>();
             _clientNumber = clientNumber;
-            _player1Hand = new Hand(this);
-            _player2Hand = new Hand(this);
-            _player1Deck = new Deck(this);
-            _player2Deck = new Deck(this);
-            _player1Drop = new Drop(this);
-            _player2Drop = new Drop(this);
-            _player1Damage = new Damage(this);
-            _player2Damage = new Damage(this);
-            _player1Bind = new Bind(this);
-            _player2Bind = new Bind(this);
-            _player1Trigger = new TriggerZone(this);
-            _player2Trigger = new TriggerZone(this);
-            _player1Order = new Order(this);
-            _player2Order = new Order(this);
-            _player1OrderArea = new OrderArea(this);
-            _player2OrderArea = new OrderArea(this);
-            _player1RideDeck = new RideDeck(this);
-            _player2RideDeck = new RideDeck(this);
-            _player1Revealed = new PseudoZone(this);
-            _player2Revealed = new PseudoZone(this);
-            _player1Looking = new PseudoZone(this);
-            _player2Looking = new PseudoZone(this);
-            _player1Prisoners = new PseudoZone(this);
-            _player2Prisoners = new PseudoZone(this);
-            _removed = new Zone(this);
-            _GC = new GuardianCircle(this);
+            _player1Hand = new Hand(this, 1);
+            _player2Hand = new Hand(this, 2);
+            _player1Deck = new Deck(this, 1);
+            _player2Deck = new Deck(this, 2);
+            _player1Drop = new Drop(this, 1);
+            _player2Drop = new Drop(this, 2);
+            _player1Damage = new Damage(this, 1);
+            _player2Damage = new Damage(this, 2);
+            _player1Bind = new Bind(this, 1);
+            _player2Bind = new Bind(this, 2);
+            _player1Trigger = new TriggerZone(this, 1);
+            _player2Trigger = new TriggerZone(this, 2);
+            _player1Order = new Order(this, 1);
+            _player2Order = new Order(this, 2);
+            _player1OrderArea = new OrderArea(this, 1);
+            _player2OrderArea = new OrderArea(this, 2);
+            _player1RideDeck = new RideDeck(this, 1);
+            _player2RideDeck = new RideDeck(this, 2);
+            _player1Revealed = new PseudoZone(this, 1);
+            _player2Revealed = new PseudoZone(this, 2);
+            _player1Looking = new PseudoZone(this, 1);
+            _player2Looking = new PseudoZone(this, 2);
+            _player1Prisoners = new PseudoZone(this, 1);
+            _player2Prisoners = new PseudoZone(this, 2);
+            _removed = new Zone(this, -1);
+            _GC = new GuardianCircle(this, -1);
             foreach (Card card in tokens)
                 _tokens.Add(card);
             for (int i = 1; i < 14; i++)
             {
                 if (i == FL.PlayerFrontLeft)
-                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this, 1);
                 else if (i == FL.PlayerBackLeft)
-                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this, 1);
                 else if (i == FL.PlayerVanguard)
-                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this);
+                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this, 1);
                 else if (i == FL.PlayerBackCenter)
-                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this, 1);
                 else if (i == FL.PlayerFrontRight)
-                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this, 1);
                 else if (i == FL.PlayerBackRight)
-                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this, 1);
                 else if (i == FL.EnemyFrontLeft)
-                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.RightColumn, i, this, 2);
                 else if (i == FL.EnemyBackLeft)
-                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.RightColumn, i, this, 2);
                 else if (i == FL.EnemyVanguard)
-                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this);
+                    _circles[i] = new VanguardCircle(0, FL.MiddleColumn, i, this, 2);
                 else if (i == FL.EnemyBackCenter)
-                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.MiddleColumn, i, this, 2);
                 else if (i == FL.EnemyFrontRight)
-                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this);
+                    _circles[i] = new RearguardCircle(0, FL.LeftColumn, i, this, 2);
                 else if (i == FL.EnemyBackRight)
-                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this);
+                    _circles[i] = new RearguardCircle(1, FL.LeftColumn, i, this, 2);
                 else if (i == 7)
-                    _circles[i] = new RearguardCircle(100, 100, i, this);
+                    _circles[i] = new RearguardCircle(100, 100, i, this, -1);
             }
             cards.Clear();
             cards2.Clear();
@@ -584,8 +584,8 @@ namespace VanguardEngine
                 }
             }
             _cardCatalog[newID] = token;
-            _cardLocations[newID] = new Tuple<Zone, int>(new Zone(this), -1);
-            _previousCardLocations[newID] = new Tuple<Zone, int>(new Zone(this), -1);
+            _cardLocations[newID] = new Tuple<Zone, int>(new Zone(this, -1), -1);
+            _previousCardLocations[newID] = new Tuple<Zone, int>(new Zone(this, -1), -1);
             return newID;
         }
 
@@ -695,14 +695,14 @@ namespace VanguardEngine
         protected Arm _leftArm;
         protected Arm _rightArm;
 
-        public Circle(int row, int column, int FL, Field field) : base(field)
+        public Circle(int row, int column, int FL, Field field, int _owner) : base(field, _owner)
         {
             _row = row;
             _column = column;
-            _soul = new Soul(field, FL);
+            _soul = new Soul(field, FL, _owner);
             _FL = FL;
-            _leftArm = new Arm(field);
-            _rightArm = new Arm(field);
+            _leftArm = new Arm(field, _owner);
+            _rightArm = new Arm(field, _owner);
         }
 
         protected override void UpdateLocation(Zone zone, int tempID)
@@ -802,7 +802,7 @@ namespace VanguardEngine
 
     public class Arm : Zone
     {
-        public Arm(Field field) : base(field)
+        public Arm(Field field, int _owner) : base(field, _owner)
         {
             location = Location.VC;
         }
@@ -822,10 +822,10 @@ namespace VanguardEngine
 
     public class RearguardCircle : Circle
     {
-        public RearguardCircle(int row, int column, int FL, Field field) : base(row, column, FL, field)
+        public RearguardCircle(int row, int column, int FL, Field field, int _owner) : base(row, column, FL, field, _owner)
         {
             location = Location.RC;
-            _soul = new OriginalDress(field, FL);
+            _soul = new OriginalDress(field, FL, _owner);
         }
 
         protected override List<Card> AssociatedCards()
@@ -887,7 +887,7 @@ namespace VanguardEngine
 
     public class VanguardCircle : Circle
     {
-        public VanguardCircle(int row, int column, int FL, Field field) : base(row, column, FL, field)
+        public VanguardCircle(int row, int column, int FL, Field field, int _owner) : base(row, column, FL, field, _owner)
         {
             location = Location.VC;
         }
@@ -895,7 +895,7 @@ namespace VanguardEngine
 
     public class Soul : Zone
     {
-        public Soul(Field field, int FL) : base(field)
+        public Soul(Field field, int FL, int _owner) : base(field, _owner)
         {
             location = Location.Soul;
             _FL = FL;
@@ -914,7 +914,7 @@ namespace VanguardEngine
 
     public class OriginalDress : Soul
     {
-        public OriginalDress(Field field, int FL) : base(field, FL)
+        public OriginalDress(Field field, int FL, int _owner) : base(field, FL, _owner)
         {
             location = Location.originalDress;
             _FL = FL;
@@ -1440,10 +1440,12 @@ namespace VanguardEngine
         protected int location = -1;
         protected int _FL = -1;
         protected bool modified = false;
+        protected int owner = -1;
 
-        public Zone(Field field)
+        public Zone(Field field, int _owner)
         {
             _field = field;
+            owner = _owner;
         }
 
         public void Initialize(List<Card> cards)
@@ -1629,6 +1631,11 @@ namespace VanguardEngine
             return _FL;
         }
 
+        public int GetOwner()
+        {
+            return owner;
+        }
+
         public List<Card> OverloadedUnits
         {
             get => _overloadedCards;
@@ -1647,7 +1654,7 @@ namespace VanguardEngine
 
     public class PseudoZone : Zone
     {
-        public PseudoZone(Field field) : base(field)
+        public PseudoZone(Field field, int _owner) : base(field, _owner)
         {
 
         }
@@ -1671,7 +1678,7 @@ namespace VanguardEngine
 
     public class Deck : Zone
     {
-        public Deck(Field field) : base(field)
+        public Deck(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Deck;
         }
@@ -1693,7 +1700,7 @@ namespace VanguardEngine
 
     public class RideDeck : Zone
     {
-        public RideDeck(Field field) : base(field)
+        public RideDeck(Field field, int _owner) : base(field, _owner)
         {
             location = Location.RideDeck;
         }
@@ -1708,7 +1715,7 @@ namespace VanguardEngine
 
     public class Drop : Zone
     {
-        public Drop(Field field) : base(field)
+        public Drop(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Drop;
         }
@@ -1727,14 +1734,14 @@ namespace VanguardEngine
         Dictionary<Card, OriginalDress> _originalDresses = new Dictionary<Card, OriginalDress>();
         Card cardBeingRemoved = null;
 
-        public GuardianCircle(Field field) : base(field)
+        public GuardianCircle(Field field, int _owner) : base(field, _owner)
         {
             location = Location.GC;
         }
 
         protected override void HandleAssociatedCards(Card card, List<Card> associatedCards)
         {
-            _originalDresses[card] = new OriginalDress(_field, _FL);
+            _originalDresses[card] = new OriginalDress(_field, _FL, owner);
             foreach (Card c in associatedCards)
             {
                 _originalDresses[card].Add(c);
@@ -1785,7 +1792,7 @@ namespace VanguardEngine
 
     public class Bind : Zone
     {
-        public Bind(Field field) : base(field)
+        public Bind(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Bind;
         }
@@ -1800,7 +1807,7 @@ namespace VanguardEngine
 
     public class Hand : Zone
     {
-        public Hand(Field field) : base(field)
+        public Hand(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Hand;
         }
@@ -1815,7 +1822,7 @@ namespace VanguardEngine
 
     public class Damage : Zone
     {
-        public Damage(Field field) : base(field)
+        public Damage(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Damage;
         }
@@ -1830,7 +1837,7 @@ namespace VanguardEngine
 
     public class TriggerZone : Zone
     {
-        public TriggerZone(Field field) : base(field)
+        public TriggerZone(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Trigger;
         }
@@ -1845,7 +1852,7 @@ namespace VanguardEngine
 
     public class Order : Zone
     {
-        public Order(Field field) : base(field)
+        public Order(Field field, int _owner) : base(field, _owner)
         {
             location = Location.Order;
         }
@@ -1860,7 +1867,7 @@ namespace VanguardEngine
 
     public class OrderArea : Zone
     {
-        public OrderArea(Field field) : base(field)
+        public OrderArea(Field field, int _owner) : base(field, _owner)
         {
             location = Location.OrderArea;
         }
@@ -1992,7 +1999,9 @@ namespace VanguardEngine
     public class Snapshot
     {
         public readonly int location;
+        public readonly int ownerOfLocation;
         public readonly int previousLocation;
+        public readonly int ownerOfPreviousLocation;
         public readonly int circle;
         public readonly string name;
         public readonly int fieldID;
@@ -2002,11 +2011,13 @@ namespace VanguardEngine
         public readonly Snapshot abilitySource;
         public readonly List<Snapshot> relevantSnapshots = new List<Snapshot>();
 
-        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
         {
             tempID = _tempID;
             location = _location;
+            ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
+            ownerOfPreviousLocation = _ownerOfPreviousLocation;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
@@ -2014,11 +2025,13 @@ namespace VanguardEngine
             grade = _grade;
         }
 
-        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource)
         {
             tempID = _tempID;
             location = _location;
+            ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
+            ownerOfPreviousLocation = _ownerOfPreviousLocation;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
@@ -2027,11 +2040,13 @@ namespace VanguardEngine
             abilitySource = _abilitySource;
         }
 
-        public Snapshot(int _tempID, int _location, int _previousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource, List<Snapshot> _relevantSnapshots)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource, List<Snapshot> _relevantSnapshots)
         {
             tempID = _tempID;
             location = _location;
+            ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
+            ownerOfPreviousLocation = _ownerOfPreviousLocation;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;

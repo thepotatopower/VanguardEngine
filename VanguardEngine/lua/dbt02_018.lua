@@ -1,60 +1,33 @@
--- Cardinal Noid, Thumborino
+-- 柩機の兵 サンボリーノ
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnAttack)
+	ability1.SetLocation(l.RC)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
+	ability1.SetProperty(p.NotMandatory)
 end
 
-function NumberOfParams()
-	return 3
+function Trigger()
+	return obj.IsBooster() and obj.Exists({q.Location, l.PlayerUnits, q.Name, obj.GetNameFromCardID("dbt01_t01"), q.UnitType, u.Token, q.Other, o.Attacking})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Name, "Shadow Army", q.UnitType, u.Token, q.Other, o.Attacking, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Column, 0
-	end
+function Condition()
+	return obj.IsSameZone()
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnAttack, p.HasPrompt
-	elseif n == 2 then
-		return a.OnBattleEnds, p.HasPrompt, p.IsMandatory, p.ResultOf, 1
-	end
+function Activation()
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 15000, p.UntilEndOfTurn)
+	local timedTrigger = GiveAbility(GetID(), GetID())
+	timedTrigger.SetTiming(a.OnBattleEnds)
+	timedTrigger.SetActivation("TimedTrigger")
+	timedTrigger.SetResetTiming(p.UntilEndOfBattle)
+	timedTrigger.StoreMultiple(obj.GetIDs({q.Other, o.ThisFieldID}, {q.Location, l.PlayerUnits, q.Other, o.Attacking}))
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() and obj.IsBooster() and obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsBooster() and obj.Activated(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddBattleOnlyPower(2, 15000)
-	elseif n == 2 then
-		obj.Inject(3, q.Column, obj.GetColumn())
-		obj.Retire(3)
-		obj.Draw(1)
-	end
-	return 0
+function TimedTrigger()
+	obj.Retire({q.Location, l.Stored})
 end

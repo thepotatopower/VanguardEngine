@@ -1,62 +1,36 @@
--- Aurora Battle Princess, Perio Turquoise
+-- 極光戦姫 ペリオ・ターコイズ
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- cont
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.RC)
+	ability1.SetActivation("Cont")
+	-- on place
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.PlacedOnRCFromPrison)
+	ability2.SetLocation(l.FrontRowRC)
+	ability2.SetTrigger("Trigger")
+	ability2.SetCondition("Condition")
+	ability2.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 4
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerPrisoners, q.Count, 2
-	elseif n == 2 then
-		return q.Location, l.LastCalledFromPrison, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 4 then
-		return q.Location, l.LastCalledFromPrison
+function Cont()
+	if obj.IsPlayerTurn() and obj.GetNumberOf({q.Location, l.PlayerPrisoners}) >= 2 then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.Cont, p.IsMandatory
-	elseif n == 2 then
-		return a.PlacedOnRCFromPrison, p.IsMandatory
-	end
+function Trigger()
+	return obj.Exists({q.Location, l.EnemyUnits, q.Other, o.Applicable, q.Other, o.Enemy})
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsFrontRowRearguard() and obj.Exists(2) then
-			return true
-		end
-	end
-	return false
+function Condition()
+	return obj.Exists({q.Location, l.EnemyUnits, q.Other, o.Applicable, q.Other, o.Enemy})
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.IsPlayerTurn() and obj.Exists(1) then
-			obj.SetAbilityPower(3, 5000)
-		end
-	elseif n == 2 then
-		obj.AddTempPower(4, -5000)
-	end
-	return 0
+function Activation()
+	obj.AddCardValue({q.Location, l.EnemyUnits, q.Other, o.Applicable, q.Other, o.Enemy}, cs.BonusPower, -5000, p.UntilEndOfTurn)
 end

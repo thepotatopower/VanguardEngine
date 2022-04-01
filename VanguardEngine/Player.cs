@@ -335,7 +335,7 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             if (card != null)
-                return new Snapshot(card.tempID, GetLocation(card), GetPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id, Grade(card.tempID));
+                return new Snapshot(card.tempID, GetLocation(card), GetOwnerOfLocation(card), GetPreviousLocation(card), GetOwnerOfPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id, Grade(card.tempID));
             return null;
         }
 
@@ -3782,10 +3782,26 @@ namespace VanguardEngine
                 return -1;
         }
 
+        public int GetOwnerOfLocation(Card card)
+        {
+            if (_field.CardLocations[card.tempID] != null)
+                return _field.CardLocations[card.tempID].Item1.GetOwner();
+            else
+                return -1;
+        }
+
         public int GetPreviousLocation(Card card)
         {
             if (_field.PreviousCardLocations[card.tempID] != null)
                 return _field.PreviousCardLocations[card.tempID].Item1.GetLocation();
+            else
+                return -1;
+        }
+
+        public int GetOwnerOfPreviousLocation(Card card)
+        {
+            if (_field.PreviousCardLocations[card.tempID] != null)
+                return _field.PreviousCardLocations[card.tempID].Item1.GetOwner();
             else
                 return -1;
         }
