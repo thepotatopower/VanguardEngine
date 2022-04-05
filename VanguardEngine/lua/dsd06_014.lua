@@ -36,18 +36,18 @@ end
 
 function OnAttackTrigger()
 	if obj.Exists({q.Location, l.MyArmedUnit, q.Other, o.Attacking}) then
-		obj.Track({q.Location, l.MyArmedUnit, q.Other, o.Attacking})
+		obj.StoreIDs({q.Location, l.MyArmedUnit, q.Other, o.Attacking})
 		return true
 	end
 	return false
 end
 
 function OnAttackCondition()
-	return obj.Exists({q.Location, l.Tracking, q.Other, o.SameZone})
+	return obj.Exists({q.Location, l.Stored, q.Other, o.SameZone})
 end
 
 function OnAttack()
-	obj.AddCardValue({q.Location, l.Tracking, q.Other, o.SameZone}, cs.BonusPower, 10000, p.UntilEndOfBattle)
+	obj.AddCardValue({q.Location, l.Stored, q.Other, o.SameZone}, cs.BonusPower, 10000, p.UntilEndOfBattle)
 	local timedTrigger = NewAbility(GetID())
 	timedTrigger.SetDescription(1)
 	timedTrigger.SetTiming(a.OnBattleEnds)

@@ -42,14 +42,16 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnAbilityActivated;
         public EventHandler<CardEventArgs> OnFree;
         public EventHandler<CardEventArgs> OnAlchemagic;
+        public NameKeys nameKeys = new NameKeys();
         int _clientNumber = 0;
         string _connectionString;
+        string _namesPath;
         public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
         int _initialDamage = 2;
-        int _initialSoul = 0;
+        int _initialSoul = 7;
         int _initialDrop = 0;
 
-        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, int clientNumber)
+        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, string namesPath, int clientNumber)
         {
             //if (File.Exists("enginelog.txt"))
             //{
@@ -60,6 +62,9 @@ namespace VanguardEngine
             //}
             _clientNumber = clientNumber;
             _connectionString = connectionString;
+            _namesPath = namesPath;
+            LoadCards.LoadNames(namesPath, nameKeys);
+            //LoadConfigFile(namesPath);
             List<Card> deck1;
             List<Card> deck2;
             Field field = new Field();
@@ -129,9 +134,10 @@ namespace VanguardEngine
             }
         }
 
-        public string LoadName(string name)
+        public string LoadName(string key)
         {
-            return ConfigurationManager.AppSettings.Get(name);
+            //return ConfigurationManager.AppSettings.Get(name);
+            return nameKeys.GetName(key);
         }
 
         public Card LoadCard(string cardID)
@@ -221,8 +227,8 @@ namespace VanguardEngine
             }
             for (int i = 0; i < _initialSoul; i++)
             {
-                player1.SoulCharge(10);
-                player2.SoulCharge(10);
+                player1.SoulCharge(1);
+                player2.SoulCharge(1);
             }
             for (int i = 0; i < _initialDrop; i++)
             {
@@ -569,11 +575,11 @@ namespace VanguardEngine
                 else if (selection == MainPhaseAction.ActivateAbility)
                 {
                     List<Ability> ACTs = new List<Ability>();
-                    foreach (Ability ability in GetACTAbilities(player1))
+                    foreach (AbilityTimingCount ability in GetACTAbilities(player1))
                     {
-                        if (ability.GetCard().tempID == _inputManager.int_input2)
+                        if (ability.ability.GetCard().tempID == _inputManager.int_input2)
                         {
-                            ACTs.Add(ability);
+                            ACTs.Add(ability.ability);
                         }
                     }
                     if (ACTs.Count > 1)
@@ -588,11 +594,11 @@ namespace VanguardEngine
                     }
                     else if (ACTs.Count == 1)
                         ActivateACT(player1, ACTs[0]);
-                    foreach (Ability ability in GetAvailableOrders(player1, false))
+                    foreach (AbilityTimingCount ability in GetAvailableOrders(player1, false))
                     {
-                        if (ability.GetCard().tempID == _inputManager.int_input2)
+                        if (ability.ability.GetCard().tempID == _inputManager.int_input2)
                         {
-                            ActivateOrder(player1, ability, true, true);
+                            ActivateOrder(player1, ability.ability, true, true);
                             break;
                         }
                     }
@@ -600,10 +606,10 @@ namespace VanguardEngine
                 else if (selection == MainPhaseAction.ActivateAbilityFromDrop)
                 {
                     List<Ability> ACTs = new List<Ability>();
-                    foreach (Ability ability in GetACTAbilities(player1))
+                    foreach (AbilityTimingCount ability in GetACTAbilities(player1))
                     {
-                        if (player1.GetDrop().Exists(card => card.tempID == ability.GetID()))
-                            ACTs.Add(ability);
+                        if (player1.GetDrop().Exists(card => card.tempID == ability.ability.GetID()))
+                            ACTs.Add(ability.ability);
                     }
                     int selectedAbility = _inputManager.SelectAbility(player1, ACTs);
                     if (selectedAbility != ACTs.Count)
@@ -614,10 +620,10 @@ namespace VanguardEngine
                 else if (selection == MainPhaseAction.ActivateAbilityFromSoul)
                 {
                     List<Ability> ACTs = new List<Ability>();
-                    foreach (Ability ability in GetACTAbilities(player1))
+                    foreach (AbilityTimingCount ability in GetACTAbilities(player1))
                     {
-                        if (player1.GetSoul().Exists(card => card.tempID == ability.GetID()))
-                            ACTs.Add(ability);
+                        if (player1.GetSoul().Exists(card => card.tempID == ability.ability.GetID()))
+                            ACTs.Add(ability.ability);
                     }
                     int selectedAbility = _inputManager.SelectAbility(player1, ACTs);
                     if (selectedAbility != ACTs.Count)
@@ -909,11 +915,11 @@ namespace VanguardEngine
                         }
                         else if (selection == GuardStepAction.BlitzOrder)
                         {
-                            foreach (Ability ability in GetAvailableOrders(player2, true))
+                            foreach (AbilityTimingCount ability in GetAvailableOrders(player2, true))
                             {
-                                if (ability.GetCard().tempID == _inputManager.int_input2)
+                                if (ability.ability.GetCard().tempID == _inputManager.int_input2)
                                 {
-                                    ActivateOrder(player2, ability, true, true);
+                                    ActivateOrder(player2, ability.ability, true, true);
                                     break;
                                 }
                             }
@@ -1166,21 +1172,21 @@ namespace VanguardEngine
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetDeck(), null));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetHand(), null));
             abilities.AddRange(_abilities.GetAbilities(Activation.Cont, player2.GetSoul(), null));
-            foreach (Card card in player1.GetAllUnitsOnField())
-            {
-                if (player1.GetGivenAbility(card.tempID) != null)
-                {
-                    foreach (Tuple<int, int> tuple in player1.GetGivenAbility(card.tempID))
-                    {
-                        givenAbility = _abilities.GetAbility(tuple.Item1, tuple.Item2);
-                        if (givenAbility.GetActivations.Contains(Activation.Cont))
-                        {
-                            givenAbility.CheckConditionAsGiven(card, Activation.Cont, null);
-                            givenAbility.ActivateAsGiven(card);
-                        }
-                    }
-                }
-            }
+            //foreach (Card card in player1.GetAllUnitsOnField())
+            //{
+            //    if (player1.GetGivenAbility(card.tempID) != null)
+            //    {
+            //        foreach (Tuple<int, int> tuple in player1.GetGivenAbility(card.tempID))
+            //        {
+            //            givenAbility = _abilities.GetAbility(tuple.Item1, tuple.Item2);
+            //            if (givenAbility.GetActivations.Contains(Activation.Cont))
+            //            {
+            //                givenAbility.CheckConditionAsGiven(card, Activation.Cont, null);
+            //                givenAbility.ActivateAsGiven(card);
+            //            }
+            //        }
+            //    }
+            //}
             for (int i = 0; i < 2; i++)
             {
                 foreach (Ability ability in abilities)
@@ -1193,7 +1199,7 @@ namespace VanguardEngine
             player2.UpdateRecordedValues();
         }
 
-        public List<Ability> GetAvailableOrders(Player player, bool blitz)
+        public List<AbilityTimingCount> GetAvailableOrders(Player player, bool blitz)
         {
             List<Ability> abilities = new List<Ability>();
             if (blitz)
@@ -1213,10 +1219,21 @@ namespace VanguardEngine
             }
             foreach (Ability ability in abilities)
             {
-                if (ability.CanPayCost())
+                if (ability.CanPayCost(-1, null))
                     available.Add(ability);
             }
-            return available;
+            return ConvertToAbilityTimingCounts(available);
+        }
+
+        public List<AbilityTimingCount> ConvertToAbilityTimingCounts(List<Ability> abilities)
+        {
+            List<AbilityTimingCount> abilityTimingCounts = new List<AbilityTimingCount>();
+            foreach (Ability ability in abilities)
+            {
+                AbilityTimingCount abilityTimingCount = new AbilityTimingCount(ability, 0, new Tuple<int, int>(0, 0));
+                abilityTimingCounts.Add(abilityTimingCount);
+            }
+            return abilityTimingCounts;
         }
 
         public List<Card> GetAvailableOrders(Player player, List<Card> cards)
@@ -1233,7 +1250,7 @@ namespace VanguardEngine
 
         public void ChooseOrderToActivate(Player player1, bool blitz)
         {
-            List<Ability> abilities = GetAvailableOrders(player1, blitz);
+            List<AbilityTimingCount> abilities = GetAvailableOrders(player1, blitz);
             int selection;
             if (abilities.Count == 0)
                 return;
@@ -1241,7 +1258,7 @@ namespace VanguardEngine
             if (selection == abilities.Count)
                 return;
             else
-                ActivateOrder(player1, abilities[selection], true, true);
+                ActivateOrder(player1, abilities[selection].ability, true, true);
         }
 
         public void ActivateOrder(Player player, Card card)
@@ -1305,7 +1322,7 @@ namespace VanguardEngine
             }
         }
 
-        public List<Ability> GetACTAbilities(Player player)
+        public List<AbilityTimingCount> GetACTAbilities(Player player)
         {
             List<Ability> abilities = new List<Ability>();
             abilities.AddRange(_abilities.GetAbilities(Activation.OnACT, player.GetActiveUnits(), null));
@@ -1321,17 +1338,23 @@ namespace VanguardEngine
             //return canActivate;
             while (abilities.Exists(ability => !ability.CanActivate()))
                 abilities.Remove(abilities.Find(ability => !ability.CanActivate()));
-            return abilities;
+            List<AbilityTimingCount> abilityTimingCounts = new List<AbilityTimingCount>();
+            foreach (Ability ability in abilities)
+            {
+                AbilityTimingCount abilityTimingCount = new AbilityTimingCount(ability, 0, new Tuple<int, int>(0, 0));
+                abilityTimingCounts.Add(abilityTimingCount);
+            }
+            return abilityTimingCounts;
         }
 
         public void ChooseACTToActivate(Player player)
         {
-            List<Ability> abilities = GetACTAbilities(player);
+            List<AbilityTimingCount> abilities = GetACTAbilities(player);
             int selection = _inputManager.SelectAbility(player, abilities);
             if (selection == abilities.Count)
                 return;
             else
-                ActivateACT(player, abilities[selection]);
+                ActivateACT(player, abilities[selection].ability);
         }
 
         public void ActivateACT(Player player1, Ability ability)
@@ -1393,7 +1416,7 @@ namespace VanguardEngine
             List<AbilityTimingCount> canActivate = new List<AbilityTimingCount>();
             foreach (AbilityTimingCount ability in availableAbilities)
             {
-                if (ability.ability.CanActivate() && ability.ability.CanPayCost())
+                if (ability.ability.CanActivate() && ability.ability.CanPayCost(ability.activation, ability.timingCount))
                     canActivate.Add(ability);
             }
             if (canActivate.Count > 0)
@@ -1431,7 +1454,7 @@ namespace VanguardEngine
             List<AbilityTimingCount> canActivate = new List<AbilityTimingCount>();
             foreach (AbilityTimingCount ability in abilities)
             {
-                if (ability.ability.GetPlayer1() == player && ability.ability.CanActivate() && ability.ability.CanPayCost())
+                if (ability.ability.GetPlayer1() == player && ability.ability.CanActivate(ability.activation, ability.timingCount) && ability.ability.CanPayCost(ability.activation, ability.timingCount))
                     canActivate.Add(ability);
             }
             if (canActivate.Count == 0)
@@ -1455,7 +1478,7 @@ namespace VanguardEngine
                     args.card = canActivate[selection].ability.GetCard();
                     OnAbilityActivated(this, args);
                 }
-                canActivate[selection].ability.PayCost();
+                canActivate[selection].ability.PayCost(canActivate[selection].activation, canActivate[selection].timingCount);
                 _currentAbility = canActivate[selection].ability;
                 ThenNum = canActivate[selection].ability.Activate(canActivate[selection].activation, canActivate[selection].timingCount);
                 abilityActivated++;
@@ -1586,15 +1609,15 @@ namespace VanguardEngine
             return soulBlasted;
         }
 
-        public void GenerateActionLog(int playerID, Card card, List<Card> relevantCards)
+        public void GenerateActionLog(int location, int playerID, Card card, List<Card> relevantCards)
         {
             List<Snapshot> relevantSnapshots = new List<Snapshot>();
             foreach (Card c in relevantCards)
                 relevantSnapshots.Add(_player1.GetSnapshot(c.tempID));
-            GenerateActionLog(playerID, card, relevantSnapshots);
+            GenerateActionLog(location, playerID, card, relevantSnapshots);
         }
 
-        public void GenerateActionLog(int playerID, Card card, List<Snapshot> relevantSnapshots)
+        public void GenerateActionLog(int location, int playerID, Card card, List<Snapshot> relevantSnapshots)
         {
             Snapshot abilitySnapshot = null;
             Player player;
@@ -1605,10 +1628,10 @@ namespace VanguardEngine
             if (_currentAbility != null)
                 abilitySnapshot = player.GetSnapshot(_currentAbility.GetCard().tempID);
             Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot, relevantSnapshots);
-            if (!actionLogs.ContainsKey(Location.SoulBlasted))
-                actionLogs[Location.SoulBlasted] = new List<ActionLog>();
+            if (!actionLogs.ContainsKey(location))
+                actionLogs[location] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(playerID, snapshot);
-            actionLogs[Location.SoulBlasted].Add(actionLog);
+            actionLogs[location].Add(actionLog);
         }
 
         public void CounterCharge(Player player1, List<Card> canCC, int count)
@@ -2072,7 +2095,7 @@ namespace VanguardEngine
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
                 if (cards.Count > 0)
                 {
-                    GenerateActionLog(playerID, cards[0], temp);
+                    //GenerateActionLog(playerID, cards[0], temp);
                 }
             }
             else if (activation == Activation.PlacedOnVC)
@@ -2080,12 +2103,10 @@ namespace VanguardEngine
                 List<Snapshot> temp = new List<Snapshot>();
                 if (playerID == 1 && _player1.GetOverloadedCircles().Count > 0)
                     temp.Add(_player1.GetSnapshot(_player1.GetOverloadedCircles()[0].tempID));
-                else if (playerID == 2 && _player2.GetSoul().Count > 0)
+                else if (playerID == 2 && _player2.GetOverloadedCircles().Count > 0)
                     temp.Add(_player2.GetSnapshot(_player2.GetOverloadedCircles()[0].tempID));
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
             }
-            else if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())
-                abilityTimingData.additionalInfo = true;
             else
             {
                 if (cards != null)
@@ -2101,8 +2122,15 @@ namespace VanguardEngine
                     }
                 }
             }
+            if (activation == Activation.OnOrderPlayed && player.IsAlchemagic())
+                abilityTimingData.additionalInfo = true;
             if (player.PayingCost)
                 abilityTimingData.asCost = true;
+            if (activation == Activation.OnRetire && player.PayingCost)
+            {
+                foreach (Card card in cards)
+                    GenerateActionLog(Location.RetiredAsCost, player._playerID, card, new List<Card>());
+            }
             _abilityTimings.AddAbilityTiming(activation, playerID, abilityTimingData, append);
             if (playerID == 1)
                 AddAbilitiesToQueue(_player1);
@@ -2133,12 +2161,31 @@ namespace VanguardEngine
             nonTurnPlayer.CheckTimingPerformed();
         }
 
+        public int CheckArms(Player player)
+        {
+            bool performed = false;
+            List<Card> cards = player.GetArms(player.Vanguard().tempID);
+            foreach (Card card in cards)
+            {
+                if (!_abilities.CanArm(card.tempID, player.Vanguard().name))
+                {
+                    player.AddToDrop(card.tempID);
+                    performed = true;
+                }
+            }
+            if (performed)
+                return 1;
+            return 0;
+        }
+
         public int ResolveRuleActions()
         {
             int ruleActionPerformed = 0;
 
             ruleActionPerformed += _player1.ClearOverloadedCards();
             ruleActionPerformed += _player2.ClearOverloadedCards();
+            ruleActionPerformed += CheckArms(_player1);
+            ruleActionPerformed += CheckArms(_player2);
             //ruleActionPerformed += _player1.RetireGC();
             //ruleActionPerformed += _player2.RetireGC();
             //rule action for riding from soul onto empty VC
@@ -2187,8 +2234,8 @@ namespace VanguardEngine
         {
             if (cardsToArm.Count > 0)
             {
-                if (_abilities.CanArm(cardsToArm[0].tempID, _player1.Vanguard().name))
-                    player.Arm(_player1.Vanguard().tempID, cardsToArm[0].tempID);
+                if (_abilities.CanArm(cardsToArm[0].tempID, player.Vanguard().name))
+                    player.Arm(player.Vanguard().tempID, cardsToArm[0].tempID);
             }
         }
 
@@ -2462,5 +2509,28 @@ namespace VanguardEngine
             //    writer.WriteLine(output);
             //}
         }
+    }
+
+    public class NameKeys
+    {
+        Dictionary<string, string> _names = new Dictionary<string, string>();
+
+        public void InsertKey(string key, string name)
+        {
+            _names.Add(key, name);
+        }
+
+        public string GetName(string key)
+        {
+            if (_names.ContainsKey(key))
+                return _names[key];
+            return "";
+        }
+    }
+
+    public class NameKey
+    {
+        public string key;
+        public string name;
     }
 }

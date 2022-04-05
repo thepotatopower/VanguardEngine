@@ -10,7 +10,7 @@ function RegisterAbilities()
 	-- on retire from GC
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
-	ability2.SetTiming(a.OnPlayerRetired)
+	ability2.SetTiming(a.OnRetire)
 	ability2.SetMovedFrom(l.GC)
 	ability2.SetProperty(p.NotMandatory)
 	ability2.SetTrigger("OnRetireTrigger")

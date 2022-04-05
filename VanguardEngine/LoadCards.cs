@@ -56,6 +56,13 @@ namespace VanguardEngine
             sql.connectionString = connectionString;
             return sql.Search(query);
         }
+
+        public static void LoadNames(string nameString, NameKeys nameKeys)
+        {
+            SQLiteDataAccess sql = new SQLiteDataAccess();
+            sql.connectionString = nameString;
+            sql.LoadNames(nameKeys);
+        }
     }
 
     public class LoadCode

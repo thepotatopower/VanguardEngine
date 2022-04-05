@@ -25,7 +25,7 @@ function Activation()
 	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 2000, p.UntilEndOfTurn)
 	if obj.SoulCount() >= 7 and obj.GetNumberOf({q.Location, l.Selected}) > 0 then
 		local id = obj.GetID({q.Location, l.Selected})
-		local timedTrigger = NewAbility(id)
+		local timedTrigger = GiveAbility(GetID(), id)
 		timedTrigger.SetTiming(a.Cont)
 		timedTrigger.SetActivation("TimedTrigger")
 		timedTrigger.SetResetTarget(id)

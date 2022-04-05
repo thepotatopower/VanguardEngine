@@ -39,7 +39,7 @@ function OnPlaceCondition()
 end
 
 function OnPlace()
-	local group = obj.AddGroups({q.Location, l.Drop, q.Name, obj.GetNameFromCardID("dsd01_006")}, {q.Location, l.Drop, q.UnitType, u.overDress})
+	local group = obj.AddGroups({q.Location, l.Drop, q.Name, obj.GetNameFromCardID("dsd01_009")}, {q.Location, l.Drop, q.UnitType, u.overDress})
 	obj.Store(group)
 	obj.AddToOriginalDress({q.Location, l.Applicable}, {q.Location, l.Stored})
 end

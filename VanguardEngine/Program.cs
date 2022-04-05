@@ -26,11 +26,11 @@ namespace VanguardEngine
             //Console.WriteLine(r.Next(48));
             //Console.ReadLine();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("orfist.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("orfist.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
-            start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", 0);
+            start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", "Data Source=./names.db;Version=3;", 0);
             if (!start)
             {
                 Console.WriteLine("Initialization error.");
@@ -38,7 +38,6 @@ namespace VanguardEngine
             }
             else
             {
-                cardFight.LoadConfigFile("Names.config");
                 cardFight.StartFight();
             }
         }

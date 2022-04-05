@@ -23,6 +23,10 @@ function Trigger()
 	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.Attacking, q.Other, o.OverDress, q.Other, o.ThisFieldID}) and obj.Exists({q.Location, l.EnemyVC, q.Other, o.Attacked})
 end
 
+function Condition()
+	return obj.IsOverDress()
+end
+
 function Activation()
 	obj.AddCardValue({q.Location, l.PlayerUnits, q.Other, o.ThisFieldID}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 	if obj.CanSB(2) and obj.YesNo(obj.GetDescription(3)) then

@@ -1,24 +1,16 @@
--- 荒躙怪獣 メガグラーゴ
+-- アメリオレート・コネクター
 
 function RegisterAbilities()
-	-- on hit
+	-- cont
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetTiming(a.OnAttackHits)
-	ability1.SetLocation(l.RC)
-	ability1.SetTrigger("Trigger")
-	ability1.SetCondition("Condition")
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.GC)
 	ability1.SetActivation("Activation")
 end
 
-function Trigger()
-	return obj.IsBooster()
-end
-
-function Condition()
-	return obj.CanCounterCharge()
-end
-
 function Activation()
-	obj.CounterCharge(1)
+	if obj.Exists({q.Location, l.EnemyVC, q.Grade, 3, q.Other, o.GradeOrHigher}) then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusShield, 5000, p.Continuous)
+	end
 end

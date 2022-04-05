@@ -1405,12 +1405,22 @@ namespace VanguardEngine
             return 0;
         }
 
-        public bool PayCost()
+        public bool PayCost(int activation, Tuple<int, int> timingCount)
         {
-            return PayCost(true);
+            int oldActivation = _currentActivation;
+            Tuple<int, int> oldTimingCount = _timingCount;
+            SetAbilityData(activation, timingCount);
+            bool payCost = RealPayCost(true);
+            SetAbilityData(oldActivation, oldTimingCount);
+            return payCost;
         }
 
-        public bool PayCost(bool required)
+        public bool PayCost()
+        {
+            return PayCost(-1, null);
+        }
+
+        bool RealPayCost(bool required)
         {
             _player1.PayingCost = true;
             if (!_costRequired && required)
@@ -1456,7 +1466,17 @@ namespace VanguardEngine
             return true;
         }
 
-        public bool CanPayCost()
+        public bool CanPayCost(int activation, Tuple<int, int> timingCount)
+        {
+            int oldActivation = _currentActivation;
+            Tuple<int, int> oldTimingCount = _timingCount;
+            SetAbilityData(activation, timingCount);
+            bool canPayCost = CanPayCost();
+            SetAbilityData(oldActivation, oldTimingCount);
+            return canPayCost;
+        }
+
+        bool CanPayCost()
         {
             if (_cost != "")
                 return _script.Call(_script.Globals[_cost], true).Boolean;
@@ -1511,13 +1531,22 @@ namespace VanguardEngine
         public bool ChoosesToPayCost()
         {
             if (CanPayCost() && _cardFight.YesNo(_player1, "Pay cost?"))
-                return PayCost(false);
+                return PayCost();
             return false;
         }
 
         public bool IsTriggered(int activation, Tuple<int, int> timingCount)
         {
+            int oldActivation = _currentActivation;
+            Tuple<int, int> oldTimingCount = _timingCount;
             SetAbilityData(activation, timingCount);
+            bool isTriggered = CheckIsTriggered(activation, timingCount);
+            SetAbilityData(oldActivation, oldTimingCount);
+            return isTriggered;
+        }
+
+        public bool CheckIsTriggered(int activation, Tuple<int, int> timingCount)
+        {
             if (_locations.Count > 0)
             {
                 if (_card.originalOwner != _player1._playerID)
@@ -1599,10 +1628,19 @@ namespace VanguardEngine
                 return true;
             return CheckCondition(activation, timingCount);
         }
-        
+
         public bool CheckCondition(int activation, Tuple<int, int> timingCount)
         {
+            int oldActivation = _currentActivation;
+            Tuple<int, int> oldTimingCount = _timingCount;
             SetAbilityData(activation, timingCount);
+            bool condition = RealCheckCondition(activation, timingCount);
+            SetAbilityData(oldActivation, oldTimingCount);
+            return condition;
+        }
+        
+        bool RealCheckCondition(int activation, Tuple<int, int> timingCount)
+        {
             if (!CanActivate())
                 return false;
             if (newFormat)
@@ -1657,6 +1695,21 @@ namespace VanguardEngine
 
         public bool CanActivate()
         {
+            return CanActivate(-1, new Tuple<int, int>(-1, -1));
+        }
+
+        public bool CanActivate(int activation, Tuple<int, int> timingCount)
+        {
+            Tuple<int, int> originalTimingCount = _timingCount;
+            int originalActivation = _currentActivation;
+            SetAbilityData(activation, timingCount);
+            bool canActivate = CheckCanActivate(activation, timingCount);
+            SetAbilityData(originalActivation, originalTimingCount);
+            return canActivate;
+        }
+
+        bool CheckCanActivate(int activation, Tuple<int, int> timingCount)
+        {
             if (_additionalProperties.Contains(Property.BlackWings) && !IsBlackWings())
                 return false;
             if (_additionalProperties.Contains(Property.WhiteWings) && !IsWhiteWings())
@@ -1670,7 +1723,17 @@ namespace VanguardEngine
             return true;
         }
 
-        public bool CanFullyResolve()
+        public bool CanFullyResolve(int currentActivation, Tuple<int, int> timingCount)
+        {
+            int oldActivation = _currentActivation;
+            Tuple<int, int> oldTimingCount = timingCount;
+            SetAbilityData(currentActivation, timingCount);
+            bool canFullyResolve = CanFullyResolve();
+            SetAbilityData(oldActivation, oldTimingCount);
+            return canFullyResolve;
+        }
+
+        bool CanFullyResolve()
         {
             if (newFormat)
             {
@@ -2376,11 +2439,16 @@ namespace VanguardEngine
                     {
                         if (data != null)
                         {
-                            if (other == Other.ThisFieldID && currentPool.Exists(card => card.tempID == _card.tempID))
+                            if (other == Other.ThisFieldID)
                             {
+                                foreach (Card card in currentPool)
+                                {
+                                    if (card.tempID == _card.tempID && data.allSnapshots[_card.tempID] != null && data.allSnapshots[_card.tempID].fieldID == _player1.GetFieldID(_card.tempID))
+                                        newPool.Add(_player1.GetCard(_card.tempID));
+                                }
                                 currentPool.Clear();
-                                if (data.allSnapshots[_card.tempID] != null && data.allSnapshots[_card.tempID].fieldID == _player1.GetFieldID(_card.tempID))
-                                    currentPool.Add(_player1.GetCard(_card.tempID));
+                                currentPool.AddRange(newPool);
+                                newPool.Clear();
                             }
                             else if (other == Other.NotThisFieldID)
                             {
@@ -2394,6 +2462,8 @@ namespace VanguardEngine
                                 newPool.Clear();
                             }
                         }
+                        else
+                            currentPool.Clear();
                     }
                 }
             }
@@ -3319,7 +3389,7 @@ namespace VanguardEngine
         public List<int> SuperiorCallToSpecificCircle(List<object> param, params int[] circles)
         {
             SetParam(param, 1);
-            return SuperiorCallToSpecificCircle(1, false, "", true, circles);
+            return SuperiorCallToSpecificCircle(1, true, "", true, circles);
         }
 
         public List<int> SuperiorCall(List<object> param, bool standing, string tokenID, bool convert, List<int> circles)
@@ -4530,6 +4600,11 @@ namespace VanguardEngine
 
         public List<int> Select(List<Card> cards, int max, int min, List<int> specifications, int prompt, bool player)
         {
+            Player actingPlayer;
+            if (player)
+                actingPlayer = _player1;
+            else
+                actingPlayer = _player2;
             _selected.Clear();
             List<Card> cardsToSelect = cards;
             while (cardsToSelect.Exists(card => !_player1.CanChoose(card.tempID)))
@@ -5360,12 +5435,14 @@ namespace VanguardEngine
 
         public void Track(int tempID)
         {
+            _tracking.Clear();
             if (!_tracking.Contains(tempID))
                 _tracking.Add(tempID);
         }
 
         public void Track(List<int> tempIDs)
         {
+            _tracking.Clear();
             foreach (int tempID in tempIDs)
                 Track(tempID);
         }
@@ -5385,8 +5462,11 @@ namespace VanguardEngine
             //return false;
             if (_currentActivation == Activation.Cont || _currentActivation == Activation.OnACT)
                 return true;
-            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.Item1, _player1._playerID);
-            return list.Exists(data => data.allSnapshots[tempID].fieldID == _player1.GetFieldID(tempID));
+            if (data != null)
+                return data.allSnapshots[tempID].fieldID == _player1.GetFieldID(tempID);
+            //List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.Item1, _player1._playerID);
+            //return list.Exists(data => data.allSnapshots[tempID].fieldID == _player1.GetFieldID(tempID));
+            return false;
         }
 
         public string GetName(string name)
@@ -5750,6 +5830,11 @@ namespace VanguardEngine
             return card != null && card.name.Contains(name);
         }
 
+        public bool NameContains(string name, string nameContains)
+        {
+            return name.Contains(nameContains);
+        }
+
         public bool IsCircle(int tempID, int circle)
         {
             return circle == _player1.GetCircle(_player1.GetCard(tempID));
@@ -5996,12 +6081,15 @@ namespace VanguardEngine
             }
             else if (location == Location.PlayedOrdersThisTurn ||
                          location == Location.SoulBlasted ||
-                         location == Location.SungThisTurn)
+                         location == Location.SungThisTurn || 
+                         location == Location.RetiredAsCost)
             {
                 snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
             }
             else if (location == Location.EnemyFrontRow)
                 currentPool.AddRange(_player2.GetPlayerFrontRow());
+            else if (location == Location.BackRowRC)
+                currentPool.AddRange(_player1.GetBackRow());
         }
 
         public bool IsStored(int tempID)
@@ -6329,7 +6417,6 @@ namespace VanguardEngine
 
     class Activation
     {
-        public const int OnRide = -1;
         public const int OnAttack = -2;
         public const int OnOverDress = -3;
         public const int OnACT = -4;
@@ -6374,6 +6461,7 @@ namespace VanguardEngine
         public const int OnSoulCharge = -43;
         public const int OnArmed = -44;
         public const int Glitter = -45;
+        public const int OnRide = -46;
     }
 
     public class Location
@@ -6453,6 +6541,8 @@ namespace VanguardEngine
         public const int SungThisTurn = 74;
         public const int EnemyFrontRow = 75;
         public const int Player = 76;
+        public const int Arm = 77;
+        public const int RetiredAsCost = 78;
     }
 
     class Query

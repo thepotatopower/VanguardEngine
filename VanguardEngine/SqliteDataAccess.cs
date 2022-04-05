@@ -12,6 +12,7 @@ namespace VanguardEngine
     public class SQLiteDataAccess
     {
         public string connectionString;
+        public string nameString;
         public Card Load(string id)
         {
             using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
@@ -47,6 +48,16 @@ namespace VanguardEngine
                         card.effect = card.text;
                 }
                 return output;
+            }
+        }
+
+        public void LoadNames(NameKeys nameKeys)
+        {
+            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            {
+                var output = cnn.Query<NameKey>("select * from names", new DynamicParameters()).ToList();
+                foreach (NameKey nameKey in output)
+                    nameKeys.InsertKey(nameKey.key, nameKey.name);
             }
         }
 

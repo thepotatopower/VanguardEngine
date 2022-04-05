@@ -11,7 +11,11 @@ end
 function Activation()
 	local group = obj.GetAbilityTimingCards(a.OnRetire, true, obj.LoadName("Blaster"), true)
 	obj.Store(group)
-	if obj.GetNumberOf({q.Location, l.Stored}) >= 2 then
+	if obj.GetNumberOf("Filter", {l.RetiredAsCost}) >= 2 then
 		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 10000, p.Continuous)
 	end
+end
+
+function Filter(snapshot)
+	return snapshot.SourceIsAbility() and obj.NameContains(snapshot.abilitySource.name, obj.LoadName("Blaster"))
 end

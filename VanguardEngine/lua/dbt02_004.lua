@@ -1,62 +1,35 @@
--- Diabolos Jetbacker, Lenard
+-- ディアブロスジェットバッカー レナード
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- cont
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.Cont)
+	ability1.SetLocation(l.RC)
+	ability1.SetActivation("Cont")
+	-- on attack hits
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnAttackHits)
+	ability2.SetLocation(l.RC)
+	ability2.SetTrigger("Trigger")
+	ability2.SetActivation("OnAttackHits")
 end
 
-function NumberOfParams()
-	return 2
-end
-
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	elseif n == 2 then
-		return q.Location, l.Soul, q.Count, 1, q.Min, 0
+function Cont()
+	if obj.InFinalRush() then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
+		obj.AddCardState({q.Other, o.This}, cs.CanColumnAttack, p.Continuous)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.Cont, p.IsMandatory
-	elseif n == 2 then
-		return a.OnAttackHits, p.HasPrompt, p.IsMandatory
-	end
+function Trigger()
+	return obj.IsAttackingUnit()
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() then
-			return true
-		end
+function OnAttackHits()
+	obj.SoulCharge(1)
+	if obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dsd02_001")}) then
+		obj.SuperiorCallToSpecificCircle({q.Location, l.Soul, q.Count, 1, q.Min, 0}, FL.OpenCircle)
 	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.InFinalRush() then
-			obj.SetAbilityPower(1, 5000)
-			obj.AllowColumnAttack(1)
-		end
-	elseif n == 2 then
-		obj.SoulCharge(1) 
-		if obj.VanguardIs("Diabolos, \"Violence\" Bruce") and obj.NumPlayerOpenCircles() > 0 then
-			obj.SuperiorCallToSpecificCircle(2, FL.OpenCircle)
-		end
-	end
-	return 0
 end

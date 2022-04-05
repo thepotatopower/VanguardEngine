@@ -1712,6 +1712,10 @@ namespace VanguardEngine
             }
             else
             {
+                if (!standing)
+                    _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
+                else
+                    _field.Orientation.SetUpRight(ToBeCalled.tempID, true);
                 if (!overDress)
                 {
                     _field.SetUnit(circle, ToBeCalled);
@@ -1720,8 +1724,6 @@ namespace VanguardEngine
                 {
                     _field.RideUnit(circle, ToBeCalled);
                 }
-                if (!standing)
-                    _field.Orientation.SetUpRight(ToBeCalled.tempID, false);
             }
             if (overDress)
                 Log.WriteLine("----------\nSuperior overDress! " + ToBeCalled.name + "!");

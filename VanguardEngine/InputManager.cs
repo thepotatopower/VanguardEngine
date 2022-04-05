@@ -19,7 +19,7 @@ namespace VanguardEngine
         public int int_input4;
         public List<int> intlist_input = new List<int>();
         public Ability _ability = null;
-        public List<Ability> _abilities = new List<Ability>();
+        public List<AbilityTimingCount> _abilities = new List<AbilityTimingCount>();
         public List<Ability> _abilities2 = new List<Ability>();
         public List<Card> cardsToSelect = new List<Card>();
         public List<List<Card>> cardSets = new List<List<Card>>();
@@ -543,7 +543,11 @@ namespace VanguardEngine
         {
             _actingPlayer = actingPlayer;
             _abilities.Clear();
-            _abilities.AddRange(abilities);
+            foreach (Ability ability in abilities)
+            {
+                AbilityTimingCount abilityTimingCount = new AbilityTimingCount(ability, 0, new Tuple<int, int>(0, 0));
+                _abilities.Add(abilityTimingCount);
+            }
             SelectAbility_Input();
             return int_input;
         }
@@ -552,8 +556,7 @@ namespace VanguardEngine
         {
             _actingPlayer = actingPlayer;
             _abilities.Clear();
-            foreach (AbilityTimingCount ability in abilities)
-                _abilities.Add(ability.ability);
+            _abilities.AddRange(abilities);
             SelectAbility_Input();
             return int_input;
         }
@@ -564,8 +567,8 @@ namespace VanguardEngine
             Log.WriteLine("----------\nSelect effect to activate.");
             for (int i = 0; i < _abilities.Count; i++)
             {
-                output = (i + 1) + ". " + _abilities[i].Name;
-                if (!_abilities[i].CanFullyResolve())
+                output = (i + 1) + ". " + _abilities[i].ability.Name;
+                if (!_abilities[i].ability.CanFullyResolve(_abilities[i].activation, _abilities[i].timingCount))
                     output += " (May not fully resolve.)";
                 Log.WriteLine(output);
             }
@@ -579,13 +582,13 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public bool CheckForMandatoryEffects(List<Ability> abilities)
+        public bool CheckForMandatoryEffects(List<AbilityTimingCount> abilities)
         {
             if (_actingPlayer.IsAlchemagic())
                 return true;
-            foreach (Ability ability in abilities)
+            foreach (AbilityTimingCount ability in abilities)
             {
-                if (ability.isMandatory)
+                if (ability.ability.isMandatory)
                     return true;
             }
             return false;
@@ -645,6 +648,7 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<List<Card>> cards, int count, int min, string query)
         {
+            _actingPlayer = actingPlayer;
             List<Card> allCards = new List<Card>();
             foreach (List<Card> list in cards)
                 allCards.AddRange(list);
@@ -654,7 +658,9 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
         {
+            _actingPlayer = actingPlayer;
             intlist_input.Clear();
+            int originalCount = count;
             int trueMin = min;
             List<int> temporaryList = new List<int>();
             _query = query;
@@ -672,7 +678,7 @@ namespace VanguardEngine
                 intlist_input.Clear();
                 return new List<int>(intlist_input);
             }
-            if (_query.Contains("retire"))
+            if (_query.Contains("retire") && cards.Count >= originalCount && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
             {
                 while (count > 1 && _query.Contains("retire") && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
                 {
@@ -711,7 +717,7 @@ namespace VanguardEngine
                     }
                 }
             }
-            else if (sameName && count > 1)
+            if (sameName && count > 1)
             {
                 _max = 1;
                 if (min > 0)

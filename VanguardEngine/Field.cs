@@ -633,12 +633,22 @@ namespace VanguardEngine
                 while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
                     _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             }
+            //player vanguard
             circle = _circles[FL.PlayerVanguard];
             if (circle.OverloadedUnits.Count > 0)
                 circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
+            while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                _player1Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+            while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
+            //enemy vanguard
             circle = _circles[FL.EnemyVanguard];
             if (circle.OverloadedUnits.Count > 0)
                 circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
+            while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                _player2Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+            while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             return retired;
         }
 
@@ -701,8 +711,8 @@ namespace VanguardEngine
             _column = column;
             _soul = new Soul(field, FL, _owner);
             _FL = FL;
-            _leftArm = new Arm(field, _owner);
-            _rightArm = new Arm(field, _owner);
+            _leftArm = new Arm(field, _owner, _FL, true);
+            _rightArm = new Arm(field, _owner, _FL, false);
         }
 
         protected override void UpdateLocation(Zone zone, int tempID)
@@ -714,7 +724,7 @@ namespace VanguardEngine
         protected override Card AddToZone(Card card, bool bottom)
         {
             _field.Orientation.SetFaceUp(card.tempID, true);
-            _field.Orientation.SetUpRight(card.tempID, true);
+            //_field.Orientation.SetUpRight(card.tempID, true);
             if (_cards.Count > 0)
             {
                 OverloadedUnits.AddRange(_cards);
@@ -802,9 +812,13 @@ namespace VanguardEngine
 
     public class Arm : Zone
     {
-        public Arm(Field field, int _owner) : base(field, _owner)
+        bool _left = true;
+
+        public Arm(Field field, int _owner, int FL, bool left) : base(field, _owner)
         {
-            location = Location.VC;
+            location = Location.Arm;
+            _FL = FL;
+            _left = left;
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -817,6 +831,13 @@ namespace VanguardEngine
                 _overloadedCards.Add(overloaded);
             }
             return returnedCard;
+        }
+
+        protected override void ActivateEvent()
+        {
+            if (args != null)
+                args.left = _left;
+            base.ActivateEvent();
         }
     }
 
@@ -2054,6 +2075,11 @@ namespace VanguardEngine
             grade = _grade;
             abilitySource = _abilitySource;
             relevantSnapshots.AddRange(_relevantSnapshots);
+        }
+
+        public bool SourceIsAbility()
+        {
+            return abilitySource != null;
         }
     }
 

@@ -33,7 +33,7 @@ function OnPlaceCanFullyResolve()
 end
 
 function OnPlace()
-	obj.Search({q.Location, l.Deck, q.Name, obj.GetNameFromCardID("dsd06_014"), q.Name, obj.GetNameFromCardID("dsd06_015")})
+	obj.Search({q.Location, l.Deck, q.Name, obj.GetNameFromCardID("dsd06_014"), q.Name, obj.GetNameFromCardID("dsd06_015"), q.Count, 1, q.Min, 0})
 end
 
 function OnAttackTrigger()
