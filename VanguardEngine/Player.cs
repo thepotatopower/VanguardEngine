@@ -278,6 +278,7 @@ namespace VanguardEngine
             UpdateRecordedValues();
             UpdateRecordedValues();
             _successfullyRetired.Clear();
+            _lastPlacedOnRC.Clear();
         }
 
         void _fieldOnShuffle(object sender, CardEventArgs e)
@@ -1698,6 +1699,7 @@ namespace VanguardEngine
 
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
         {
+            List<int> called = new List<int>();
             bool fromHand = false;
             bool fromPrison = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
@@ -1732,25 +1734,25 @@ namespace VanguardEngine
             _lastPlacedOnRC.Add(ToBeCalled);
             _unitsCalledThisTurn.Add(ToBeCalled);
             CardStates.AddUntilEndOfTurnState(ToBeCalled.tempID, CardState.PlacedThisTurn);
-            if (fromHand)
-            {
-                _unitsCalledFromHandThisTurn.Add(ToBeCalled);
-                _lastPlacedOnRCFromHand.Add(ToBeCalled);
-                return 1;
-            }
-            else
-                _lastPlacedOnRCOtherThanFromHand.Add(ToBeCalled);
-            if (fromPrison)
-            {
-                _lastPlacedOnRCFromPrison.Add(ToBeCalled);
-                return 2;
-            }
-            return 0;
+            //if (fromHand)
+            //{
+            //    _unitsCalledFromHandThisTurn.Add(ToBeCalled);
+            //    _lastPlacedOnRCFromHand.Add(ToBeCalled);
+            //    return 1;
+            //}
+            //else
+            //    _lastPlacedOnRCOtherThanFromHand.Add(ToBeCalled);
+            //if (fromPrison)
+            //{
+            //    _lastPlacedOnRCFromPrison.Add(ToBeCalled);
+            //    return 2;
+            //}
+            return ToBeCalled.tempID;
         }
 
         public void DoneCalling()
         {
-            _lastPlacedOnRC.Clear();
+            //_lastPlacedOnRC.Clear();
             _lastPlacedOnRCFromHand.Clear();
             _lastPlacedOnRCFromPrison.Clear();
             _lastPlacedOnRCOtherThanFromHand.Clear();
@@ -2004,6 +2006,11 @@ namespace VanguardEngine
             else
                 MyStates.AddUntilEndOfTurnValue(PlayerState.NumOfAttacks, numOfAttacks + 1);
             _field.CardStates.IncrementUntilEndOfTurnValue(Attacker.tempID, CardState.NumOfAttacks, 1);
+            foreach (Card card in _field.Attacked)
+            {
+                if (IsRearguard(card.tempID))
+                    _field.CardStates.AddUntilEndOfBattleState(Attacker.tempID, CardState.AttackedRearguard);
+            }
             if (OnAttack != null)
             {
                 CardEventArgs args = new CardEventArgs();
@@ -2787,6 +2794,16 @@ namespace VanguardEngine
             _isAlchemagic = false;
             _alchemagicFreeSB = false;
             _alchemagicFreeSBActive = false;
+        }
+
+        public void SimulateAlchemagic()
+        {
+            _isAlchemagic = true;
+        }
+
+        public void EndAlchemagicSimulation()
+        {
+            _isAlchemagic = false;
         }
 
         public bool CanAlchemagicDiff()

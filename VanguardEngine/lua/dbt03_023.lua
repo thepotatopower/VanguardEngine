@@ -15,7 +15,7 @@ function RegisterAbilities()
 end
 
 function Trigger()
-	return obj.IsAttackingUnit()
+	return obj.IsAttackingUnit() and obj.AttackedRearguard()
 end
 
 function Condition()

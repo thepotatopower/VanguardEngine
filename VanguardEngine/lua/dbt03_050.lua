@@ -40,13 +40,11 @@ function OnRideCost(check)
 end
 
 function OnRideCanFullyResolve()
-	return obj.IsSameZone()
+	return obj.Exists({q.Location, l.Soul, q.Other, o.This})
 end
 
 function OnRide()
-	if obj.IsSameZone() then
-		obj.SuperiorCall({q.Location, l.Soul, q.Other, o.This})
-	end
+	obj.SuperiorCall({q.Location, l.Soul, q.Other, o.This})
 end
 
 function OnAttackTrigger()

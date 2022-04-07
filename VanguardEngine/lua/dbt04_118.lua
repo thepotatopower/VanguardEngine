@@ -12,10 +12,6 @@ function CanFullyResolve()
 	return obj.Exists({q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1})
 end
 
-function GetCosts()
-	return
-end
-
 function Activation()
 	obj.EnemyChooseRetire({q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1})
 	local grade = obj.GetGrade({q.Location, l.SuccessfullyRetired})

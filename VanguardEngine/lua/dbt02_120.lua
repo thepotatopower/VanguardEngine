@@ -1,45 +1,24 @@
--- Overcoming the Unnatural Death
+-- 非業の死を乗り越えて
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetGetCosts("GetCosts")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Drop, q.Other, o.Order, q.Count, 2, q.Min, 0
-	elseif n == 2 then
-		return q.Location, l.PlayedOrder, q.Other, o.This
-	end
+function GetCosts()
+	return p.CB, 1
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.CB, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Bind(2)
-		obj.ChooseAddToHand(1)
-	end
-	return 0
+function Activation()
+	obj.Bind({q.Other, o.ThisFieldID})
+	obj.ChooseAddToHand({q.Location, l.Drop, q.Other, o.Order, q.Count, 2, q.Min, 0})
 end

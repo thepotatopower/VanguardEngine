@@ -1,46 +1,26 @@
--- Grief, Despair, and Rejection
+-- 悲嘆と絶望、そして拒絶
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetGetCosts("GetCosts")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 1
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function GetParam(n)
-	if n == 1 then 
-		return q.Location, l.PlayerRC, q.Location, l.PlayerVC, q.Count, 3
+function GetCosts()
+	return p.CB, 1
+end
+
+function Activation()
+	if obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dbt01_009")}) then
+		obj.Select({q.Location, l.PlayerUnits, q.Count, 3})
+		obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.CB, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		if obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		if obj.VanguardIs("Mysterious Rain Spiritualist, Zorga") then
-			obj.ChooseAddTempPower(1, 10000)
-		end
-	end
-	return 0
 end

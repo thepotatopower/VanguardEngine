@@ -1449,6 +1449,7 @@ namespace VanguardEngine
         public const int PersonaRideIfNameContains = 46;
         public const int RiddenFrom = 47;
         public const int NumOfAttacks = 48;
+        public const int AttackedRearguard = 49;
     }
 
     public class Zone

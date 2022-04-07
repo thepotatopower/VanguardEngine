@@ -1,55 +1,30 @@
--- Cursed Souls Squirming in Agony
+-- 呪われし魂は悶え蠢く
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetGetCosts("GetCosts")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 4
+function Cost(check)
+	if check then return obj.CanSB(2) end
+	obj.SoulBlast(2)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Looking, q.Count, 1, q.Min, 0
-	elseif n == 2 then
-		return q.Location, l.Looking, q.Count, 2, q.Min, 0
-	elseif n == 3 then
-		return q.Location, l.Looking
-	elseif n == 4 then
-		return q.Location, l.LastCalled
+function GetCosts()
+	return p.SB, 2
+end
+
+function Activation()
+	obj.LookAtTopOfDeck(4)
+	if obj.IsAlchemagic() then
+		obj.SuperiorCall({q.Location, l.Looking, q.Other, o.Unit, q.Count, 2, q.Min, 0})
+	else
+		obj.SuperiorCall({q.Location, l.Looking, q.Other, o.Unit, q.Count, 1, q.Min, 0})
 	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.SB, 2
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.LookAtTopOfDeck(4)
-		if obj.IsAlchemagic() then
-			obj.SuperiorCall(2)
-		else
-			obj.SuperiorCall(1)
-		end
-		obj.AddToDrop(3)
-		obj.AddTempPower(4, 5000)
-	end
-	return 0
+	obj.AddToDrop({q.Location, l.Looking})
+	obj.AddCardValue({q.Location, l.LastCalled}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end

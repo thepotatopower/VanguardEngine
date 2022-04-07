@@ -13,6 +13,7 @@ function RegisterAbilities()
 	ability2.SetDescription(2)
 	ability2.SetTiming(a.OnOrderPlayed)
 	ability2.SetLocation(l.PlayerRC)
+	ability2.SetTrigger("OnOrderTrigger")
 	ability2.SetCanFullyResolve("OnOrderCanFullyResolve")
 	ability2.SetCost("OnOrderCost")
 	ability2.SetActivation("OnOrderPlayed")
@@ -33,13 +34,17 @@ function OnPlaced()
 	obj.Shuffle()
 end
 
+function OnOrderTrigger()
+	return obj.Exists({q.Location, l.Applicable, q.Other, o.Order, q.Other, o.Player})
+end
+
 function OnOrderCanFullyResolve()
 	return obj.IsSameZone() or (obj.IsAlchemagic() and obj.Exists({q.Location, l.PlayerRC, q.Other, o.NotThisFieldID}))
 end
 
 function OnOrderCost(check)
-	if check then return obj.CanCB(1) end
-	obj.CounterBlast(1)
+	if check then return obj.CanSB(1) end
+	obj.SoulBlast(1)
 end
 
 function OnOrderPlayed()

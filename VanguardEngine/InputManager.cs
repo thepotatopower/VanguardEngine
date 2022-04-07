@@ -658,6 +658,8 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
         {
+            if (count == 0 && min == 0)
+                return new List<int>();
             _actingPlayer = actingPlayer;
             intlist_input.Clear();
             int originalCount = count;

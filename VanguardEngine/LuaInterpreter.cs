@@ -343,6 +343,7 @@ namespace VanguardEngine
 
         public List<Ability> GetAlchemagicableCards(Player player1, int tempID)
         {
+            player1.SimulateAlchemagic();
             Ability fromHand = GetAbility(tempID, 1);
             Ability fromDrop;
             int SB = 0;
@@ -361,7 +362,7 @@ namespace VanguardEngine
                     Retire = fromHand.GetRetire() + fromDrop.GetRetire();
                     if (player1.AlchemagicFreeSBAvailable())
                         SB = 0;
-                    if (!(player1.CanSB(SB) && player1.CanCB(CB) && player1.CanRetire(Retire)))
+                    if (!(player1.CanSB(SB) && player1.CanCB(CB) && fromHand.CanRetireAmount(Retire)))
                         continue;
                     int specificDiscardDrop = fromDrop.GetSpecificDiscard();
                     int specificDiscardHand = fromHand.GetSpecificDiscard();
@@ -376,15 +377,16 @@ namespace VanguardEngine
                         costs.Add(cost1);
                     if (cost2 != null)
                         costs.Add(cost2);
-                    if (!CanPayCosts(costs, new List<Card>(), new List<Card>()))
+                    if (!CanPayCosts(costs, new List<Card>(), new List<Card>(), fromHand.GetCard(), fromDrop.GetCard()))
                         continue;
                     alchemagicable.Add(fromDrop);
                 }
             }
+            player1.EndAlchemagicSimulation();
             return alchemagicable;
         }
 
-        public bool CanPayCosts(List<Tuple<Ability, int, int>> _costs, List<Card> _chosenCards, List<Card> _alreadyChosen)
+        public bool CanPayCosts(List<Tuple<Ability, int, int>> _costs, List<Card> _chosenCards, List<Card> _alreadyChosen, Card hand, Card drop)
         {
             if (_costs.Count == 0)
                 return true;
@@ -396,10 +398,10 @@ namespace VanguardEngine
             {
                 List<Tuple<Ability, int, int>> costs = new List<Tuple<Ability, int, int>>(_costs);
                 costs.RemoveAt(0);
-                return CanPayCosts(costs, new List<Card>(), _alreadyChosen);
+                return CanPayCosts(costs, new List<Card>(), _alreadyChosen, hand, drop);
             }
             if (costType == Property.SpecificDiscard)
-                availableCards.RemoveAll(card => card.tempID == ability.GetCard().tempID);
+                availableCards.RemoveAll(card => card.tempID == hand.tempID);
             foreach (Card card in availableCards)
             {
                 if (!_chosenCards.Contains(card) && !_alreadyChosen.Contains(card))
@@ -408,11 +410,30 @@ namespace VanguardEngine
                     List<Card> alreadyChosen = new List<Card>(_alreadyChosen);
                     chosenCards.Add(card);
                     alreadyChosen.Add(card);
-                    if (CanPayCosts(_costs, chosenCards, alreadyChosen))
+                    if (CanPayCosts(_costs, chosenCards, alreadyChosen, hand, drop))
                         return true;
                 }
             }
             return false;
+        }
+
+        public void PayCosts(Player player, Ability fromHand, Ability fromDrop)
+        {
+            int SB = fromHand.GetSB() + fromDrop.GetSB();
+            int CB = fromHand.GetCB() + fromDrop.GetCB();
+            int Retire = fromHand.GetRetire() + fromDrop.GetRetire();
+            if (player.AlchemagicFreeSBAvailable())
+                SB = 0;
+            int specificDiscardDrop = fromDrop.GetSpecificDiscard();
+            int specificDiscardHand = fromHand.GetSpecificDiscard();
+            fromHand.SoulBlast(SB);
+            fromHand.CounterBlast(CB);
+            if (specificDiscardDrop > 0)
+                fromDrop.SpecificDiscard(specificDiscardDrop);
+            if (specificDiscardHand > 0)
+                fromHand.SpecificDiscard(specificDiscardHand);
+            List<object> param = new List<object>();
+            fromHand.ChooseRetireAmount(Retire);
         }
 
         public void OnZoneChange(int tempID)
@@ -1372,12 +1393,13 @@ namespace VanguardEngine
             return 0;
         }
 
-        public int ActivateAsGiven(Card card)
+        public int ActivateAsGiven(Card card, AbilityTimingData newData)
         {
             if (!_player1.IsAlchemagic())
                 _lastCalled.Clear();
             _payingCost = false;
             Card originalCard = _card;
+            AbilityTimingData originalData = data;
             bool swapped = false;
             Player temp;
             if (card.originalOwner != _player1._playerID)
@@ -1388,12 +1410,14 @@ namespace VanguardEngine
                 swapped = true;
             }
             _card = card;
+            data = newData;
             if (_activationFunction != "")
                 _script.Call(_script.Globals[_activationFunction]);
             else
                 _script.Call(_abilityActivate, _abilityNumber);
             _activated = true;
             _card = originalCard;
+            data = originalData;
             if (swapped)
             {
                 temp = _player1;
@@ -1688,7 +1712,9 @@ namespace VanguardEngine
         public bool CheckConditionWithoutAlchemagic()
         {
             _withAlchemagic = false;
+            _player1.SimulateAlchemagic();
             bool condition = CheckCondition(Activation.OnOrder, null);
+            _player1.EndAlchemagicSimulation();
             _withAlchemagic = true;
             return condition;
         }
@@ -1777,16 +1803,22 @@ namespace VanguardEngine
 
         public int GetSB()
         {
+            List<Tuple<int, int>> costs = GetCosts();
             if (_costs.ContainsKey(Property.SB))
                 return _costs[Property.SB];
+            else if (costs.Exists(tuple => tuple.Item1 == Property.SB))
+                return costs.Find(tuple => tuple.Item1 == Property.SB).Item2;
             else
                 return 0;
         }
 
         public int GetRetire()
         {
+            List<Tuple<int, int>> costs = GetCosts();
             if (_costs.ContainsKey(Property.Retire))
                 return GetMin(_costs[Property.Retire]);
+            else if (costs.Exists(tuple => tuple.Item1 == Property.Retire))
+                return costs.Find(tuple => tuple.Item1 == Property.Retire).Item2;
             else
                 return 0;
         }
@@ -3073,6 +3105,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool CanRetireAmount(int count)
+        {
+            return _player1.GetRearguards(true).Count >= count;
+        }
+
+        public void ChooseRetireAmount(int count)
+        {
+            _cardFight.SelectCardToRetire(_player1, _player2, _player1.GetRearguards(true), count, count);
+        }
+
         public bool CanDiscard(int count)
         {
             List<Card> hand = _player1.GetHand();
@@ -3142,6 +3184,11 @@ namespace VanguardEngine
             if (_player1.AttackingUnit() != null && _card.tempID == _player1.AttackingUnit().tempID)
                 return true;
             return false;
+        }
+
+        public bool AttackedRearguard()
+        {
+            return _player1.HasCardState(_card.tempID, CardState.AttackedRearguard);
         }
 
         public bool IsAttacked()
@@ -3466,16 +3513,16 @@ namespace VanguardEngine
             bool superiorOverDress = false;
             if (specifications.Contains(Property.SuperiorOverDress))
                 superiorOverDress = true;
-            _lastCalled.AddRange(_cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, superiorOverDress, !asRest, false, false));
+            List<int> called = _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, max, min, circlesToSelect, superiorOverDress, !asRest, false, false);
             foreach (var list in cardsToSelect)
             {
                 foreach (var card in list)
                 {
-                    if (!_lastCalled.Contains(card) && card.unitType == UnitType.Token)
+                    if (!called.Contains(card.tempID) && card.unitType == UnitType.Token)
                         _player1.Remove(card);
                 }
             }
-            return ConvertToTempIDs(_lastCalled);
+            return called;
         }
 
         public List<int> SuperiorCallAsRest(List<object> param)
@@ -3493,8 +3540,8 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            List<Card> cards = _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, false, false, false);
-            return ConvertToTempIDs(cards);
+            return _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, false, false, false);
+            //return ConvertToTempIDs(cards);
         }
 
         public List<int> SuperiorOverDress(int paramNum, int paramNum2)
@@ -3503,8 +3550,8 @@ namespace VanguardEngine
             int circle = _player1.GetCircle(ValidCards(paramNum2)[0]);
             List<int> circles = new List<int>();
             circles.Add(circle);
-            List<Card> cards = _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles.ToArray(), true, true, false, false);
-            return ConvertToTempIDs(cards);
+            return _cardFight.SuperiorCall(_player1, _player2, fromHand, 1, 1, circles.ToArray(), true, true, false, false);
+            //return ConvertToTempIDs(cards);
         }
 
         public List<int> SuperiorCallToDifferentRows(int paramNum)
@@ -3516,8 +3563,8 @@ namespace VanguardEngine
                 count = cardsToSelect.Count;
             if (min == -1)
                 min = 0;
-            List<Card> cards = _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, false, true);
-            return ConvertToTempIDs(cards);
+            return _cardFight.SuperiorCall(_player1, _player2, cardsToSelect, count, min, null, false, true, false, true);
+            //return ConvertToTempIDs(cards);
         }
 
         public int GetCircle(List<object> param)
@@ -5968,7 +6015,7 @@ namespace VanguardEngine
             else if (location == Location.Trigger)
                 currentPool.Add(_player1.GetTrigger(true));
             else if (location == Location.LastCalled)
-                currentPool.AddRange(_lastCalled);
+                currentPool.AddRange(_player1.GetLastPlacedOnRC());
             else if (location == Location.PlayerOrder)
                 currentPool.AddRange(_player1.GetPlayerOrder());
             else if (location == Location.OrderArea)

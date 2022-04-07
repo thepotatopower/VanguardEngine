@@ -1,48 +1,25 @@
--- Tearful Malice
+-- 涙する悪意
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetGetCosts("GetCosts")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Cost(check)
+	if check then return obj.CanRetire({q.Location, l.PlayerRC, q.Count, 2}) end
+	obj.ChooseRetire({q.Location, l.PlayerRC, q.Count, 2})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Count, 2
-	elseif n == 2 then
-		return q.Location, l.PlayedOrder
-	end
+function GetCosts()
+	return p.Retire, 2
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.Retire, 1
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.CanRetire(1) then 
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Draw(1)
-		obj.AddToSoul(2)
-		obj.CounterCharge(1)
-	end
-	return 0
+function Activation()
+	obj.Draw(1)
+	obj.AddToSoul({q.Other, o.ThisFieldID})
+	obj.CounterCharge(1)
 end

@@ -48,7 +48,7 @@ namespace VanguardEngine
         string _namesPath;
         public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
         int _initialDamage = 2;
-        int _initialSoul = 7;
+        int _initialSoul = 3;
         int _initialDrop = 0;
 
         public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, string namesPath, int clientNumber)
@@ -667,19 +667,20 @@ namespace VanguardEngine
             player1.DoneCalling();
         }
 
-        public List<Card> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
+        public List<int> SuperiorCall(Player player1, Player player2, List<Card> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
         {
             List<List<Card>> lists = new List<List<Card>>();
             lists.Add(cardsToSelect);
             return SuperiorCall(player1, player2, lists, max, min, circles, overDress, standing, free, differentRows);
         }
 
-        public List<Card> SuperiorCall(Player player1, Player player2, List<List<Card>> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
+        public List<int> SuperiorCall(Player player1, Player player2, List<List<Card>> cardsToSelect, int max, int min, int[] circles, bool overDress, bool standing, bool free, bool differentRows)
         {
             List<int> selections;
             int selectedCircle = 0;
             List<int> selectedCircles = new List<int>();
             List<int> canSelect = new List<int>();
+            List<int> called = new List<int>();
             int sc = 0;
             selections = _inputManager.SelectFromList(player1, cardsToSelect, max, min, "to call.");
             foreach (int tempID in selections)
@@ -708,7 +709,9 @@ namespace VanguardEngine
                     }
                 }
                 sc = player1.SuperiorCall(selectedCircle, tempID, overDress, standing);
-                if (sc == 2 && OnFree != null)
+                if (sc >= 0)
+                    called.Add(sc);
+                if (free)
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.playerID = player2._playerID;
@@ -716,23 +719,23 @@ namespace VanguardEngine
                 }
                 _abilities.ResetActivation(tempID);
             }
-            List<Card> lastPlacedOnRC = player1.GetLastPlacedOnRC();
-            foreach (Card card in lastPlacedOnRC)
+            //List<Card> lastPlacedOnRC = player1.GetLastPlacedOnRC();
+            foreach (int tempID in called)
             {
-                AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, card);
+                AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetCard(tempID));
             }
             //AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
-            if (sc == 1)
-                AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
-            else
-                AddAbilityTiming(Activation.PlacedOnRCOtherThanFromHand, player1._playerID, player1.GetLastPlacedOnRCOtherThanFromHand(), player1.IsAlchemagic());
+            //if (sc == 1)
+            //    AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
+            //else
+            //    AddAbilityTiming(Activation.PlacedOnRCOtherThanFromHand, player1._playerID, player1.GetLastPlacedOnRCOtherThanFromHand(), player1.IsAlchemagic());
             if (free)
             {
-                foreach (Card card in player1.GetLastPlacedOnRCFromPrison())
-                    AddAbilityTiming(Activation.PlacedOnRCFromPrison, player1._playerID, card);
+                foreach (int tempID in called)
+                    AddAbilityTiming(Activation.PlacedOnRCFromPrison, player1._playerID, player1.GetCard(tempID));
             }
             player1.DoneCalling();
-            return lastPlacedOnRC;
+            return called;
         }
 
         public void MoveRearguard(Player player1, Player player2, int selection)
@@ -870,8 +873,10 @@ namespace VanguardEngine
                             if (selections.Count == 0)
                                 continue;
                             player2.Guard(selections, selection2);
-                            AddAbilityTiming(Activation.PlacedOnGC, player2._playerID, player2.GetLastPlacedOnGC());
-                            AddAbilityTiming(Activation.PutOnGC, player2._playerID, player2.GetLastPutOnGC());
+                            foreach (Card card in player2.GetLastPlacedOnGC())
+                                AddAbilityTiming(Activation.PlacedOnGC, player2._playerID, player2.GetLastPlacedOnGC());
+                            foreach (Card card in player2.GetLastPutOnGC())
+                                AddAbilityTiming(Activation.PutOnGC, player2._playerID, card);
                         }
                         else if (selection == 5)
                         {
@@ -1274,6 +1279,7 @@ namespace VanguardEngine
         {
             int amSelection = -1;
             bool proceedWithAlchemagic = false;
+            _alchemagicQueue.Clear();
             //_currentAbility = ability;
             if (isPlayTiming && ability.GetCard().orderType == OrderType.Normal && (player1.CanAlchemagicSame() || player1.CanAlchemagicDiff()))
             {
@@ -1292,7 +1298,6 @@ namespace VanguardEngine
                 PlayOrder(player1, _alchemagicQueue[amSelection].GetID(), true);
                 List<Card> list = new List<Card>();
                 list.Add(ability.GetCard());
-                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
                 CardEventArgs args;
                 if (OnAlchemagic != null)
                 {
@@ -1300,11 +1305,14 @@ namespace VanguardEngine
                     args.message = ability.GetCard().name + " alchemagics with " + _alchemagicQueue[amSelection].Name + "!";
                     OnAlchemagic(this, args);
                 }
-                ability.PayCost();
+                _abilities.PayCosts(player1, ability, _alchemagicQueue[amSelection]);
+                //ability.PayCost();
                 //_currentAbility = _alchemagicQueue[amSelection];
-                _alchemagicQueue[amSelection].PayCost();
+                //_alchemagicQueue[amSelection].PayCost();
+                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
+                AbilityTimingData data = GetNoActivationData(player1._playerID);
                 ability.Activate(Activation.OnOrder, null);
-                _alchemagicQueue[amSelection].ActivateAsGiven(player1.GetCard(_alchemagicQueue[amSelection].GetID()));
+                _alchemagicQueue[amSelection].ActivateAsGiven(ability.GetCard(), data);
                 player1.EndAlchemagic();
                 player1.EndOrder();
             }
@@ -1314,9 +1322,9 @@ namespace VanguardEngine
                 PlayOrder(player1, ability.GetID(), false);
                 List<Card> list = new List<Card>();
                 list.Add(ability.GetCard());
-                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
                 if (payCost)
                     ability.PayCost();
+                AddAbilityTiming(Activation.OnOrderPlayed, player1._playerID, list);
                 ability.Activate(Activation.OnOrder, null);
                 player1.EndOrder();
             }
@@ -1979,7 +1987,17 @@ namespace VanguardEngine
             List<AbilityTimingData> list = _abilityTimings.GetAbilityTimingData(abilityTiming, timingCount.Item1, playerID);
             if (list.Count > 0 && list.Count >= timingCount.Item2)
                 return list[timingCount.Item2 - 1];
-            return null;
+            return GetNoActivationData(playerID);
+            //return null;
+        }
+
+        public AbilityTimingData GetNoActivationData(int playerID)
+        {
+            AbilityTimingData data = new AbilityTimingData();
+            data.playerID = playerID;
+            for (int i = 0; i < 200; i++)
+                data.allSnapshots[i] = _player1.GetSnapshot(i);
+            return data;
         }
 
         public void Sing(Player player, List<Card> cardsToSing, int count)
