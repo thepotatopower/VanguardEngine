@@ -12,7 +12,7 @@ function RegisterAbilities()
 end
 
 function Trigger()
-	return obj.Exists({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal})
+	return obj.IsPlayerTurn() and obj.Exists({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal, q.Other, o.Player})
 end
 
 function Condition()
@@ -22,6 +22,7 @@ end
 function Activation()
 	obj.Store(obj.SuperiorCallToSpecificCircle({q.Location, l.RevealedTrigger, q.Race, r.Ghost, q.UnitType, u.Normal, q.Count, 1}, FL.FrontRow, FL.OpenCircle))
 	if obj.Exists({q.Location, l.Stored}) and obj.CanPayCost("Cost") and obj.PayAdditionalCost() then
+		obj.PayCost("Cost")
 		obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusDrive, 1, p.UntilEndOfBattle)
 	end
 end

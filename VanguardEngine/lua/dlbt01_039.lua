@@ -10,7 +10,7 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.LastOrderPlayed, q.Other, o.Gem, q.Count, 1
+		return q.Location, l.Applicable, q.Other, o.Gem, q.Other, o.Player, q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.GC, q.Other, o.This
 	elseif n == 3 then

@@ -1,22 +1,23 @@
--- 魅惑の微笑 ツェツィーリヤ
+-- AiD 9-V
 
 function RegisterAbilities()
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
-	ability1.SetTiming(a.PlacedOnRC)
-	ability1.SetMovedFrom(l.Hand)
+	ability1.SetTiming(a.OnAttack)
+	ability1.SetLocation(l.RC)
 	ability1.SetTrigger("Trigger")
 	ability1.SetCondition("Condition")
 	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
 	ability1.SetActivation("Activation")
 end
 
 function Trigger()
-	return obj.IsApplicable()
+	return obj.IsBooster()
 end
 
 function Condition()
-	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.NotThisFieldID, q.Count, 3})
+	return obj.GetNumberOf({q.Location, l.Order}) >= 2
 end
 
 function Cost(check)
@@ -24,6 +25,10 @@ function Cost(check)
 	obj.CounterBlast(1)
 end
 
+function CanFullyResolve()
+	return obj.IsSameZone()
+end
+
 function Activation()
-	obj.Draw(1)
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 10000, p.UntilEndOfBattle)
 end

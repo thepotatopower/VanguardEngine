@@ -1,4 +1,4 @@
--- 魅惑の微笑 ツェツィーリヤ
+-- 軽快な旋律 シャーレット
 
 function RegisterAbilities()
 	local ability1 = NewAbility(GetID())
@@ -8,6 +8,7 @@ function RegisterAbilities()
 	ability1.SetTrigger("Trigger")
 	ability1.SetCondition("Condition")
 	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
 	ability1.SetActivation("Activation")
 end
 
@@ -16,7 +17,11 @@ function Trigger()
 end
 
 function Condition()
-	return obj.Exists({q.Location, l.PlayerRC, q.Other, o.NotThisFieldID, q.Count, 3})
+	return obj.Exists({q.Location, l.PlayerVC, q.Grade, 3, q.Other, o.GradeOrHigher})
+end
+
+function CanFullyResolve()
+	return obj.CanAddToHand({q.Location, l.Drop, q.Other, o.Song, q.Count, 1})
 end
 
 function Cost(check)
@@ -25,5 +30,5 @@ function Cost(check)
 end
 
 function Activation()
-	obj.Draw(1)
+	obj.ChooseAddToHand({q.Location, l.Drop, q.Other, o.Song, q.Count, 1})
 end

@@ -1,53 +1,40 @@
--- Earnescorrect Member, Evelyn
+-- Earnescorrectメンバー エブリン
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetMovedFrom(l.Hand)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 3
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Deck, q.NameContains, "Earnescorrect", q.Grade, 2, q.Other, o.GradeOrLess, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Revealed, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Name, "", q.Count, 1
-	end
+function Condition()
+	return obj.Exists({q.Location, l.PlayerVC, q.Name, obj.GetNameFromCardID("dlbt01_001")})
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnRCFromHand, p.HasPrompt, p.CB, 1
-	end
+function Cost(check)
+	if check then return obj.CanCB(1) end
+	obj.CounterBlast(1)
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.LastPlacedOnRCFromHand() then
-			return true
-		end
-	end
-	return false
+function CanFullyResolve()
+	return obj.GetNumberOf("Filter", {l.Deck}) >= 1
 end
 
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
+function Filter(id)
+	return not obj.NameIs(id, obj.GetNames({q.Location, l.PlayerRC})) and obj.GradeOf(id) <= 2 and obj.NameContains(id, obj.LoadName("Earnescorrect"))
 end
 
-function Activate(n)
-	if n == 1 then
-		obj.ChooseReveal(1)
-		obj.Inject(3, q.Name, obj.GetName(2))
-		if not obj.Exists(3) and obj.CanSuperiorCallToSpecificCircle(2, FL.OpenCircle) then
-			obj.SuperiorCallToSpecificCircle(2, FL.OpenCircle)
-		end
-		obj.Shuffle()
-	end
-	return 0
+function Activation()
+	obj.Select("Filter", {l.Deck}, 1, 0)
+	obj.Reveal({q.Location, l.Selected})
+	obj.SuperiorCallToSpecificCircle({q.Location, l.Selected}, FL.OpenCircle)
+	obj.Shuffle()
 end

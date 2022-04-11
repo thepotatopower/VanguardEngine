@@ -1,50 +1,31 @@
--- Spurring Maiden, Ellenia
+-- 鞭撻の乙女 イレーニア
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetMovedFrom(l.Hand)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Drop, q.Grade, 2, q.Grade, 1, q.Grade, 0, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.Selected, q.Count, 1
-	end
+function Cost(check)
+	if check then return obj.CanCB(1) and obj.CanSB(1) end
+	obj.CounterBlast(1)
+	obj.SoulBlast(1)
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnRCFromHand, p.HasPrompt, p.CB, 1, p.SB, 1
-	end
+function CanFullyResolve()
+	return obj.CanSuperiorCall({q.Location, l.Drop, q.Grade, 2, q.Other, o.GradeOrLess, q.Count, 1})
 end
 
-function CheckCondition(n)
-	if n == 1 then 
-		if obj.LastPlacedOnRCFromHand() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Select(1)
-		obj.SuperiorCall(2)
-		obj.AddTempPower(2, 5000)
-	end
-	return 0
+function Activation()
+	obj.Store(obj.SuperiorCall({q.Location, l.Drop, q.Grade, 2, q.Other, o.GradeOrLess, q.Count, 1}))
+	obj.AddCardValue({q.Location, l.Stored}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end

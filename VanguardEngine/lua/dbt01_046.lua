@@ -56,11 +56,11 @@ function Activate(n)
 		obj.RearrangeOnTop(1)
 	elseif n == 2 then
 		obj.LookAtTopOfDeck(1)
-		obj.ChooseSendToTop(3)
+		obj.RearrangeOnTop(3)
 		if obj.GetNumberOf(4) > 0 then
-			obj.SendToTop(4)
+			obj.RearrangeOnTop(4)
 		else
-			obj.SendToBottom(1)
+			obj.RearrangeOnBottom(1)
 			obj.AddTempPower(2, 2000)
 		end
 	end

@@ -1,47 +1,34 @@
--- Overserious President, Equinoa
+-- 生真面目会長 エクノア
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetLocation(l.RC)
+	ability1.SetProperty(p.OncePerTurn)
+	ability1.SetTiming(a.OnAttack)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 1
+function Trigger()
+	return obj.IsAttackingUnit()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function Condition()
+	return obj.PlayerHasState(ps.VanguardHasSungSongThisTurn)
+end
+
+function Activation()
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 5000, p.UntilEndOfTurn)
+	if obj.CanPayCost("Cost") and obj.PayAdditionalCost() then
+		obj.PayCost("Cost")
+		obj.Draw(2)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnAttack, p.HasPrompt, p.OncePerTurn, p.CB, 1, p.Discard, 1, p.CostNotRequired
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() and obj.PlayerHasState(ps.VanguardHasSungSongThisTurn) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddTempPower(1, 5000)
-		if obj.ChoosesToPayCost() then
-			obj.Draw(2)
-		end
-	end
-	return 0
+function Cost(check)
+	if check then return obj.CanCB(1) and obj.CanDiscard(1) end
+	obj.CounterBlast(1) 
+	obj.Discard(1)
 end

@@ -43,6 +43,7 @@ namespace VanguardEngine
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
         public EventHandler<CardEventArgs> OnChosen;
+        public bool _cancellable = false;
 
         public void Initialize(Player player1, Player player2)
         {
@@ -296,7 +297,7 @@ namespace VanguardEngine
             intlist_input.AddRange(availableCircles);
             _max = count;
             SelectCircle_Input();
-            return intlist_input;
+            return new List<int>(intlist_input);
         }
 
         protected virtual void SelectCircle_Input()
@@ -601,6 +602,11 @@ namespace VanguardEngine
             cardsToSelect.Clear();
             cardsToSelect.AddRange(cardsToRearrange);
             intlist_input.Clear();
+            if (cardsToRearrange.Count == 1)
+            {
+                intlist_input.Add(cardsToRearrange[0].tempID);
+                return new List<int>(intlist_input);
+            }
             if (cardsToRearrange.Count > 0)
                 ChooseOrder_Input();
             return new List<int>(intlist_input);
@@ -643,7 +649,7 @@ namespace VanguardEngine
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query)
         {
             _actingPlayer = actingPlayer;
-            return SelectFromList(actingPlayer, cards, count, min, query, false);
+            return SelectFromList(actingPlayer, cards, count, min, query, new List<int>());
         }
 
         public List<int> SelectFromList(Player actingPlayer, List<List<Card>> cards, int count, int min, string query)
@@ -656,10 +662,14 @@ namespace VanguardEngine
             return SelectFromList(actingPlayer, allCards, count, min, query);
         }
 
-        public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, bool sameName)
+        public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, List<int> specifications)
         {
             if (count == 0 && min == 0)
                 return new List<int>();
+            if (specifications.Contains(Property.Cancellable))
+                _cancellable = true;
+            else
+                _cancellable = false;
             _actingPlayer = actingPlayer;
             intlist_input.Clear();
             int originalCount = count;
@@ -680,100 +690,116 @@ namespace VanguardEngine
                 intlist_input.Clear();
                 return new List<int>(intlist_input);
             }
-            if (_query.Contains("retire") && cards.Count >= originalCount && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
+            if (count == min && cards.Count == count)
             {
-                while (count > 1 && _query.Contains("retire") && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
-                {
-                    _query = "Choose " + count + " card(s)";
-                    if (query == "")
-                        _query += ".";
-                    else
-                        _query += " " + query;
-                    _query += " min: (" + min + ")";
-                    _max = 1;
-                    if (min > 0)
-                        _min = 1;
-                    else
-                        _min = 0;
-                    _trueMin = trueMin;
-                    SelectFromList_Input();
-                    if (intlist_input.Count == 0)
-                        break;
-                    else
-                    {
-                        if (_actingPlayer.CanCountAsTwoRetires(intlist_input[0]) && YesNo(actingPlayer, "Count as two retires?"))
-                        {
-                            count -= 2;
-                            min -= 2;
-                            trueMin -= 2;
-                        }
-                        else
-                        {
-                            count--;
-                            min--;
-                            trueMin--;
-                        }
-                        temporaryList.Add(intlist_input[0]);
-                        cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
-                        intlist_input.Clear();
-                    }
-                }
-            }
-            if (sameName && count > 1)
-            {
-                _max = 1;
-                if (min > 0)
-                    _min = 1;
-                else
-                    _min = 0;
-                SelectFromList_Input();
-                cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
-                temporaryList.Add(intlist_input[0]);
-                List<Card> currentList = new List<Card>(cardsToSelect);
-                foreach (Card card in currentList)
-                {
-                    if (card.name != _actingPlayer.GetCard(intlist_input[0]).name)
-                        cardsToSelect.Remove(card);
-                }
-                count--;
-                min--;
-                intlist_input.Clear();
-            }
-            if (cardSets.Count > 1)
-            {
-                cardsToSelect.Clear();
-                List<int> selectedIDs = new List<int>();
-                while (selectedIDs.Count < min)
-                {
-                    _max = 1;
-                    _min = 1;
-                    cardsToSelect.Clear();
-                    foreach (List<Card> set in cardSets)
-                    {
-                        if (selectedIDs.Exists(id => set.Exists(card => card.tempID == id)))
-                            continue;
-                        cardsToSelect.AddRange(set);
-                    }
-                    SelectFromList_Input();
-                    selectedIDs.AddRange(intlist_input);
-                }
-                intlist_input.Clear();
-                intlist_input.AddRange(selectedIDs);
+                foreach (Card card in cards)
+                    intlist_input.Add(card.tempID);
             }
             else
             {
-                if (count > 0 || min > 0)
+                if (_query.Contains("retire") && cards.Count >= originalCount && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
                 {
-                    _max = count;
-                    _min = min;
+                    while (count > 1 && _query.Contains("retire") && cards.Exists(card => _actingPlayer.CanCountAsTwoRetires(card.tempID) && !_actingPlayer.IsEnemy(card.tempID)))
+                    {
+                        _query = "Choose " + count + " card(s)";
+                        if (query == "")
+                            _query += ".";
+                        else
+                            _query += " " + query;
+                        _query += " min: (" + min + ")";
+                        _max = 1;
+                        if (min > 0)
+                            _min = 1;
+                        else
+                            _min = 0;
+                        _trueMin = trueMin;
+                        SelectFromList_Input();
+                        if (intlist_input.Count == 0)
+                            break;
+                        else
+                        {
+                            if (_actingPlayer.CanCountAsTwoRetires(intlist_input[0]) && YesNo(actingPlayer, "Count as two retires?"))
+                            {
+                                count -= 2;
+                                min -= 2;
+                                trueMin -= 2;
+                            }
+                            else
+                            {
+                                count--;
+                                min--;
+                                trueMin--;
+                            }
+                            temporaryList.Add(intlist_input[0]);
+                            cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
+                            intlist_input.Clear();
+                        }
+                    }
                 }
-                if (count == min && cards.Count == count)
+                if ((specifications.Contains(Property.SameName) || specifications.Contains(Property.DifferentNames)) && count > 1)
                 {
-                    foreach (Card card in cards)
-                        intlist_input.Add(card.tempID);
+                    while (temporaryList.Count < min)
+                    {
+                        _max = 1;
+                        if (min > 0)
+                            _min = 1;
+                        else
+                            _min = 0;
+                        SelectFromList_Input();
+                        if (intlist_input.Count > 0)
+                        {
+                            cardsToSelect.Remove(cardsToSelect.Find(card => card.tempID == intlist_input[0]));
+                            temporaryList.Add(intlist_input[0]);
+                            foreach (int tempID in temporaryList)
+                            {
+                                if (specifications.Contains(Property.SameName))
+                                    cardsToSelect.RemoveAll(card => card.name != _actingPlayer.GetCard(tempID).name);
+                                if (specifications.Contains(Property.DifferentNames))
+                                    cardsToSelect.RemoveAll(card => card.tempID == tempID && card.name == _actingPlayer.GetCard(tempID).name);
+                            }
+                            intlist_input.Clear();
+                        }
+                        else
+                            break;
+                    }
+                    intlist_input.Clear();
+                }
+                if (cardSets.Count > 1)
+                {
+                    cardsToSelect.Clear();
+                    List<int> selectedIDs = new List<int>();
+                    while (selectedIDs.Count < min)
+                    {
+                        _max = 1;
+                        _min = 1;
+                        cardsToSelect.Clear();
+                        foreach (List<Card> set in cardSets)
+                        {
+                            if (selectedIDs.Exists(id => set.Exists(card => card.tempID == id)))
+                                continue;
+                            cardsToSelect.AddRange(set);
+                        }
+                        SelectFromList_Input();
+                        selectedIDs.AddRange(intlist_input);
+                    }
+                    intlist_input.Clear();
+                    intlist_input.AddRange(selectedIDs);
                 }
                 else
-                    SelectFromList_Input();
+                {
+                    if (count > 0 || min > 0)
+                    {
+                        _max = count;
+                        _min = min;
+                    }
+                    if (count == min && cards.Count == count)
+                    {
+                        foreach (Card card in cards)
+                            intlist_input.Add(card.tempID);
+                    }
+                    else
+                        SelectFromList_Input();
+                }
             }
             intlist_input.AddRange(temporaryList);
             foreach (int tempID in intlist_input)
@@ -786,6 +812,7 @@ namespace VanguardEngine
                 }
             }
             cardSets.Clear();
+            _cancellable = false;
             return new List<int>(intlist_input);
         }
 
@@ -927,6 +954,7 @@ namespace VanguardEngine
         public const int MoveRearguardFreeSwap = 16;
         public const int ActivateAbilityFromDrop = 17;
         public const int ActivateAbilityFromSoul = 18;
+        public const int ActivateAbilityFromOrderZone = 19;
     }
 
     public class BattlePhaseAction

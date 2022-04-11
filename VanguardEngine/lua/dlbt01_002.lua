@@ -37,8 +37,7 @@ function OnMainPhase()
 	obj.Select("", {l.Bind}, 1, 1, {}, Prompt.AddToHand)
 	obj.Store(obj.AddToHand({q.Location, l.Selected}))
 	if obj.GetNumberOf({q.Location, l.Stored}) > 0 then
-		obj.Select({q.Location, l.Hand, q.Count, 1})
-		obj.Bind({q.Location, l.Selected})
+		obj.BindTopOfDeck(1)
 	end
 end
 

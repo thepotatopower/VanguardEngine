@@ -1,65 +1,34 @@
--- Aim to be the Strongest Idol!
+-- 目指せ！最強のアイドル！
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCondition("Condition")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 5
+function Condition()
+	return obj.Exists({q.Location, l.PlayerUnits, q.NameContains, obj.LoadName("Earnescorrect"), q.Count, 5, q.Other, o.DifferentNames})
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerUnits, q.NameContains, "Earnescorrect", q.Other, o.DifferentNames, q.Count, 5
-	elseif n == 2 then
-		return q.Location, l.PlayerUnits, q.NameContains, "Earnescorrect"
-	elseif n == 3 then
-		return q.Location, l.EnemyVC, q.Grade, 3, q.Other, o.GradeOrHigher, q.Count, 1
-	elseif n == 4 then
-		return q.Location, l.PlayerVC, q.Name, "Earnescorrect Leader, Clarissa", q.Count, 1
-	elseif n == 5 then
-		return q.Location, l.PlayerVC, q.Other, o.This
-	end
-end
-
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt
-	elseif n == 2 then
-		return a.Cont, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.Exists(1) then 
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() then
-			return true
+function Activation()
+	obj.AddCardValue({q.Location, l.PlayerUnits, q.NameContains, obj.LoadName("Earnescorrect")}, cs.BonusPower, 5000, p.UntilEndOfTurn)
+	if obj.Exists({q.Location, l.EnemyVC, q.Grade, 3, q.Other, o.GradeOrHigher}) then
+		obj.Select({q.Location, l.PlayerUnits, q.Name, obj.GetNameFromCardID("dlbt01_001"), q.Count, 1})
+		local id = obj.GetID({q.Location, l.Selected})
+		if id >= 0 then
+			local given = GiveAbility(GetID(), id)
+			given.SetDescription(2)
+			given.SetTiming(a.Cont)
+			given.SetLocation(l.VC)
+			given.SetActivation("Cont")
+			given.SetResetTarget(id)
+			given.SetResetTiming(p.UntilEndOfTurn)
 		end
 	end
-	return false
 end
 
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddTempPower(2, 5000)
-		if obj.Exists(3) then
-			obj.ChooseGiveAbility(4, 2)
-		end
-	elseif n == 2 then
-		obj.AddContinuousState(5, cs.CanChooseThreeCirclesWhenAttacking)
-	end
-	return 0
+function Cont()
+	obj.AddCardState({q.Other, o.This}, cs.CanChooseThreeCirclesWhenAttacking, p.Continuous)
 end

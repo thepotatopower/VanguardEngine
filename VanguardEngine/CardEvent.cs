@@ -27,6 +27,7 @@ namespace VanguardEngine
         public Tuple<int, int> previousLocation { get; set; }
         public Tuple<int, int> currentLocation { get; set; }
         public RecordedUnitValue recordedUnitValue { get; set; }
+        public List<CardValues> cardValues { get; set; }
         public bool left = true;
 
 
@@ -37,6 +38,7 @@ namespace VanguardEngine
         {
             cardList = new List<Card>();
             intList = new List<int>();
+            cardValues = new List<CardValues>();
         }
     }
 }

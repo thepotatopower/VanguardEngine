@@ -20,5 +20,5 @@ end
 function Activation()
 	obj.RevealFromDeck(2)
 	obj.AddToSoul({q.Location, l.Revealed, q.UnitType, u.Normal})
-	obj.SendToBottom({q.Location, l.Revealed})
+	obj.RearrangeOnBottom({q.Location, l.Revealed})
 end

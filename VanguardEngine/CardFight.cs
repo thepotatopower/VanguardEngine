@@ -47,11 +47,11 @@ namespace VanguardEngine
         string _connectionString;
         string _namesPath;
         public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
-        int _initialDamage = 2;
+        int _initialDamage = 3;
         int _initialSoul = 3;
         int _initialDrop = 0;
 
-        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, string namesPath, int clientNumber)
+        public bool Initialize(List<Card> Deck1, List<Card> Deck2, List<Card> tokens, InputManager inputManager, string luaPath, string connectionString, string namesPath, int seed, int clientNumber)
         {
             //if (File.Exists("enginelog.txt"))
             //{
@@ -83,7 +83,7 @@ namespace VanguardEngine
             inputManager.Initialize(_player1, _player2);
             _inputManager = inputManager;
             luaInterpreter = new LuaInterpreter(luaPath, this);
-            field.Initialize(deck1, deck2, tokens, clientNumber);
+            field.Initialize(deck1, deck2, tokens, seed, clientNumber);
             _player1.Initialize(1, field);
             _player2.Initialize(2, field);
             for (int i = 0; i < deck1.Count; i++)
@@ -453,6 +453,8 @@ namespace VanguardEngine
             player1.Ride(selection);
             AddAbilityTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
             AddAbilityTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
+            foreach (Card card in player1.GetLastPlacedOnVC())
+                GenerateActionLog(Location.RodeThisTurn, player1._playerID, card, new List<Card>());
         }
 
         public void Discard(Player player1, Player player2, List<Card> cardsToSelect, int max, int min)
@@ -631,6 +633,20 @@ namespace VanguardEngine
                         ActivateACT(player1, ACTs[selectedAbility]);
                     }
                 }
+                else if (selection == MainPhaseAction.ActivateAbilityFromOrderZone)
+                {
+                    List<Ability> ACTs = new List<Ability>();
+                    foreach (AbilityTimingCount ability in GetACTAbilities(player1))
+                    {
+                        if (player1.GetOrderZone().Exists(card => card.tempID == ability.ability.GetID()))
+                            ACTs.Add(ability.ability);
+                    }
+                    int selectedAbility = _inputManager.SelectAbility(player1, ACTs);
+                    if (selectedAbility != ACTs.Count)
+                    {
+                        ActivateACT(player1, ACTs[selectedAbility]);
+                    }
+                }
                 else if (selection == MainPhaseAction.SoulCharge)
                 {
                     player1.SoulCharge(1);
@@ -725,6 +741,8 @@ namespace VanguardEngine
                 AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetCard(tempID));
             }
             //AddAbilityTiming(Activation.PlacedOnRC, player1._playerID, player1.GetLastPlacedOnRC(), player1.IsAlchemagic());
+            foreach (Card card in player1.GetLastPlacedOnRCFromHand())
+                AddAbilityTiming(Activation.PlacedOnRCOtherThanFromHand, player1._playerID, card);
             //if (sc == 1)
             //    AddAbilityTiming(Activation.PlacedOnRCFromHand, player1._playerID, player1.GetLastPlacedOnRCFromHand(), player1.IsAlchemagic());
             //else
@@ -864,12 +882,14 @@ namespace VanguardEngine
                                 selection2 = _inputManager.SelectCardToGuard(player2);
                             else
                                 selection2 = -1;
+                            List<int> specifications = new List<int>();
+                            specifications.Add(Property.Cancellable);
                             if (player2.MustGuardWithTwo())
-                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 2, "to guard with.");
+                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 2, "to guard with.", specifications);
                             else if (player2.MyStates.GetValue(PlayerState.GuardRestrict) > 1)
-                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, player2.MyStates.GetValue(PlayerState.GuardRestrict), "to guard with.");
+                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, player2.MyStates.GetValue(PlayerState.GuardRestrict), "to guard with.", specifications);
                             else
-                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "to guard with.");
+                                selections = _inputManager.SelectFromList(player2, player2.GetGuardableCards(), player2.GetGuardableCards().Count, 1, "to guard with.", specifications);
                             if (selections.Count == 0)
                                 continue;
                             player2.Guard(selections, selection2);
@@ -1224,7 +1244,7 @@ namespace VanguardEngine
             }
             foreach (Ability ability in abilities)
             {
-                if (ability.CanPayCost(-1, null))
+                if (ability.CanActivate() && ability.CanPayCost(-1, null))
                     available.Add(ability);
             }
             return ConvertToAbilityTimingCounts(available);
@@ -1635,7 +1655,7 @@ namespace VanguardEngine
                 player = _player2;
             if (_currentAbility != null)
                 abilitySnapshot = player.GetSnapshot(_currentAbility.GetCard().tempID);
-            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot, relevantSnapshots);
+            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, card.OriginalGrade(), abilitySnapshot, relevantSnapshots);
             if (!actionLogs.ContainsKey(location))
                 actionLogs[location] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(playerID, snapshot);
@@ -1653,17 +1673,10 @@ namespace VanguardEngine
             return player1.SoulCharge(count);
         }
 
-        public List<int> Search(Player player1, Player player2, List<Card> canSearch, int max, int min)
-        {
-            List<int> cardsToSearch = _inputManager.SelectFromList(player1, canSearch, max, min, "to search.");
-            player1.Search(cardsToSearch);
-            return cardsToSearch;
-        }
-
         public List<int> Search(Player player, List<Card> cards, int max, int min)
         {
-            List<int> cardsToSearch = _inputManager.SelectFromList(_player1, cards, max, min, "to search.");
-            _player1.Search(cardsToSearch);
+            List<int> cardsToSearch = _inputManager.SelectFromList(player, cards, max, min, "to search.");
+            player.Search(cardsToSearch);
             return cardsToSearch;
         }
 
@@ -1879,7 +1892,15 @@ namespace VanguardEngine
 
         public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min, string query, bool sameName)
         {
-            List<int> selectedCards = _inputManager.SelectFromList(player1, cardsToSelect, max, min, query, sameName);
+            List<int> specifications = new List<int>();
+            if (sameName)
+                specifications.Add(Property.SameName);
+            return _inputManager.SelectFromList(player1, cardsToSelect, max, min, query, specifications);
+        }
+
+        public List<int> SelectCards(Player player1, List<Card> cardsToSelect, int max, int min, string query, List<int> specifications)
+        {
+            List<int> selectedCards = _inputManager.SelectFromList(player1, cardsToSelect, max, min, query, specifications);
             AddToChosen(selectedCards);
             return selectedCards;
         }
@@ -1907,13 +1928,13 @@ namespace VanguardEngine
         public void RearrangeOnTop(Player player1, List<Card> cardsToRearrange)
         {
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
-            player1.RearrangeOnTop(newOrder);
+            player1.Rearrange(newOrder, false);
         }
 
         public void RearrangeOnBottom(Player player1, List<Card> cardsToRearrange)
         {
             List<int> newOrder = _inputManager.ChooseOrder(player1, cardsToRearrange);
-            player1.RearrangeOnBottom(newOrder);
+            player1.Rearrange(newOrder, true);
         }
 
         public void ChooseBind(Player player1, List<Card> cards, int max, int min)

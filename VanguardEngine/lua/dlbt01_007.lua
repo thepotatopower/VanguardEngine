@@ -1,58 +1,57 @@
--- Capriccio of Circulating Star, Ingrid
+-- 巡り星の綺想曲 イングリット
 
-function NumberOfAbilities()
-	return 2
+function RegisterAbilities()
+	-- on place
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetNotMovedFrom(l.Hand)
+	ability1.SetTrigger("OnPlaceTrigger")
+	ability1.SetCondition("OnPlaceCondition")
+	ability1.SetActivation("OnPlace")
+	-- on attack
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(2)
+	ability2.SetTiming(a.OnAttack)
+	ability2.SetLocation(l.RC)
+	ability2.SetTrigger("OnAttackTrigger")
+	ability2.SetCondition("OnAttackCondition")
+	ability2.SetActivation("OnAttack")
 end
 
-function NumberOfParams()
-	return 3
+function OnPlaceTrigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Damage, q.Other, o.FaceDown, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.SameColumn, q.Other, o.Resting, q.Count, 1
-	elseif n == 3 then
-		return q.Location, l.PlayerRC, q.Other, o.This
+function OnPlaceCondition()
+	return obj.Exists({q.Location, l.Damage, q.Other, o.FaceDown}) or 
+	(obj.IsSameZone() and obj.Exists({q.Location, l.PlayerRC, q.Other, o.Resting, q.Other, o.SameColumn}))
+end
+
+function OnPlace()
+	obj.CounterCharge(1)
+	obj.ChooseStand({q.Location, l.PlayerRC, q.Other, o.Resting, q.Other, o.SameColumn})
+end
+
+function OnAttackTrigger()
+	return obj.IsAttackingUnit()
+end
+
+function OnAttackCondition()
+	return obj.IsSameZone()
+end
+
+function OnAttack()
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 5000, p.UntilEndOfBattle)
+	if obj.IsSameZone() then
+		local timedTrigger = GiveAbility(GetID(), GetID())
+		timedTrigger.SetTiming(a.OnBattleEnds)
+		timedTrigger.SetActivation("TimedTrigger")
+		timedTrigger.SetResetTarget(GetID())
+		timedTrigger.SetResetTiming(p.UntilEndOfBattle)
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnRCOtherThanFromHand, p.HasPrompt, p.IsMandatory
-	elseif n == 2 then
-		return a.OnAttack, p.IsMandatory
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		if obj.IsApplicable() and obj.Exists(1) then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsRearguard() and obj.IsAttackingUnit() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.CounterCharge(1)
-		obj.ChooseStand(2)
-	elseif n == 2 then
-		obj.AddBattleOnlyPower(3, 5000)
-		obj.AddUntilEndOfBattleState(3, cs.SendToBottomAtEndOfBattle)
-	end
-	return 0
+function TimedTrigger()
+	obj.SendToBottom({q.Other, o.ThisFieldID})
 end

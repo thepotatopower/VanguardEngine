@@ -18,19 +18,20 @@ namespace VanguardEngine
             bool start = false;
             //LuaTest testing = new LuaTest();
             //testing.Testing();
-            //int seed = 28583;
+            //int seed = 542367287;
             //Random r = new Random(seed);
             //Console.WriteLine("seed: " + seed);
-            //Console.WriteLine(r.Next(50));
-            //Console.WriteLine(r.Next(49));
-            //Console.WriteLine(r.Next(48));
+            //Console.WriteLine(r.Next(100000));
+            //Console.WriteLine(r.Next(100000));
+            //Console.WriteLine(r.Next(100000));
             //Console.ReadLine();
+            Random r = new Random();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("zorga.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("zorga.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("testDeck.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
-            start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", "Data Source=./names.db;Version=3;", 0);
+            start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", "Data Source=./names.db;Version=3;", r.Next(), 0);
             if (!start)
             {
                 Console.WriteLine("Initialization error.");

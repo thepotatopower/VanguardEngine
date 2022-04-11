@@ -1,62 +1,34 @@
--- Worldwide Special Live Tour!
+-- 世界周遊スペシャルライブツアー！
 
-function NumberOfAbilities()
-	return 3
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.OnACT)
+	ability1.SetLocation(l.Order)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
+	ability1.SetProperty(p.OncePerTurn)
 end
 
-function NumberOfParams()
-	return 2
+function Cost(check)
+	if check then return obj.CanCB(2) end
+	obj.CounterBlast(2)
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.PlayerVC, q.Count, 1
-	elseif n == 2 then
-		return q.Location, l.PlayerRC
+function Activation()
+	obj.Select({q.Location, l.PlayerVC, q.Count, 1})
+	local id = obj.GetID({q.Location, l.Selected})
+	if id >= 0 then
+		local newAbility = GiveAbility(GetID(), id)
+		newAbility.SetDescription(2)
+		newAbility.SetTiming(a.Cont)
+		newAbility.SetLocation(l.VC)
+		newAbility.SetResetTiming(p.UntilEndOfTurn)
+		newAbility.SetResetTarget(id)
+		newAbility.SetActivation("Cont")
 	end
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt
-	elseif n == 2 then
-		return a.OnACT, p.HasPrompt, p.OncePerTurn, p.CB, 2
-	elseif n == 3 then
-		return a.Cont, p.IsMandatory, p.Given
-	end
-end
-
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	if n == 2 then
-		if obj.IsInOrderZone() then
-			return true
-		end
-	elseif n == 2 then
-		if obj.IsVanguard() then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		return true
-	elseif n == 2 then
-		return true
-	elseif n == 3 then
-		return true
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 2 then
-		obj.ChooseGiveAbility(1, 3)
-	elseif n == 3 then
-		obj.SetAbilityPower(2, 5000)
-	end
-	return 0
+function Cont()
+	obj.AddCardValue({q.Location, l.PlayerRC}, cs.BonusPower, 5000, p.Continuous)
 end

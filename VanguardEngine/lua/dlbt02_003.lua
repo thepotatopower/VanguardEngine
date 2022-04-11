@@ -10,11 +10,11 @@ function RegisterAbilities()
 end
 
 function Condition()
-	return obj.GetNumberOf("ConditionFilter", {l.Units}) > 0
+	return obj.GetNumberOf("ConditionFilter", {l.PlayerVC}) > 0
 end
 
 function ConditionFilter(id)
-	return obj.IsAttackingUnit(id) and obj.IsVanguard(id) and obj.NameIs(id, obj.GetNameFromCardID("dlbt01_004"))
+	return obj.IsAttackingUnit(id) and obj.NameIs(id, obj.GetNameFromCardID("dlbt01_004"))
 end
 
 function Activation()
@@ -41,7 +41,7 @@ function SapphireFilter1(snapshot)
 end
 
 function SapphireFilter2(snapshot)
-	return snapshot.name == obj.GetNameFromCardID("dlbt01_116") and snapshot.abilitySource.location == l.VC
+	return snapshot.name == obj.GetNameFromCardID("dlbt01_116") and snapshot.SourceIsAbility() and snapshot.abilitySource.location == l.VC
 end
 
 function ActivationFilter(id)

@@ -10,7 +10,7 @@ end
 
 function GetParam(n)
 	if n == 1 then
-		return q.Location, l.Applicable, q.Name, "Truehearted Ruby", q.Count, 1
+		return q.Location, l.Applicable, q.Name, "Truehearted Ruby", q.Other, o.Player, q.Count, 1
 	elseif n == 2 then
 		return q.Location, l.PlayerVC, q.Name, "Prismajica, Wilista", q.Count, 1
 	elseif n == 3 then

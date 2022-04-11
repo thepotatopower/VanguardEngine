@@ -1,48 +1,29 @@
--- Dreaming Eyes, Emmeline
+-- パワフルダッシュ アンドーラ
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetDescription(1)
+	ability1.SetTiming(a.PlacedOnRC)
+	ability1.SetMovedFrom(l.Hand)
+	ability1.SetTrigger("Trigger")
+	ability1.SetCost("Cost")
+	ability1.SetCanFullyResolve("CanFullyResolve")
+	ability1.SetActivation("Activation")
 end
 
-function NumberOfParams()
-	return 2
+function Trigger()
+	return obj.IsApplicable()
 end
 
-function GetParam(n)
-	if n == 1 then
-		return q.Location, l.Applicable, q.Other, o.This
-	elseif n == 2 then
-		return q.Location, l.PlayerRC, q.Other, o.This
-	end
+function Cost(check)
+	if check then return obj.CanCB(2) end
+	obj.CounterBlast(2)
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.PlacedOnRCFromHand, p.HasPrompt, p.CB, 2
-	end
+function CanFullyResolve()
+	return obj.IsSameZone()
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		if obj.Exists(1) then
-			return true
-		end
-	end
-	return false
-end
-
-function CanFullyResolve(n) 
-	if n == 1 then
-		if obj.Exists(2) then
-			return true
-		end
-	end
-	return false
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.AddCritical(2, 1)
-	end
-	return 0
+function Activation()
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusCritical, 1, p.UntilEndOfTurn)
 end

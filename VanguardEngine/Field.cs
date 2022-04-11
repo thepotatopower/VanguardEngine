@@ -65,6 +65,7 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnZoneSwapped;
         public event EventHandler<CardEventArgs> OnShuffle;
         public Random rand = new Random();
+        public Random shuffleRand;
 
         public Deck Player1Deck
         {
@@ -403,8 +404,9 @@ namespace VanguardEngine
             _turn++;
         }
 
-        public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens, int clientNumber)
+        public void Initialize(List<Card> deck1, List<Card> deck2, List<Card> tokens, int seed, int clientNumber)
         {
+            shuffleRand = new Random(seed);
             List<Card> cards = new List<Card>();
             List<Card> cards2 = new List<Card>();
             _clientNumber = clientNumber;
@@ -659,34 +661,47 @@ namespace VanguardEngine
                 deck = Player1Deck;
             else
                 deck = Player2Deck;
-            if (_clientNumber != 0)
+            deck.readSeed(shuffleRand);
+            if (OnShuffle != null)
             {
-                if (playerID == _clientNumber)
-                {
-                    int seed = FisherYates.Shuffle(deck.GetCards());
-                    deck.readSeed(seed);
-                    _seedToBeSent = seed;
-                    if (OnShuffle != null)
-                    {
-                        CardEventArgs args = new CardEventArgs();
-                        args.i = seed;
-                        args.playerID = playerID;
-                        OnShuffle(this, args);
-                    }
-                }
-                else
-                {
-                    Log.WriteLine("waiting for seed");
-                    while (_seedsToBeRead.Count == 0) ;
-                    Log.WriteLine("reading seed");
-                    deck.readSeed(_seedsToBeRead.Dequeue());
-                    Log.WriteLine("seed read");
-                }
+                CardEventArgs args = new CardEventArgs();
+                //args.i = seed;
+                args.playerID = playerID;
+                OnShuffle(this, args);
             }
-            else
-            {
-                deck.readSeed(FisherYates.Shuffle(deck.GetCards()));
-            }
+            //if (_clientNumber != 0)
+            //{
+            //    if (playerID == _clientNumber)
+            //    {
+            //        int seed = FisherYates.Shuffle(deck.GetCards());
+            //        deck.readSeed(seed);
+            //        _seedToBeSent = seed;
+            //        if (OnShuffle != null)
+            //        {
+            //            CardEventArgs args = new CardEventArgs();
+            //            args.i = seed;
+            //            args.playerID = playerID;
+            //            OnShuffle(this, args);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        Log.WriteLine("waiting for seed");
+            //        while (_seedsToBeRead.Count == 0) ;
+            //        Log.WriteLine("reading seed");
+            //        deck.readSeed(_seedsToBeRead.Dequeue());
+            //        Log.WriteLine("seed read");
+            //    }
+            //}
+            //else
+            //{
+            //    deck.readSeed(FisherYates.Shuffle(deck.GetCards()));
+            //}
+        }
+
+        public void Shuffle(List<Card> cards)
+        {
+            FisherYates.Shuffle(cards, shuffleRand);
         }
 
         public void RemoveCard(Card card)
@@ -1204,8 +1219,9 @@ namespace VanguardEngine
                 _untilEndOfTurnValues[tuple].Add(value);
             }
             else if (_untilEndOfTurnValues[tuple].Count == 0)
-                _untilEndOfTurnValues[tuple].Add(0);
-            _untilEndOfTurnValues[tuple][0] += value;
+                _untilEndOfTurnValues[tuple].Add(value);
+            else
+                _untilEndOfTurnValues[tuple][0] += value;
         }
 
         public void AddUntilEndOfTurnAbility(int tempID, int abilityTempID, int activationNumber)
@@ -1628,14 +1644,12 @@ namespace VanguardEngine
 
         public void readSeed(int seed)
         {
-            //Card temp;
-            //for (int n = _cards.Count - 1; n > 0; --n)
-            //{
-            //    temp = _cards[n];
-            //    _cards[n] = _cards[_shuffleKey[n]];
-            //    _cards[_shuffleKey[n]] = temp;
-            //}
-            FisherYates.Shuffle(_cards, seed);
+            //FisherYates.Shuffle(_cards, seed);
+        }
+
+        public void readSeed(Random rand)
+        {
+            FisherYates.Shuffle(_cards, rand);
         }
 
         //public void Shuffle()
@@ -1987,7 +2001,7 @@ namespace VanguardEngine
         static Random rand = new Random();
         //  Based on Java code from wikipedia:
         //  http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
-        static public int Shuffle(List<Card> list, int seed)
+        static int Shuffle(List<Card> list, int seed)
         {
             Random r;
             int newSeed = -1;
@@ -2012,10 +2026,25 @@ namespace VanguardEngine
             return newSeed;
         }
 
-        static public int Shuffle(List<Card> list)
+        static public void Shuffle(List<Card> list, Random r)
         {
-            return Shuffle(list, -1);
+            Card temp;
+            int k;
+            int[] key = new int[list.Count];
+            for (int n = list.Count - 1; n > 0; --n)
+            {
+                k = r.Next(n + 1);
+                key[n] = k;
+                temp = list[n];
+                list[n] = list[k];
+                list[k] = temp;
+            }
         }
+
+        //static public int Shuffle(List<Card> list)
+        //{
+        //    return Shuffle(list, -1);
+        //}
     }
 
     public class Snapshot

@@ -2664,15 +2664,16 @@ namespace VanguardEngine
             }
             if (param.Others.Contains(Other.Shuffled))
             {
-                Random r = new Random();
-                List<Card> shuffled = new List<Card>();
-                while (currentPool.Count > 0)
-                {
-                    Card randomCard = currentPool[r.Next(currentPool.Count)];
-                    shuffled.Add(randomCard);
-                    currentPool.Remove(randomCard);
-                }
-                return shuffled;
+                //Random r = new Random();
+                //List<Card> shuffled = new List<Card>();
+                //while (currentPool.Count > 0)
+                //{
+                //    Card randomCard = currentPool[r.Next(currentPool.Count)];
+                //    shuffled.Add(randomCard);
+                //    currentPool.Remove(randomCard);
+                //}
+                //return shuffled;
+                return _player1.ShuffleList(currentPool);
             }
             return currentPool;
         }
@@ -3673,7 +3674,7 @@ namespace VanguardEngine
         public List<int> Search(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
-            return _cardFight.Search(_player1, _player2, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
+            return _cardFight.Search(_player1, cardsToSelect, GetCount(paramNum), GetMin(paramNum));
         }
 
         public List<int> Search(string filter, List<int> locations, int max, int min)
@@ -3966,6 +3967,12 @@ namespace VanguardEngine
         {
             SetParam(param, 1);
             return ChooseSendToBottom(1, true);
+        }
+
+        public void RevealAndSendToBottom(List<object> param)
+        {
+            SetParam(param, 1);
+            RevealAndSendToBottom(1);
         }
 
         public void RevealAndSendToBottom(int paramNum)
@@ -4639,6 +4646,11 @@ namespace VanguardEngine
             return Select(cardsToSelect, GetCount(paramNum), GetMin(paramNum), specifications, -1, player);
         }
 
+        public List<int> Select(string filter, List<int> locations, int max, int min)
+        {
+            return Select(filter, locations, max, min, new List<int>(), -1);
+        }
+
         public List<int> Select(string filter, List<int> locations, int max, int min, List<int> specifications, int prompt)
         {
             List<Card> filtered = FilterCards(filter, locations);
@@ -4663,7 +4675,7 @@ namespace VanguardEngine
             if (!specifications.Contains(Property.Auto))
             {
                 if (player)
-                    selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, max, min, "", sameName);
+                    selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, max, min, "", specifications);
                 else
                     selectedCards = _cardFight.SelectCards(_player2, cardsToSelect, max, min, "", sameName);
             }
@@ -4946,6 +4958,15 @@ namespace VanguardEngine
                 return cards[0].name;
             else
                 return "";
+        }
+
+        public List<string> GetNames(List<object> param)
+        {
+            SetParam(param, 1);
+            List<string> names = new List<string>();
+            foreach (Card card in ValidCards(1))
+                names.Add(card.name);
+            return names;
         }
 
         public string GetNameFromCardID(string cardID)
@@ -5871,6 +5892,17 @@ namespace VanguardEngine
             return card != null && card.name == name;
         }
 
+        public bool NameIs(int tempID, List<string> names)
+        {
+            Card card = _player1.GetCard(tempID);
+            foreach (string name in names)
+            {
+                if (card.name == name)
+                    return true;
+            }
+            return false;
+        }
+
         public bool NameContains(int tempID, string name)
         {
             Card card = _player1.GetCard(tempID);
@@ -6092,8 +6124,8 @@ namespace VanguardEngine
             }
             else if (location == Location.Applicable)
                 currentPool.AddRange(GetSnapshottedCards(0));
-            else if (location == Location.PlayedOrdersThisTurn)
-                currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
+            //else if (location == Location.PlayedOrdersThisTurn)
+            //    currentPool.AddRange(_player1.GetPlayedOrdersThisTurn());
             else if (location == Location.MyOriginalDress)
                 currentPool.AddRange(_player1.GetOriginalDress(_card.tempID));
             else if (location == Location.Stored)
@@ -6129,7 +6161,8 @@ namespace VanguardEngine
             else if (location == Location.PlayedOrdersThisTurn ||
                          location == Location.SoulBlasted ||
                          location == Location.SungThisTurn || 
-                         location == Location.RetiredAsCost)
+                         location == Location.RetiredAsCost ||
+                         location == Location.RodeThisTurn)
             {
                 snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
             }
@@ -6165,6 +6198,11 @@ namespace VanguardEngine
             if (card != null)
                 return card.clan == clan;
             return false;
+        }
+
+        public bool IsStanding(int tempID)
+        {
+            return _player1.IsUpRight(_player1.GetCard(tempID));
         }
     }
 
@@ -6590,6 +6628,7 @@ namespace VanguardEngine
         public const int Player = 76;
         public const int Arm = 77;
         public const int RetiredAsCost = 78;
+        public const int RodeThisTurn = 79;
     }
 
     class Query
@@ -6709,6 +6748,8 @@ namespace VanguardEngine
         public const int UntilEndOfNextTurn = 41;
         public const int SuperiorOverDress = 42;
         public const int DoNotConvert = 43;
+        public const int Cancellable = 44;
+        public const int DifferentNames = 45;
     }
 
     public class Prompt

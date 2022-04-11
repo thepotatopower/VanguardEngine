@@ -44,8 +44,8 @@ function Activate(n)
 	local t = 0
 	if n == 1 then
 		obj.LookAtTopOfDeck(2)
-		obj.ChooseSendToTop(2)
-		obj.SendToBottom(3)
+		obj.RearrangeOnTop(2)
+		obj.RearrangeOnBottom(3)
 	end
 	return 0
 end

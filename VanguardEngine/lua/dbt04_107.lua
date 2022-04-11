@@ -17,9 +17,9 @@ function Activation()
 	obj.LookAtTopOfDeck(1)
 	local option = obj.SelectOption(obj.GetDescription(2), obj.GetDescription(3))
 	if option == 1 then
-		obj.SendToTop({q.Location, l.Looking})
+		obj.RearrangeOnTop({q.Location, l.Looking})
 	else
-		obj.SendToBottom({q.Location, l.Looking})
+		obj.RearrangeOnBottom({q.Location, l.Looking})
 	end
 	obj.Draw(1)
 end

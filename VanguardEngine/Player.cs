@@ -131,6 +131,9 @@ namespace VanguardEngine
         public event EventHandler<CardEventArgs> OnAbilityTiming;
         public event EventHandler<CardEventArgs> OnMarkedForRetire;
         public event EventHandler<CardEventArgs> OnShuffle;
+        public event EventHandler<CardEventArgs> OnSentToDeck;
+        public event EventHandler<CardEventArgs> OnLooking;
+        public event EventHandler<CardEventArgs> OnUpdateValues;
 
         public void Initialize(int playerID, Field field)
         {
@@ -271,6 +274,22 @@ namespace VanguardEngine
                         OnCardValueChanged(this, args);
                 }
             }
+            if (OnUpdateValues != null)
+            {
+                CardEventArgs args = new CardEventArgs();
+                foreach (Card card in GetAllUnitsOnField())
+                {
+                    CardValues cv = new CardValues();
+                    cv.circle = GetCircle(card);
+                    cv.tempID = card.tempID;
+                    cv.cardID = card.id;
+                    cv.power = GetPower(card.tempID);
+                    cv.critical = Critical(card.tempID);
+                    cv.cardStates.Add(new Tuple<int, bool>(CardState.Friend, HasCardState(card.tempID, CardState.Friend)));
+                    args.cardValues.Add(cv);
+                }
+                OnUpdateValues(this, args);
+            }
         }
 
         public void CheckTimingPerformed()
@@ -295,7 +314,7 @@ namespace VanguardEngine
             {
                 OnZoneChanged(this, e);
             }
-            UpdateRecordedValues();
+            //UpdateRecordedValues();
         }
 
         void _fieldOnZoneSwapped(object sender, CardEventArgs e)
@@ -304,7 +323,7 @@ namespace VanguardEngine
             {
                 OnZoneSwapped(this, e);
             }
-            UpdateRecordedValues();
+            //UpdateRecordedValues();
         }
 
         void _fieldOnFaceUpChanged(object sender, CardEventArgs e)
@@ -313,7 +332,7 @@ namespace VanguardEngine
             {
                 OnFaceUpChanged(this, e);
             }
-            UpdateRecordedValues();
+            //UpdateRecordedValues();
         }
 
         void _fieldOnUpRightChanged(object sender, CardEventArgs e)
@@ -322,7 +341,7 @@ namespace VanguardEngine
             {
                 OnUpRightChanged(this, e);
             }
-            UpdateRecordedValues();
+            //UpdateRecordedValues();
         }
 
         public int GetFieldID(int tempID)
@@ -751,6 +770,12 @@ namespace VanguardEngine
         public void Shuffle()
         {
             _field.Shuffle(_playerID);
+        }
+
+        public List<Card> ShuffleList(List<Card> cards)
+        {
+            _field.Shuffle(cards);
+            return cards;
         }
 
         public void StandAll()
@@ -2343,32 +2368,36 @@ namespace VanguardEngine
 
         public bool SendToDeck(List<int> cardsToSend, bool bottom)
         {
-            Card card;
-            Zone deck;
-            Zone hand;
-            Zone drop;
-            List<Card> leftover = new List<Card>();
-            foreach (int tempID in cardsToSend)
-            {
-                card = _field.CardCatalog[tempID];
-                if (card.originalOwner == _playerID)
-                {
-                    deck = PlayerDeck;
-                    hand = PlayerHand;
-                    drop = PlayerDrop;
-                }
-                else
-                {
-                    deck = EnemyDeck;
-                    hand = EnemyHand;
-                    drop = EnemyDrop;
-                }
-                if (bottom)
-                    deck.Add(card);
-                else
-                    deck.AddToTop(card);
-            }
-            return true;
+            //Card card;
+            //Zone deck;
+            //Zone hand;
+            //Zone drop;
+            //List<Card> leftover = new List<Card>();
+            //foreach (int tempID in cardsToSend)
+            //{
+            //    card = _field.CardCatalog[tempID];
+            //    if (card.originalOwner == _playerID)
+            //    {
+            //        deck = PlayerDeck;
+            //        hand = PlayerHand;
+            //        drop = PlayerDrop;
+            //    }
+            //    else
+            //    {
+            //        deck = EnemyDeck;
+            //        hand = EnemyHand;
+            //        drop = EnemyDrop;
+            //    }
+            //    if (bottom)
+            //        deck.Add(card);
+            //    else
+            //        deck.AddToTop(card);
+            //}
+            //return true;
+            if (bottom)
+                return Rearrange(cardsToSend, true);
+            else
+                return Rearrange(cardsToSend, false);
         }
 
         public int TriggerCheck(bool drivecheck)
@@ -2560,6 +2589,7 @@ namespace VanguardEngine
         {
             if (PlayerTrigger.Count() > 0)
                 PlayerHand.Add(PlayerTrigger.Index(0));
+            _lastRevealedTrigger = null;
         }
 
         public void RemoveTrigger()
@@ -3211,34 +3241,81 @@ namespace VanguardEngine
                 deck = EnemyDeck;
             for (int i = 0; i < count && deck.GetCards().Count > i; i++)
                 PlayerLooking.Add(deck.Index(i));
+            CardEventArgs args = new CardEventArgs();
+            if (player)
+                args.playerID = _playerID;
+            else
+                args.playerID = _enemyID;
+            args.message = "Opponent looking at top " + count + " card(s) of deck.";
+            if (OnLooking != null)
+                OnLooking(this, args);
         }
 
-        public void RearrangeOnTop(List<int> tempIDs)
+        public bool Rearrange(List<int> tempIDs, bool bottom)
         {
             List<int> returned = new List<int>();
+            List<Card> player = new List<Card>();
+            List<Card> enemy = new List<Card>();
             Card card;
+            string message1 = "";
+            string message2 = "";
             for (int i = tempIDs.Count - 1; i >= 0; i--)
             {
                 card = _field.CardCatalog[tempIDs[i]];
                 if (card.originalOwner == _playerID)
-                    PlayerDeck.AddToTop(card);
+                {
+                    if (bottom)
+                        PlayerDeck.Add(card);
+                    else
+                        PlayerDeck.AddToTop(card);
+                    player.Add(card);
+                }
                 else
-                    EnemyDeck.AddToTop(card);
+                {
+                    if (bottom)
+                        EnemyDeck.Add(card);
+                    else
+                        EnemyDeck.AddToTop(card);
+                    enemy.Add(card);
+                }
             }
-        }
-
-        public void RearrangeOnBottom(List<int> tempIDs)
-        {
-            List<int> returned = new List<int>();
-            Card card;
-            for (int i = 0; i < tempIDs.Count; i++)
+            if (player.Count > 0)
             {
-                card = _field.CardCatalog[tempIDs[i]];
-                if (card.originalOwner == _playerID)
-                    PlayerDeck.Add(card);
+                message1 = player.Count + " card(s) sent to ";
+                if (bottom)
+                    message1 += "bottom.";
                 else
-                    EnemyDeck.Add(card);
+                    message1 += "top.";
             }
+            if (enemy.Count > 0)
+            {
+                message2 = enemy.Count + " card(s) sent to ";
+                if (bottom)
+                    message2 += "bottom.";
+                else
+                    message2 += "top.";
+            }
+            if (OnSentToDeck != null)
+            {
+                CardEventArgs args;
+                if (message1 != "")
+                {
+                    args = new CardEventArgs();
+                    args.playerID = _playerID;
+                    args.cardList.AddRange(player);
+                    args.message = message1;    
+                    OnSentToDeck(this, args);
+                }
+                if (message2 != "")
+                {
+                    args = new CardEventArgs();
+                    args.playerID = _enemyID;
+                    args.cardList.AddRange(enemy);
+                    args.message = message2;
+                    OnSentToDeck(this, args);
+                }
+            }
+            return true;
         }
 
         public List<int> ReturnToDeck(List<int> tempIDs)
@@ -4123,5 +4200,17 @@ namespace VanguardEngine
         {
             currentGrade = grade;
         }
+    }
+
+    public class CardValues
+    {
+        public int tempID;
+        public string cardID;
+        public int circle = -1;
+        public int power;
+        public int critical;
+        public int shield;
+        public int grade;
+        public List<Tuple<int, bool>> cardStates = new List<Tuple<int, bool>>();
     }
 }

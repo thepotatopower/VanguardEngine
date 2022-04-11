@@ -10,7 +10,7 @@ function RegisterAbilities()
 	-- glitter
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(2)
-	ability2.SetTiming(a.Glitter)
+	ability2.SetProperty(p.IsGlitter)
 end
 
 function Trigger()
