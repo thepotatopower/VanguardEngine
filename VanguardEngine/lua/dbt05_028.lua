@@ -4,7 +4,7 @@ function RegisterAbilities()
 	local ability1 = NewAbility(GetID())
 	ability1.SetDescription(1)
 	ability1.SetTiming(a.OnPut)
-	ability1.SetMovedTo(l.Order)
+	ability1.SetMovedTo(l.Order, l.Player)
 	ability1.SetTrigger("Trigger")
 	ability1.SetActivation("Activation")
 end
@@ -17,6 +17,7 @@ function Activation()
 	obj.Draw(1)
 	obj.Discard(1)
 	if obj.GetNumberOf("Filter", {l.Order}) >= 3 and obj.CanPayCost("Cost") and obj.PayAdditionalCost() then
+		obj.PayCost("Cost")
 		obj.ChooseBind({q.Location, l.EnemyRC, q.Other, o.CanChoose, q.Count, 1})
 	end
 end

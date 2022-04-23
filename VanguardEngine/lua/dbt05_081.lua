@@ -19,5 +19,5 @@ end
 
 function Activation()
 	obj.RevealFromDeck(1)
-	obj.SuperiorCall({q.Location, l.Revealed, q.Grade, 2, q.Other, o.GradeOrLess, q.Other, o.Unit, q.Count, 1, q.Min, 0})
+	obj.SuperiorCallAsRest({q.Location, l.Revealed, q.Grade, 2, q.Other, o.GradeOrLess, q.Other, o.Unit, q.Count, 1, q.Min, 0})
 end

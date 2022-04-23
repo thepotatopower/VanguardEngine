@@ -10,7 +10,7 @@ function RegisterAbilities()
 	local ability2 = NewAbility(GetID())
 	ability2.SetDescription(1)
 	ability2.SetTiming(a.OnPut)
-	ability2.SetMovedTo(l.Order)
+	ability2.SetMovedTo(l.Order, l.Player)
 	ability2.SetTrigger("OnPutTrigger")
 	ability2.SetActivation("OnPut")
 	-- cont

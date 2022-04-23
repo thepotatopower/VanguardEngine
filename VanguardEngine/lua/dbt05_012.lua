@@ -37,8 +37,8 @@ function OnAttackTrigger()
 end
 
 function OnAttackCost(check)
-	if check then return obj.CanRetire({q.Location, l.PlayerRC, q.Count, 1}) end
-	obj.ChooseRetire({q.Location, l.PlayerRC, q.Count, obj.GetNumberOf({q.Location, l.PlayerRC}), q.Min, 1})
+	if check then return obj.CanRetire({q.Location, l.PlayerRC, q.UnitType, u.Token, q.Count, 1}) end
+	obj.ChooseRetire({q.Location, l.PlayerRC, q.UnitType, u.Token, q.Min, 1})
 end
 
 function OnAttack()

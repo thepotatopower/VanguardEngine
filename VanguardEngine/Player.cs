@@ -1586,6 +1586,8 @@ namespace VanguardEngine
             int critical = card.critical;
             foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusCritical))
                 critical += value;
+            foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.TriggerCritical))
+                critical += value;
             critical += _field.CircleCritical[GetCircle(card)];
             return critical;
         }
@@ -1595,6 +1597,8 @@ namespace VanguardEngine
             Card card = _field.CardCatalog[tempID];
             int critical = card.critical;
             foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusCritical))
+                critical += value;
+            foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.TriggerCritical))
                 critical += value;
             return critical;
         }
@@ -1719,7 +1723,7 @@ namespace VanguardEngine
         public void Call(int location, int selection, bool overDress)
         {
             SuperiorCall(location, selection, overDress, true);
-            _field.ClearOverloadedCards();
+            //_field.ClearOverloadedCards(_playerID);
         }
 
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
@@ -1785,13 +1789,29 @@ namespace VanguardEngine
 
         public int ClearOverloadedCards()
         {
-            bool cleared = _field.ClearOverloadedCards();
-            if (cleared)
+            List<Card> retired = _field.ClearOverloadedCards(_playerID);
+            if (retired.Count > 0)
             {
                 _playerRetiredThisTurn = true;
+                foreach (Card card in retired)
+                {
+                    if (OnAbilityTiming != null)
+                    {
+                        CardEventArgs args = new CardEventArgs();
+                        args.cardList.Add(card);
+                        args.i = Activation.OnRetire;
+                        args.playerID = _playerID;
+                        OnAbilityTiming(this, args);
+                    }
+                }
                 return 1;
             }
             return 0;
+        }
+
+        public void ClearSuccessfullyRetired()
+        {
+            _successfullyRetired.Clear();
         }
 
         public void MoveRearguard(int location)
@@ -2525,7 +2545,7 @@ namespace VanguardEngine
         public void DoubleCritical(int selection)
         {
             Card target = _field.CardCatalog[selection];
-            _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusCritical, Critical(target.tempID));
+            _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.TriggerCritical, Critical(target.tempID));
         }
 
         public void AddDrive(int selection, int drive)
@@ -2733,6 +2753,7 @@ namespace VanguardEngine
             {
                 PlayerBind.Add(card);
                 _isAlchemagic = true;
+                MyStates.AddUntilEndOfTurnState(PlayerState.AlchemagicUsedThisTurn);
                 return 2;
             }
             else if (PlayerHand.Contains(card))
@@ -4169,6 +4190,11 @@ namespace VanguardEngine
             if (values.Count > 0)
                 return values[0];
             return -1;
+        }
+
+        public List<int> GetCardValues(int tempID, int cardState)
+        {
+            return _field.CardStates.GetValues(tempID, cardState);
         }
     }
 

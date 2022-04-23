@@ -607,50 +607,92 @@ namespace VanguardEngine
             _player2Prisoners.RemoveCard(card);
         }
 
-        public bool ClearOverloadedCards()
+        public List<Card> ClearOverloadedCards(int playerID)
         {
-            bool retired = false;
             Circle circle;
-            for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+            List<Card> retired = new List<Card>();
+            if (playerID == 1)
             {
-                circle = _circles[i];
+                for (int i = FL.PlayerFrontLeft; i < FL.PlayerVanguard; i++)
+                {
+                    circle = _circles[i];
+                    while (circle.OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player1Drop.Add(circle.OverloadedUnits[0]);
+                    }
+                    while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player1Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                    }
+                    while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+                {
+                    circle = _circles[i];
+                    while (circle.OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player2Drop.Add(circle.OverloadedUnits[0]);
+                    }
+                    while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player2Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                    }
+                    while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                    {
+                        retired.Add(circle.OverloadedUnits[0]);
+                        _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
+                    }
+                }
+            }
+            if (playerID == 1)
+            {
+                //player vanguard
+                circle = _circles[FL.PlayerVanguard];
                 if (circle.OverloadedUnits.Count > 0)
-                    retired = true;
-                while (circle.OverloadedUnits.Count > 0)
-                    _player1Drop.Add(circle.OverloadedUnits[0]);
+                {
+                    circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
+                }
                 while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                {
+                    retired.Add(circle.OverloadedUnits[0]);
                     _player1Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                }
                 while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                {
+                    retired.Add(circle.OverloadedUnits[0]);
                     _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
+                }
             }
-            for (int i = FL.EnemyFrontLeft; i < FL.EnemyVanguard; i++)
+            else
             {
-                circle = _circles[i];
+                //enemy vanguard
+                circle = _circles[FL.EnemyVanguard];
                 if (circle.OverloadedUnits.Count > 0)
-                    retired = true;
-                while (circle.OverloadedUnits.Count > 0)
-                    _player2Drop.Add(circle.OverloadedUnits[0]);
+                {
+                    circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
+                }
                 while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
+                {
+                    retired.Add(circle.OverloadedUnits[0]);
                     _player2Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
+                }
                 while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
+                {
+                    retired.Add(circle.OverloadedUnits[0]);
                     _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
+                }
             }
-            //player vanguard
-            circle = _circles[FL.PlayerVanguard];
-            if (circle.OverloadedUnits.Count > 0)
-                circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
-            while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
-                _player1Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
-            while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
-                _player1Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
-            //enemy vanguard
-            circle = _circles[FL.EnemyVanguard];
-            if (circle.OverloadedUnits.Count > 0)
-                circle.GetSoulZone().Add(circle.OverloadedUnits[0]);
-            while (circle.GetArmZone(true).OverloadedUnits.Count > 0)
-                _player2Drop.Add(circle.GetArmZone(true).OverloadedUnits[0]);
-            while (circle.GetArmZone(false).OverloadedUnits.Count > 0)
-                _player2Drop.Add(circle.GetArmZone(false).OverloadedUnits[0]);
             return retired;
         }
 
@@ -1413,6 +1455,7 @@ namespace VanguardEngine
         public const int AdditionalArms = 31;
         public const int CanRideFromRideDeckWithoutDiscard = 32;
         public const int FreeCB = 33;
+        public const int AlchemagicUsedThisTurn = 34;
     }
 
     public class CardState
@@ -1466,6 +1509,7 @@ namespace VanguardEngine
         public const int RiddenFrom = 47;
         public const int NumOfAttacks = 48;
         public const int AttackedRearguard = 49;
+        public const int TriggerCritical = 50;
     }
 
     public class Zone

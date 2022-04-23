@@ -25,3 +25,9 @@ function Activation()
 	obj.Select({q.Location, l.PlayerUnits, q.Count, 1})
 	obj.AddCardValue({q.Location, l.Selected}, cs.BonusPower, 5000, p.UntilEndOfTurn)
 end
+
+function Cont()
+	if obj.IsPlayerTurn() and obj.IsAbyssalDarkNight() then
+		obj.AddCardValue({q.Other, o.This}, cs.BonusPower, 5000, p.Continuous)
+	end
+end

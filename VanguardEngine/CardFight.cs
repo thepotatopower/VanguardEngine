@@ -47,7 +47,7 @@ namespace VanguardEngine
         string _connectionString;
         string _namesPath;
         public Dictionary<int, List<ActionLog>> actionLogs = new Dictionary<int, List<ActionLog>>();
-        int _initialDamage = 3;
+        int _initialDamage = 2;
         int _initialSoul = 3;
         int _initialDrop = 0;
 
@@ -1042,6 +1042,7 @@ namespace VanguardEngine
                     Log.WriteLine("----------\nChoose unit to give Critical to.");
                     selection = _inputManager.SelectActiveUnit(player1, PromptType.AddCritical, 1);
                     player1.AddCritical(selection, 1);
+                    player1.AddCardState(selection, CardState.TriggerCritical, -1, Property.UntilEndOfTurn);
                     player1.UpdateRecordedValues();
                     player2.UpdateRecordedValues();
                 }
@@ -1905,12 +1906,12 @@ namespace VanguardEngine
             return selectedCards;
         }
 
-        public int SelectOption(Player player, string[] list)
+        public int SelectOption(Player player, Tuple<string, bool>[] list)
         {
             return _inputManager.SelectOption(player, list);
         }
 
-        public int SelectOption(Player player, List<string>[] list)
+        public int SelectOption(Player player, string[] list)
         {
             return _inputManager.SelectOption(player, list);
         }

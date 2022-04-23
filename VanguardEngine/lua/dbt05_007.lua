@@ -49,13 +49,9 @@ end
 
 function OnAttack()
 	local option = 0
-	if obj.CanSuperiorCall({q.Location, l.Soul, q.Count, 1}) and
-		(obj.CanSuperiorCall({q.Location, l.Soul, q.NameContains, obj.LoadName("Ririmi"), q.Count, 1}) or
-		obj.CanSuperiorCall({q.Location, l.Soul, q.NameContains, obj.LoadName("Rarami"), q.Count, 1})) then
-		option = obj.SelectOption(obj.GetDescription(5), obj.GetDescription(6))
-	elseif obj.CanSuperiorCall({q.Location, l.Soul, q.NameContains, obj.LoadName("Ririmi"), q.Count, 1}) or 
+	if obj.CanSuperiorCall({q.Location, l.Soul, q.NameContains, obj.LoadName("Ririmi"), q.Count, 1}) and
 		obj.CanSuperiorCall({q.Location, l.Soul, q.NameContains, obj.LoadName("Rarami"), q.Count, 1}) then
-		option = 2
+		option = obj.SelectOption(obj.GetDescription(5), obj.GetDescription(6))
 	elseif obj.CanSuperiorCall({q.Location, l.Soul, q.Count, 1}) then
 		option = 1
 	end

@@ -40,6 +40,7 @@ namespace VanguardEngine
         public List<int> _ints2 = new List<int>();
         public List<int> _circles = new List<int>();
         public List<int> _tempIDs = new List<int>();
+        public List<bool> _bools = new List<bool>();
         public static ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         public EventHandler<CardEventArgs> OnPlayerSwap;
         public EventHandler<CardEventArgs> OnChosen;
@@ -755,7 +756,7 @@ namespace VanguardEngine
                                 if (specifications.Contains(Property.SameName))
                                     cardsToSelect.RemoveAll(card => card.name != _actingPlayer.GetCard(tempID).name);
                                 if (specifications.Contains(Property.DifferentNames))
-                                    cardsToSelect.RemoveAll(card => card.tempID == tempID && card.name == _actingPlayer.GetCard(tempID).name);
+                                    cardsToSelect.RemoveAll(card => card.name == _actingPlayer.GetCard(tempID).name);
                             }
                             intlist_input.Clear();
                         }
@@ -764,7 +765,7 @@ namespace VanguardEngine
                     }
                     intlist_input.Clear();
                 }
-                if (cardSets.Count > 1)
+                else if (cardSets.Count > 1)
                 {
                     cardsToSelect.Clear();
                     List<int> selectedIDs = new List<int>();
@@ -847,33 +848,39 @@ namespace VanguardEngine
         {
             _actingPlayer = actingPlayer;
             _list = list;
+            _bools.Clear();
+            foreach (string s in list)
+                _bools.Add(true);
             SelectOption_Input();
             return int_input;
         }
 
-        public int SelectOption(Player actingPlayer, params List<string>[] list)
+        public int SelectOption(Player actingPlayer, params Tuple<string, bool>[] list)
         {
-            //_actingPlayer = actingPlayer;
-            //List<string> options = new List<string>();
-            //foreach (List<string> option in list)
-            //{
-            //    if (option.Count == 3)
-            //        options.Add(
-            //}
-            //SelectOption_Input();
-            //return int_input;
-            return 1;
+            _actingPlayer = actingPlayer;
+            _list = new string[list.Length];
+            _bools.Clear();
+            for (int i = 0; i < list.Length; i++)
+            {
+                _list[i] = list[i].Item1;
+                _bools.Add(list[i].Item2);
+            }
+            SelectOption_Input();
+            return int_input;
         }
 
         protected virtual void SelectOption_Input()
         {
-            int selection;
+            int selection = 0;
             Log.WriteLine("Choose an option.");
-            for (int i = 0; i < _list.Length; i++)
+            while (selection <= 0 || !_bools[selection - 1])
             {
-                Log.WriteLine(i + 1 + ". " + _list[i]);
+                for (int i = 0; i < _list.Length; i++)
+                {
+                    Log.WriteLine(i + 1 + ". " + _list[i]);
+                }
+                selection = SelectPrompt(_list.Length);
             }
-            selection = SelectPrompt(_list.Length);
             int_input = selection;
             oSignalEvent.Set();
         }

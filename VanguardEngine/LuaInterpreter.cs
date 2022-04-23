@@ -1640,8 +1640,8 @@ namespace VanguardEngine
                         if (_player1.GetHand().Exists(card => card.tempID == _card.tempID))
                             validLocation = true;
                     }
-                    if (MovedFrom(location))
-                        validLocation = true;
+                    //if (MovedFrom(location))
+                    //    validLocation = true;
                 }
                 if (!validLocation)
                     return false;
@@ -3870,6 +3870,7 @@ namespace VanguardEngine
 
         public void ChooseRetire(int paramNum)
         {
+            _player1.ClearSuccessfullyRetired();
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<Card> canRetire = new List<Card>();
             foreach (Card card in cardsToSelect)
@@ -4635,6 +4636,13 @@ namespace VanguardEngine
             return Select(1);
         }
 
+        public List<int> Select(List<object> param, int prompt)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            return Select(cards, GetCount(1), GetMin(1), new List<int>(), prompt, true);
+        }
+
         public List<int> Select(int paramNum, string query, bool auto, bool player)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
@@ -4659,6 +4667,9 @@ namespace VanguardEngine
 
         public List<int> Select(List<Card> cards, int max, int min, List<int> specifications, int prompt, bool player)
         {
+            string query = "";
+            if (prompt == Prompt.Critical)
+                query = "to add to hand.";
             Player actingPlayer;
             if (player)
                 actingPlayer = _player1;
@@ -4675,9 +4686,9 @@ namespace VanguardEngine
             if (!specifications.Contains(Property.Auto))
             {
                 if (player)
-                    selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, max, min, "", specifications);
+                    selectedCards = _cardFight.SelectCards(_player1, cardsToSelect, max, min, query, specifications);
                 else
-                    selectedCards = _cardFight.SelectCards(_player2, cardsToSelect, max, min, "", sameName);
+                    selectedCards = _cardFight.SelectCards(_player2, cardsToSelect, max, min, query, sameName);
             }
             else
                 selectedCards = ConvertToTempIDs(cardsToSelect);
@@ -5042,13 +5053,18 @@ namespace VanguardEngine
 
         public int SelectOption(params List<string>[] list)
         {
-            List<string> options = new List<string>();
+            List<Tuple<string, bool>> options = new List<Tuple<string, bool>>();
             foreach (List<string> option in list)
             {
-                if (option.Count == 3 && CanPayCost(option[0]))
-                    options.Add(option[2]);
+                if (option.Count == 3)
+                {
+                    if (CanPayCost(option[0]))
+                        options.Add(new Tuple<string, bool>(option[2], true));
+                    else
+                        options.Add(new Tuple<string, bool>(option[2], false));
+                }
                 else if (option.Count == 1)
-                    options.Add(option[0]);
+                    options.Add(new Tuple<string, bool>(option[0], true));
             }
             return _cardFight.SelectOption(_player1, options.ToArray());
         }
@@ -5451,6 +5467,8 @@ namespace VanguardEngine
                 targetPlayer = _player2;
             if (duration == Property.UntilEndOfBattle)
                 targetPlayer.MyStates.AddUntilEndOfBattleState(state);
+            else if (duration == Property.UntilEndOfTurn)
+                targetPlayer.MyStates.AddUntilEndOfTurnState(state);
         }
 
         public void AddPlayerValue(int state, int value, int duration)
@@ -6170,6 +6188,11 @@ namespace VanguardEngine
                 currentPool.AddRange(_player2.GetPlayerFrontRow());
             else if (location == Location.BackRowRC)
                 currentPool.AddRange(_player1.GetBackRow());
+            else if (location == Location.VCArms)
+            {
+                if (_player1.Vanguard() != null)
+                    currentPool.AddRange(_player1.GetArms(_player1.Vanguard().tempID));
+            }
         }
 
         public bool IsStored(int tempID)
@@ -6203,6 +6226,33 @@ namespace VanguardEngine
         public bool IsStanding(int tempID)
         {
             return _player1.IsUpRight(_player1.GetCard(tempID));
+        }
+
+        public int Critical(int id)
+        {
+            return _player1.Critical(id);
+        }
+
+        public int OriginalCritical(int id)
+        {
+            Card card = _player1.GetCard(id);
+            if (card != null)
+                return card.critical;
+            return 0;
+        }
+
+        public bool CriticalIncreasedByAbility(int id)
+        {
+            List<int> values = _player1.GetCardValues(id, CardState.BonusCritical);
+            int total = 0;
+            foreach (int value in values)
+                total += value;
+            return total > 0;
+        }
+
+        public bool IsAttacker(int id)
+        {
+            return _player1.GetAttacker() != null && _player1.GetAttacker().tempID == id;
         }
     }
 
@@ -6629,6 +6679,7 @@ namespace VanguardEngine
         public const int Arm = 77;
         public const int RetiredAsCost = 78;
         public const int RodeThisTurn = 79;
+        public const int VCArms = 80;
     }
 
     class Query
@@ -6674,7 +6725,9 @@ namespace VanguardEngine
         public const int SetOrder = 18;
         public const int InFront = 19;
         public const int GradeOrLess = 20;
+        public const int GradeOrLower = 20;
         public const int GradeOrHigher = 24;
+        public const int GradeOrGreater = 24;
         public const int Boosting = 21;
         public const int Locked = 22;
         public const int SameColumn = 23;
@@ -6757,5 +6810,6 @@ namespace VanguardEngine
         public const int Stand = 0;
         public const int AddToHand = 1;
         public const int Bind = 2;
+        public const int Critical = 3;
     }
 }

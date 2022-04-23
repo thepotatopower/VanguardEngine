@@ -37,10 +37,10 @@ end
 function OnAttack()
 	local count = obj.GetNumberOf({q.Location, l.Order, q.Other, o.SetOrder})
 	local power = 0
-	if count >= 1 then
-		power = 5000
-	elseif count >= 3 then
+	if count >= 3 then
 		power = 10000
+	elseif count >= 1 then
+		power = 5000
 	end
 	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, power, p.UntilEndOfBattle)
 end
@@ -50,7 +50,7 @@ function OnPlaceTrigger()
 end
 
 function OnPlaceCondition()
-	return obj.GetNumberOf("GlitterFilter", {l.PlayerVC}) > 0 and obj.IsSameZone() and obj.GetNumberOf("Filter", {l.Deck}) >= 3
+	return obj.GetNumberOf("GlitterFilter", {l.PlayerVC}) > 0 and obj.IsSameZone() and obj.GetNumberOf("Filter", {l.Order}) >= 3
 end
 
 function Filter(id) 

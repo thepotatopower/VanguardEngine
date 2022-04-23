@@ -1,42 +1,31 @@
--- Hollowing Moonlit Night
+-- 虚ろなる月夜
 
-function NumberOfAbilities()
-	return 1
+function RegisterAbilities()
+	local ability1 = NewAbility(GetID())
+	ability1.SetTiming(a.OnOrder)
+	ability1.SetCost("Cost")
+	ability1.SetActivation("Activation")
+	-- on put
+	local ability2 = NewAbility(GetID())
+	ability2.SetDescription(1)
+	ability2.SetTiming(a.OnPut)
+	ability2.SetMovedTo(l.Order, l.Player)
+	ability2.SetTrigger("OnPutTrigger")
+	ability2.SetActivation("OnPut")
 end
 
-function NumberOfParams()
-	return 0
+function Cost(check)
+	if check then return obj.CanSB(1) end
+	obj.SoulBlast(1)
 end
 
-function ActivationRequirement(n)
-	if n == 1 then
-		return a.OnOrder, p.HasPrompt, p.SB, 1
-	end
+function Activation()
 end
 
-function CheckCondition(n)
-	if n == 1 then
-		return true
-	end
-	return false
+function OnPutTrigger()
+	return obj.IsApplicable()
 end
 
-function CanFullyResolve(n)
-	if n == 1 then
-		return true
-	end
-	return false
-end
-
-function Cost(n)
-	if n == 1 then
-		obj.SoulBlast(1)
-	end
-end
-
-function Activate(n)
-	if n == 1 then
-		obj.Draw(1)
-	end
-	return 0
+function OnPut()
+	obj.Draw(1)
 end

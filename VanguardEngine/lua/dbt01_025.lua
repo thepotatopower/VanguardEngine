@@ -41,7 +41,8 @@ end
 function Activate(n)
 	if n == 1 then
 		obj.Draw(1)
-		obj.ChooseAddCritical(1, 1)
+		obj.Select({q.Location, l.PlayerUnits, q.Count, 1}, Prompt.Critical)
+		obj.AddCardValue({q.Location, l.Selected}, cs.TriggerCritical, 1, p.UntilEndOfTurn)
 		obj.AddTempPower(2, 10000)
 		obj.Heal()
 	end
