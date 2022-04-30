@@ -14,6 +14,7 @@ namespace VanguardEngine
         {
             SQLiteDataAccess SQL = new SQLiteDataAccess();
             InputManager inputManager = new InputManager();
+            //inputManager.ReadFromInputLog("3440353.txt");
             CardFight cardFight = new CardFight();
             bool start = false;
             //LuaTest testing = new LuaTest();
@@ -27,8 +28,8 @@ namespace VanguardEngine
             //Console.ReadLine();
             Random r = new Random();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("orfist.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("orfist.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("magnolia.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("magnolia.txt", LoadCode.WithRideDeck), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
             start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", "Data Source=./names.db;Version=3;", r.Next(), 0);

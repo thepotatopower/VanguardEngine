@@ -12,8 +12,8 @@ namespace VanguardEngine
         public static List<string> GenerateList(string deckFilepath, int loadCode)
         {
             string[] f1 = File.ReadAllLines(deckFilepath);
-            if (loadCode == LoadCode.WithRideDeck && f1.Length != 52)
-                return null;
+            //if (loadCode == LoadCode.WithRideDeck && f1.Length != 52)
+            //    return null;
             List<string> output = new List<string>();
             if (loadCode == LoadCode.WithRideDeck)
             {

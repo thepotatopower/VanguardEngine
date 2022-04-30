@@ -13,8 +13,8 @@ namespace VanguardEngine
         protected List<Card> _tokens = new List<Card>();
         protected Card[] _cardCatalog = new Card[200];
         protected List<int> _removedTokens = new List<int>();
-        protected Dictionary<int, Tuple<Zone, int>> _cardLocations = new Dictionary<int, Tuple<Zone, int>>();
-        protected Dictionary<int, Tuple<Zone, int>> _previousCardLocations = new Dictionary<int, Tuple<Zone, int>>();
+        protected Dictionary<int, Tuple<Zone, int, int>> _cardLocations = new Dictionary<int, Tuple<Zone, int, int>>();
+        protected Dictionary<int, Tuple<Zone, int, int>> _previousCardLocations = new Dictionary<int, Tuple<Zone, int, int>>();
         protected readonly Circle[] _circles = new Circle[14];
         protected int[] _circlePower = new int[14];
         protected int[] _circleCritical = new int[14];
@@ -84,12 +84,12 @@ namespace VanguardEngine
             get => _cardCatalog;
         }
 
-        public Dictionary<int, Tuple<Zone, int>> CardLocations
+        public Dictionary<int, Tuple<Zone, int, int>> CardLocations
         {
             get => _cardLocations;
         }
 
-        public Dictionary<int, Tuple<Zone, int>> PreviousCardLocations
+        public Dictionary<int, Tuple<Zone, int, int>> PreviousCardLocations
         {
             get => _previousCardLocations;
         }
@@ -586,8 +586,8 @@ namespace VanguardEngine
                 }
             }
             _cardCatalog[newID] = token;
-            _cardLocations[newID] = new Tuple<Zone, int>(new Zone(this, -1), -1);
-            _previousCardLocations[newID] = new Tuple<Zone, int>(new Zone(this, -1), -1);
+            _cardLocations[newID] = new Tuple<Zone, int, int>(new Zone(this, -1), -1, -1);
+            _previousCardLocations[newID] = new Tuple<Zone, int, int>(new Zone(this, -1), -1, -1);
             return newID;
         }
 
@@ -775,7 +775,7 @@ namespace VanguardEngine
         protected override void UpdateLocation(Zone zone, int tempID)
         {
             _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
-            _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.CardLocations[tempID].Item2);
+            _field.CardLocations[tempID] = new Tuple<Zone, int, int>(this, _FL, _field.CardLocations[tempID].Item2);
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -953,12 +953,12 @@ namespace VanguardEngine
             if (circle._cards.Count > 0)
             {
                 _field.PreviousCardLocations[circle._cards[0].tempID] = _field.CardLocations[circle._cards[0].tempID];
-                _field.CardLocations[circle._cards[0].tempID] = new Tuple<Zone, int>(circle, _field.CardLocations[circle._cards[0].tempID].Item2);
+                _field.CardLocations[circle._cards[0].tempID] = new Tuple<Zone, int, int>(circle, circle._FL, _field.CardLocations[circle._cards[0].tempID].Item2);
             }
             if (_cards.Count > 0)
             {
                 _field.PreviousCardLocations[_cards[0].tempID] = _field.CardLocations[_cards[0].tempID];
-                _field.CardLocations[_cards[0].tempID] = new Tuple<Zone, int>(this, _field.CardLocations[_cards[0].tempID].Item2);
+                _field.CardLocations[_cards[0].tempID] = new Tuple<Zone, int, int>(this, this._FL, _field.CardLocations[_cards[0].tempID].Item2);
             }
         }
     }
@@ -1456,6 +1456,9 @@ namespace VanguardEngine
         public const int CanRideFromRideDeckWithoutDiscard = 32;
         public const int FreeCB = 33;
         public const int AlchemagicUsedThisTurn = 34;
+        public const int CannotSuperiorRide = 35;
+        public const int CannotCallNormalUnitsToGC = 36;
+        public const int CannotPlayBlitzOrderFromHand = 37;
     }
 
     public class CardState
@@ -1535,7 +1538,7 @@ namespace VanguardEngine
             foreach (Card card in cards)
             {
                 _cards.Add(card);
-                _field.CardLocations[card.tempID] = new Tuple<Zone, int>(this, _field.rand.Next());
+                _field.CardLocations[card.tempID] = new Tuple<Zone, int, int>(this, this._FL, _field.rand.Next());
                 _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
             }
         }
@@ -1570,7 +1573,7 @@ namespace VanguardEngine
         protected virtual void UpdateLocation(Zone zone, int tempID)
         {
             _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
-            _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.rand.Next());
+            _field.CardLocations[tempID] = new Tuple<Zone, int, int>(this, this._FL, _field.rand.Next());
         }
 
         protected virtual Card AddToZone(Card card, bool bottom)
@@ -1832,7 +1835,7 @@ namespace VanguardEngine
         protected override void UpdateLocation(Zone zone, int tempID)
         {
             _field.PreviousCardLocations[tempID] = _field.CardLocations[tempID];
-            _field.CardLocations[tempID] = new Tuple<Zone, int>(this, _field.CardLocations[tempID].Item2);
+            _field.CardLocations[tempID] = new Tuple<Zone, int, int>(this, this._FL, _field.CardLocations[tempID].Item2);
         }
 
         protected override Card AddToZone(Card card, bool bottom)
@@ -2097,6 +2100,7 @@ namespace VanguardEngine
         public readonly int ownerOfLocation;
         public readonly int previousLocation;
         public readonly int ownerOfPreviousLocation;
+        public readonly int previousCircle;
         public readonly int circle;
         public readonly string name;
         public readonly int fieldID;
@@ -2106,13 +2110,14 @@ namespace VanguardEngine
         public readonly Snapshot abilitySource;
         public readonly List<Snapshot> relevantSnapshots = new List<Snapshot>();
 
-        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, int _previousCircle, string _name, int _fieldID, string _cardID, int _grade)
         {
             tempID = _tempID;
             location = _location;
             ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
             ownerOfPreviousLocation = _ownerOfPreviousLocation;
+            previousCircle = _previousCircle;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
@@ -2120,13 +2125,14 @@ namespace VanguardEngine
             grade = _grade;
         }
 
-        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, int _previousCircle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource)
         {
             tempID = _tempID;
             location = _location;
             ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
             ownerOfPreviousLocation = _ownerOfPreviousLocation;
+            previousCircle = _previousCircle;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;
@@ -2135,13 +2141,14 @@ namespace VanguardEngine
             abilitySource = _abilitySource;
         }
 
-        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource, List<Snapshot> _relevantSnapshots)
+        public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, int _previousCircle, string _name, int _fieldID, string _cardID, int _grade, Snapshot _abilitySource, List<Snapshot> _relevantSnapshots)
         {
             tempID = _tempID;
             location = _location;
             ownerOfLocation = _ownerOfLocation;
             previousLocation = _previousLocation;
             ownerOfPreviousLocation = _ownerOfPreviousLocation;
+            previousCircle = _previousCircle;
             circle = _circle;
             name = _name;
             fieldID = _fieldID;

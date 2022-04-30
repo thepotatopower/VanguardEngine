@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace VanguardEngine
 {
@@ -45,11 +46,24 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnPlayerSwap;
         public EventHandler<CardEventArgs> OnChosen;
         public bool _cancellable = false;
+        public string inputlog = "";
+        List<string> inputLogInputs;
 
         public void Initialize(Player player1, Player player2)
         {
             _actingPlayer = player1;
+            DateTime dt = DateTime.Now;
+            inputlog = dt.Hour.ToString() + dt.Minute.ToString() + dt.Second.ToString() + dt.Millisecond.ToString() + ".txt";
             //_player2 = player2;
+        }
+
+        public void ReadFromInputLog(string inputfile)
+        {
+            inputLogInputs = new List<string>();
+            List<string> lines = File.ReadLines(inputfile).ToList();
+            for (int i = 0; i < 52; i++)
+                lines.RemoveAt(0);
+            inputLogInputs.AddRange(lines);
         }
 
         //public virtual void SwapPlayers()
@@ -100,10 +114,13 @@ namespace VanguardEngine
 
         public virtual bool YesNo(Player actingPlayer, string query)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetBoolInput();
             _actingPlayer = actingPlayer;
             prompt = PromptType.UniqueQuery;
             string_input = query;
             YesNo_Input();
+            RecordInput(actingPlayer, bool_input);
             return bool_input;
         }
 
@@ -123,8 +140,11 @@ namespace VanguardEngine
 
         public virtual int RPS(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             RPS_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -140,8 +160,11 @@ namespace VanguardEngine
 
         public virtual List<int> SelectCardsToMulligan(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             _actingPlayer = actingPlayer;
             SelectCardsToMulligan_Input();
+            RecordInput(actingPlayer, intlist_input);
             return new List<int>(intlist_input);
         }
 
@@ -174,8 +197,11 @@ namespace VanguardEngine
 
         public virtual int SelectRidePhaseAction(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectRidePhaseAction_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -191,8 +217,11 @@ namespace VanguardEngine
 
         public virtual int SelectMainPhaseAction(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectMainPhaseAction_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -213,8 +242,11 @@ namespace VanguardEngine
 
         public virtual int SelectRearguardToCall(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectRearguardToCall_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -232,6 +264,8 @@ namespace VanguardEngine
 
         public virtual int SelectCallLocation(Player actingPlayer, string query, Card card, List<int> selectedCircles, List<int> canSelect)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             _query = query;
             _circles.Clear();
@@ -241,6 +275,7 @@ namespace VanguardEngine
             if (canSelect != null)
                 _tempIDs.AddRange(canSelect);
             SelectCallLocation_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -291,6 +326,8 @@ namespace VanguardEngine
 
         public virtual List<int> SelectCircle(Player actingPlayer, List<int> availableCircles, int count)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             if (availableCircles.Count == 0)
                 return new List<int>();
             _actingPlayer = actingPlayer;
@@ -298,6 +335,7 @@ namespace VanguardEngine
             intlist_input.AddRange(availableCircles);
             _max = count;
             SelectCircle_Input();
+            RecordInput(actingPlayer, intlist_input);
             return new List<int>(intlist_input);
         }
 
@@ -341,8 +379,11 @@ namespace VanguardEngine
 
         public virtual int SelectRearguardColumn(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectRearguardColumn_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
         
@@ -363,10 +404,13 @@ namespace VanguardEngine
 
         public virtual Tuple<int, int> MoveRearguards(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetTupleInput();
             _actingPlayer = actingPlayer;
             cardsToSelect = _actingPlayer.GetActiveUnits();
             cardsToSelect.RemoveAt(cardsToSelect.Count - 1);
             MoveRearguards_Input();
+            RecordInput(actingPlayer, new Tuple<int, int>(int_input, int_input2));
             return new Tuple<int, int>(int_input, int_input2);
         }
 
@@ -394,8 +438,11 @@ namespace VanguardEngine
 
         public virtual int SelectBattlePhaseAction(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectBattlePhaseAction_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -412,8 +459,11 @@ namespace VanguardEngine
 
         public virtual int SelectAttackingUnit(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectAttackingUnit_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -431,8 +481,11 @@ namespace VanguardEngine
 
         public virtual int SelectUnitToAttack(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectUnitToAttack_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -450,8 +503,11 @@ namespace VanguardEngine
 
         public virtual int SelectGuardPhaseAction(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectGuardPhaseAction_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -471,8 +527,11 @@ namespace VanguardEngine
 
         public virtual int SelectCardToGuardWith(Player player)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = player;
             SelectCardToGuardWith_Input();
+            RecordInput(player, int_input);
             return int_input;
         }
 
@@ -494,8 +553,11 @@ namespace VanguardEngine
 
         public virtual int SelectCardToGuard(Player actingPlayer)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             SelectCardToGuard_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -517,6 +579,8 @@ namespace VanguardEngine
 
         public virtual int SelectActiveUnit(Player actingPlayer, int request, int amount)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             prompt = request;
             value = amount;
@@ -527,6 +591,7 @@ namespace VanguardEngine
                 args.card = _actingPlayer.GetCard(int_input);
                 OnChosen(this, args);
             }
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -543,6 +608,8 @@ namespace VanguardEngine
 
         public virtual int SelectAbility(Player actingPlayer, List<Ability> abilities)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             _abilities.Clear();
             foreach (Ability ability in abilities)
@@ -551,15 +618,19 @@ namespace VanguardEngine
                 _abilities.Add(abilityTimingCount);
             }
             SelectAbility_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
         public virtual int SelectAbility(Player actingPlayer, List<AbilityTimingCount> abilities)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             _abilities.Clear();
             _abilities.AddRange(abilities);
             SelectAbility_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -598,6 +669,8 @@ namespace VanguardEngine
 
         public List<int> ChooseOrder(Player actingPlayer, List<Card> cardsToRearrange)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             _actingPlayer = actingPlayer;
             Log.WriteLine("Choose order for card(s).");
             cardsToSelect.Clear();
@@ -610,6 +683,7 @@ namespace VanguardEngine
             }
             if (cardsToRearrange.Count > 0)
                 ChooseOrder_Input();
+            RecordInput(actingPlayer, intlist_input);
             return new List<int>(intlist_input);
         }
 
@@ -649,12 +723,16 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             _actingPlayer = actingPlayer;
             return SelectFromList(actingPlayer, cards, count, min, query, new List<int>());
         }
 
         public List<int> SelectFromList(Player actingPlayer, List<List<Card>> cards, int count, int min, string query)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             _actingPlayer = actingPlayer;
             List<Card> allCards = new List<Card>();
             foreach (List<Card> list in cards)
@@ -665,8 +743,13 @@ namespace VanguardEngine
 
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, List<int> specifications)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetListInput();
             if (count == 0 && min == 0)
+            {
+                RecordInput(actingPlayer, new List<int>());
                 return new List<int>();
+            }
             if (specifications.Contains(Property.Cancellable))
                 _cancellable = true;
             else
@@ -689,6 +772,7 @@ namespace VanguardEngine
             if (cardsToSelect.Count == 0 || cardsToSelect.Count < min)
             {
                 intlist_input.Clear();
+                RecordInput(actingPlayer, intlist_input);
                 return new List<int>(intlist_input);
             }
             if (count == min && cards.Count == count)
@@ -814,6 +898,7 @@ namespace VanguardEngine
             }
             cardSets.Clear();
             _cancellable = false;
+            RecordInput(actingPlayer, intlist_input);
             return new List<int>(intlist_input);
         }
 
@@ -846,17 +931,22 @@ namespace VanguardEngine
 
         public int SelectOption(Player actingPlayer, params string[] list)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             _list = list;
             _bools.Clear();
             foreach (string s in list)
                 _bools.Add(true);
             SelectOption_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
         public int SelectOption(Player actingPlayer, params Tuple<string, bool>[] list)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = actingPlayer;
             _list = new string[list.Length];
             _bools.Clear();
@@ -866,6 +956,7 @@ namespace VanguardEngine
                 _bools.Add(list[i].Item2);
             }
             SelectOption_Input();
+            RecordInput(actingPlayer, int_input);
             return int_input;
         }
 
@@ -887,8 +978,11 @@ namespace VanguardEngine
 
         public int SelectColumn(Player player)
         {
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
+                return GetIntInput();
             _actingPlayer = player;
             SelectColumn_Input();
+            RecordInput(player, int_input);
             return int_input;
         }
 
@@ -918,12 +1012,96 @@ namespace VanguardEngine
 
         protected virtual void DisplayCards_Input()
         {
+            if (inputLogInputs.Count > 0)
+                return;
             Log.WriteLine("----------");
             for (int i = 0; i < cardsToSelect.Count; i++)
             {
                 Log.WriteLine(i + 1 + ". " + cardsToSelect[i].name);
             }
             oSignalEvent.Set();
+        }
+
+        public void RecordInput(Player player, int input)
+        {
+            RecordInput("P" + player._playerID + " int" + input);
+        }
+
+        public int GetIntInput()
+        {
+            string line = inputLogInputs[0];
+            inputLogInputs.RemoveAt(0);
+            int index = line.IndexOf("int");
+            return Int32.Parse(line.Substring(index + 3));
+        }
+
+        public void RecordInput(Player player, List<int> inputs)
+        {
+            string line = "P" + player._playerID + " list";
+            foreach (int input in inputs)
+                line += input + "|";
+            RecordInput(line);
+        }
+
+        public List<int> GetListInput()
+        {
+            string line = inputLogInputs[0];
+            inputLogInputs.RemoveAt(0);
+            int index = line.IndexOf("list");
+            List<int> inputs = new List<int>();
+            List<string> split = line.Substring(index + 4).Split('|').ToList<string>();
+            List<int> converted = new List<int>();
+            foreach (string item in split)
+            {
+                if (item != "")
+                    converted.Add(Int32.Parse(item));
+            }
+            return converted;
+        }
+
+        public void RecordInput(Player player, bool input)
+        {
+            string line = "P" + player._playerID + " bool";
+            if (input)
+                line += "true";
+            else
+                line += "false";
+            RecordInput(line);
+        }
+
+        public bool GetBoolInput()
+        {
+            string line = inputLogInputs[0];
+            inputLogInputs.RemoveAt(0);
+            return line.Contains("true");
+        }
+
+        public void RecordInput(Player player, Tuple<int, int> input)
+        {
+            string line = "P" + player._playerID + " tuple" + input.Item1 + "|" + input.Item2;
+        }
+
+        public Tuple<int, int> GetTupleInput()
+        {
+            string line = inputLogInputs[0];
+            inputLogInputs.RemoveAt(0);
+            int index = line.IndexOf("tuple");
+            List<int> inputs = new List<int>();
+            List<string> split = line.Substring(index + 5).Split('|').ToList<string>();
+            return new Tuple<int, int>(Int32.Parse(split[0]), Int32.Parse(split[1]));
+        }
+
+        public void RecordInput(string input)
+        {
+            using (StreamWriter writer = new StreamWriter(inputlog, true))
+            {
+                writer.WriteLine(input);
+            }
+        }
+
+        public bool IsReadingInputLog()
+        {
+            return inputLogInputs != null;
         }
     }
 

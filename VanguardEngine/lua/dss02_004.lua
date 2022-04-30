@@ -1,4 +1,4 @@
--- 樹角獣 カマプー
+-- ディアブロスマドンナ ミーガン
 
 function RegisterAbilities()
 	local ability1 = NewAbility(GetID())
@@ -15,10 +15,9 @@ function Trigger()
 end
 
 function Condition()
-	return obj.IsSameZone() and obj.Exists({q.Location, l.BackRow, q.Grade, 2, q.Othe8r, o.GradeOrHigher})
+	return obj.InFinalRush() and obj.IsSameZone()
 end
 
 function Activation()
-	local power = obj.GetNumberOf({q.Location, l.BackRow, q.Grade, 2, q.Other, o.GradeOrHigher}) * 2000
-	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, power, p.UntilEndOfBattle)
+	obj.AddCardValue({q.Other, o.ThisFieldID}, cs.BonusPower, 10000, p.UntilEndOfTurn)
 end

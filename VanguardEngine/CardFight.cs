@@ -42,6 +42,7 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnAbilityActivated;
         public EventHandler<CardEventArgs> OnFree;
         public EventHandler<CardEventArgs> OnAlchemagic;
+        public EventHandler<CardEventArgs> OnGameOver;
         public NameKeys nameKeys = new NameKeys();
         int _clientNumber = 0;
         string _connectionString;
@@ -117,6 +118,7 @@ namespace VanguardEngine
         public int CreateToken(Player player1, Player player2, string tokenID)
         {
             int token = player1.CreateToken(tokenID);
+            _abilities.RemoveAbilities(token);
             _abilities.AddAbilities(token, luaInterpreter.GetAbilities(player1.GetCard(token), player1, player2, true));
             return token;
         }
@@ -421,7 +423,7 @@ namespace VanguardEngine
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
                         input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, 0, input);
+                        Ride(player1, player2, input, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -432,7 +434,7 @@ namespace VanguardEngine
                     if (player1.CanRideFromHand())
                     {
                         input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, 0, input);
+                        Ride(player1, player2, input, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -440,7 +442,7 @@ namespace VanguardEngine
                 }
                 else if (selection == RidePhaseAction.RideFromHand)
                 {
-                    Ride(player1, player2, 0, _inputManager.int_input2);
+                    Ride(player1, player2, _inputManager.int_input2, true);
                     PerformCheckTiming(player1, player2);
                 }
                 else if (selection == RidePhaseAction.End)
@@ -448,9 +450,9 @@ namespace VanguardEngine
             }
         }
 
-        public void Ride(Player player1, Player player2, int location, int selection)
+        public void Ride(Player player1, Player player2, int selection, bool normal)
         {
-            player1.Ride(selection);
+            player1.Ride(selection, normal);
             AddAbilityTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
             AddAbilityTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
             foreach (Card card in player1.GetLastPlacedOnVC())
@@ -487,9 +489,9 @@ namespace VanguardEngine
                 _inputManager._abilities.AddRange(GetACTAbilities(player1));
                 _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
                 selection = _inputManager.SelectMainPhaseAction(player1);
-                if (selection == 1)
+                if (selection == 1 && !_inputManager.IsReadingInputLog())
                     BrowseHand(player1);
-                else if (selection == 2)
+                else if (selection == 2 && !_inputManager.IsReadingInputLog())
                     BrowseField(player1);
                 else if (selection == 3)
                 {
@@ -971,7 +973,12 @@ namespace VanguardEngine
                     //_inputManager.SwapPlayers();
                 }
                 if (player1.GetAttacker() != null && player2.GetAttackedCards().Count > 0 && player2.AttackHits())
+                {
                     attackHits = true;
+                    List<Card> cards = player2.GetUnitsHit();
+                    foreach (Card card in cards)
+                        GenerateActionLog(Location.MyUnitsHit, player2._playerID, card, new List<Card>());
+                }
                 player2.RetireGC();
                 PerformCheckTiming(player1, player2);
                 if (attackHits)
@@ -1097,6 +1104,7 @@ namespace VanguardEngine
                     list.Add(player1.GetTrigger(true));
                 AddAbilityTiming(Activation.OnDriveCheck, player1._playerID, list);
                 PerformCheckTiming(player1, player2);
+                GenerateActionLog(Location.RevealedDriveChecksThisTurn, player1._playerID, player1.GetTrigger(true), new List<Card>());
                 player1.AddTriggerToHand();
             }
             else
@@ -1629,7 +1637,7 @@ namespace VanguardEngine
                 Snapshot abilitySnapshot = null;
                 if (_currentAbility != null)
                     abilitySnapshot = player1.GetSnapshot(_currentAbility.GetCard().tempID);
-                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot);
+                Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, abilitySnapshot);
                 if (!actionLogs.ContainsKey(Location.SoulBlasted))
                     actionLogs[Location.SoulBlasted] = new List<ActionLog>();
                 ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
@@ -1656,7 +1664,7 @@ namespace VanguardEngine
                 player = _player2;
             if (_currentAbility != null)
                 abilitySnapshot = player.GetSnapshot(_currentAbility.GetCard().tempID);
-            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, card.OriginalGrade(), abilitySnapshot, relevantSnapshots);
+            Snapshot snapshot = new Snapshot(card.tempID, -1, -1, -1, -1, -1, -1, card.name, -1, card.id, player.Grade(card.tempID), abilitySnapshot, relevantSnapshots);
             if (!actionLogs.ContainsKey(location))
                 actionLogs[location] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(playerID, snapshot);
@@ -1822,7 +1830,7 @@ namespace VanguardEngine
                 AddAbilityTiming(Activation.PutOnOrderZone, player1._playerID, player1.GetLastPutOnOrderZone());
             }
             Card card = _player1.GetCard(tempID);
-            Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, null);
+            Snapshot snapshot = new Snapshot(tempID, -1, -1, -1, -1, -1, -1, card.name, -1, card.id, -1, null);
             if (!actionLogs.ContainsKey(Location.PlayedOrdersThisTurn))
                 actionLogs[Location.PlayedOrdersThisTurn] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(player1._playerID, snapshot);
@@ -2045,7 +2053,7 @@ namespace VanguardEngine
             ability.Activate(Activation.OnSing, null);
             player.Flip(selectedCards, false);
             player.MyStates.AddUntilEndOfTurnState(PlayerState.VanguardHasSungSongThisTurn);
-            Snapshot snapshot = new Snapshot(ability.GetCard().tempID, -1, -1, -1, -1, -1, ability.GetCard().name, -1, ability.GetCard().id, -1, null);
+            Snapshot snapshot = new Snapshot(ability.GetCard().tempID, -1, -1, -1, -1, -1, -1, ability.GetCard().name, -1, ability.GetCard().id, -1, null);
             if (!actionLogs.ContainsKey(Location.SungThisTurn))
                 actionLogs[Location.SungThisTurn] = new List<ActionLog>();
             ActionLog actionLog = new ActionLog(player._playerID, snapshot);
@@ -2230,9 +2238,27 @@ namespace VanguardEngine
             //ruleActionPerformed += _player2.RetireGC();
             //rule action for riding from soul onto empty VC
             if (_player1.DamageThresholdReached() || _player2.DamageThresholdReached())
+            {
+                CardEventArgs args = new CardEventArgs();
+                if (_player1.DamageThresholdReached())
+                    args.i = 1;
+                else
+                    args.i = 2;
+                if (OnGameOver != null)
+                    OnGameOver(this, args);
                 throw new ArgumentException("damage threshold reached");
+            }
             if (_player1.GetDeck().Count == 0 || _player2.GetDeck().Count == 0)
+            {
+                CardEventArgs args = new CardEventArgs();
+                if (_player1.GetDeck().Count == 0)
+                    args.i = 1;
+                else
+                    args.i = 2;
+                if (OnGameOver != null)
+                    OnGameOver(this, args);
                 throw new ArgumentException("deck out");
+            }
             if (_player1.Vanguard() == null || _player2.Vanguard() == null)
                 throw new ArgumentException("no vanguard");
 

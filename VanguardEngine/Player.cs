@@ -347,7 +347,7 @@ namespace VanguardEngine
         public int GetFieldID(int tempID)
         {
             if (_field.CardLocations.ContainsKey(tempID))
-                return _field.CardLocations[tempID].Item2;
+                return _field.CardLocations[tempID].Item3;
             return -1;
         }
 
@@ -355,7 +355,7 @@ namespace VanguardEngine
         {
             Card card = _field.CardCatalog[tempID];
             if (card != null)
-                return new Snapshot(card.tempID, GetLocation(card), GetOwnerOfLocation(card), GetPreviousLocation(card), GetOwnerOfPreviousLocation(card), GetCircle(card), card.name, GetFieldID(tempID), card.id, Grade(card.tempID));
+                return new Snapshot(card.tempID, GetLocation(card), GetOwnerOfLocation(card), GetPreviousLocation(card), GetOwnerOfPreviousLocation(card), GetCircle(card), GetPreviousCircle(card), card.name, GetFieldID(tempID), card.id, Grade(card.tempID));
             return null;
         }
 
@@ -381,6 +381,8 @@ namespace VanguardEngine
             List<Card> orderableCards = new List<Card>();
             foreach (Card card in hand)
             {
+                if (OrderType.IsBlitzOrder(card.orderType) && MyStates.HasState(PlayerState.CannotPlayBlitzOrderFromHand))
+                    continue;
                 if (card.orderType >= 0 && Grade(card.tempID) <= Grade(_field.GetUnit(PlayerVanguard).tempID))
                     orderableCards.Add(card);
             }
@@ -1124,6 +1126,8 @@ namespace VanguardEngine
                         continue;
                     if (MyStates.GetValues(PlayerState.MinGradeForGuard).Exists(grade => Grade(card.tempID) > grade))
                         continue;
+                    if (MyStates.HasState(PlayerState.CannotCallNormalUnitsToGC) && UnitType.IsNormal(card.unitType))
+                        continue;
                     if (card.orderType < 0 && !_field.CardStates.HasState(card.tempID, CardState.CanOnlyBeCalledToBackRowCenter) &&
                         (MyStates.GetValue(PlayerState.MinGradeForGuard) == -1 || Grade(card.tempID) >= MyStates.GetValue(PlayerState.MinGradeForGuard)) &&
                         MyStates.GetValue(PlayerState.CannotGuardWithUnitType) != card.unitType &&
@@ -1667,6 +1671,11 @@ namespace VanguardEngine
             return _field.UnitsHit.Count;
         }
 
+        public List<Card> GetUnitsHit()
+        {
+            return new List<Card>(_field.UnitsHit);
+        }
+
         public bool AttackerIsVanguard()
         {
             if (_field.Attacker == PlayerVanguard)
@@ -1675,7 +1684,7 @@ namespace VanguardEngine
                 return false;
         }
 
-        public void Ride(int selection)
+        public void Ride(int selection, bool normal)
         {
             Card card = _field.CardCatalog[selection];
             _lastRidden.Clear();
@@ -1683,7 +1692,7 @@ namespace VanguardEngine
             _lastRidden.Add(_field.GetUnit(PlayerVanguard));
             bool personaRide = false;
             Card rodeFrom = _field.GetUnit(PlayerVanguard);
-            if (_field.GetUnit(PlayerVanguard).personaRide == 1)
+            if (normal && _field.GetUnit(PlayerVanguard).personaRide == 1)
             {
                 if (card.name == _field.GetUnit(PlayerVanguard).name)
                     personaRide = true;
@@ -2103,6 +2112,8 @@ namespace VanguardEngine
             foreach (int selection in selections)
             {
                 card = _field.CardCatalog[selection];
+                if (UnitType.IsNormal(card.unitType) && MyStates.HasState(PlayerState.CannotCallNormalUnitsToGC))
+                    continue;
                 if (target == -1)
                     target = _field.Attacked[0].tempID;
                 if (!_field.Guardians.ContainsKey(target))
@@ -2313,15 +2324,18 @@ namespace VanguardEngine
             if (OnAbilityTiming != null)
             {
                 CardEventArgs args = new CardEventArgs();
-                args.cardList.Add(card);
-                args.i = Activation.OnPlayerRetired;
-                args.playerID = _playerID;
-                OnAbilityTiming(this, args);
+                if (card.originalOwner == _playerID)
+                {
+                    args.cardList.Add(card);
+                    args.i = Activation.OnPlayerRetired;
+                    args.playerID = _playerID;
+                    OnAbilityTiming(this, args);
+                }
 
                 args = new CardEventArgs();
                 args.cardList.Add(card);
                 args.i = Activation.OnRetire;
-                args.playerID = _playerID;
+                args.playerID = card.originalOwner;
                 OnAbilityTiming(this, args);
             }
             _successfullyRetired.Add(card);
@@ -3911,6 +3925,14 @@ namespace VanguardEngine
         {
             if (_field.PreviousCardLocations[card.tempID] != null)
                 return _field.PreviousCardLocations[card.tempID].Item1.GetLocation();
+            else
+                return -1;
+        }
+
+        public int GetPreviousCircle(Card card)
+        {
+            if (_field.PreviousCardLocations[card.tempID] != null)
+                return _field.PreviousCardLocations[card.tempID].Item2;
             else
                 return -1;
         }

@@ -251,6 +251,12 @@ namespace VanguardEngine
             _abilities[placement].AddRange(ability);
         }
 
+        public void RemoveAbilities(int tempID)
+        {
+            if (_abilities[tempID] != null)
+                _abilities[tempID].Clear();
+        }
+
         public Ability GetAbility(int tempID, int activationNumber)
         {
             return _abilities[tempID][activationNumber - 1];
@@ -1635,6 +1641,11 @@ namespace VanguardEngine
                         if ((data != null && _player1.GetRowNum(data.allSnapshots[_card.tempID].circle) == 0) || IsFrontRowRearguard())
                             validLocation = true;
                     }
+                    else if (location == Location.BackRowCenterRC)
+                    {
+                        if ((data != null && _player1.GetRowNum(data.allSnapshots[_card.tempID].circle) == 1 && _player1.GetColumnNum(data.allSnapshots[_card.tempID].circle) == 0) || (_player1.GetUnitAt(FL.PlayerBackCenter, true) != null && _player1.GetUnitAt(FL.PlayerBackCenter, true).tempID == _card.tempID))
+                            validLocation = true;
+                    }
                     else if (location == Location.Hand)
                     {
                         if (_player1.GetHand().Exists(card => card.tempID == _card.tempID))
@@ -1935,6 +1946,15 @@ namespace VanguardEngine
         public bool PersonaRode()
         {
             return _player1.PersonaRode();
+        }
+
+        public bool CanSuperiorRide(List<object> param)
+        {
+            if (_player1.MyStates.HasState(PlayerState.CannotSuperiorRide))
+                return false;
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            return cards.Count > 0;
         }
 
         public bool CanSuperiorCall(List<object> param)
@@ -3035,6 +3055,13 @@ namespace VanguardEngine
             if (canAddToHand != null && canAddToHand.Count >= GetCount(paramNum))
                 return true;
             return false;
+        }
+
+        public bool CanPutIntoOrderZone(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            return cards.Count >= GetMin(1);
         }
 
         public bool CanAddToSoul(List<object> param)
@@ -4667,9 +4694,7 @@ namespace VanguardEngine
 
         public List<int> Select(List<Card> cards, int max, int min, List<int> specifications, int prompt, bool player)
         {
-            string query = "";
-            if (prompt == Prompt.Critical)
-                query = "to add to hand.";
+            string query = GetQuery(prompt);
             Player actingPlayer;
             if (player)
                 actingPlayer = _player1;
@@ -5469,6 +5494,8 @@ namespace VanguardEngine
                 targetPlayer.MyStates.AddUntilEndOfBattleState(state);
             else if (duration == Property.UntilEndOfTurn)
                 targetPlayer.MyStates.AddUntilEndOfTurnState(state);
+            else if (duration == Property.Continuous)
+                targetPlayer.MyStates.AddContinuousState(state);
         }
 
         public void AddPlayerValue(int state, int value, int duration)
@@ -5615,8 +5642,19 @@ namespace VanguardEngine
                     continue;
                 if (_movedTo.Count > 0 && !_movedTo.Contains(snapshot.location))
                     continue;
-                if (_movedFrom.Count > 0 && !_movedFrom.Contains(snapshot.previousLocation))
-                    continue;
+                if (_movedFrom.Count > 0)
+                {
+                    if (_movedFrom.Contains(Location.BackRowCenterRC))
+                    {
+                        if (!(_player1.GetRowNum(data.allSnapshots[_card.tempID].previousCircle) == 1))
+                            continue;
+                    }
+                    else
+                    {
+                        if (!_movedFrom.Contains(snapshot.previousLocation))
+                            continue;
+                    }
+                }
                 if (_movedTo.Contains(Location.Player) && snapshot.ownerOfLocation != _player1._playerID)
                     continue;
                 cards.Add(_player1.GetCard(snapshot.tempID));
@@ -6178,9 +6216,11 @@ namespace VanguardEngine
             }
             else if (location == Location.PlayedOrdersThisTurn ||
                          location == Location.SoulBlasted ||
-                         location == Location.SungThisTurn || 
+                         location == Location.SungThisTurn ||
                          location == Location.RetiredAsCost ||
-                         location == Location.RodeThisTurn)
+                         location == Location.RodeThisTurn ||
+                         location == Location.MyUnitsHit ||
+                         location == Location.RevealedDriveChecksThisTurn)
             {
                 snapshots.AddRange(_cardFight.GetSnapshots(_player1._playerID, location));
             }
@@ -6193,6 +6233,8 @@ namespace VanguardEngine
                 if (_player1.Vanguard() != null)
                     currentPool.AddRange(_player1.GetArms(_player1.Vanguard().tempID));
             }
+            else if (location == Location.UnitsHit)
+                currentPool.AddRange(_player1.GetUnitsHit());
         }
 
         public bool IsStored(int tempID)
@@ -6253,6 +6295,28 @@ namespace VanguardEngine
         public bool IsAttacker(int id)
         {
             return _player1.GetAttacker() != null && _player1.GetAttacker().tempID == id;
+        }
+
+        public void SuperiorRide(List<object> param)
+        {
+            if (_player1.MyStates.HasState(PlayerState.CannotSuperiorRide))
+                return;
+            SetParam(param, 1);
+            List<Card> validCards = ValidCards(1);
+            List<int> selected = _cardFight.SelectCards(_player1, validCards, GetCount(1), GetMin(1), GetQuery(Prompt.Ride));
+            if (selected.Count > 0)
+                _cardFight.Ride(_player1, _player2, selected[0], false);
+        }
+
+        public string GetQuery(int prompt)
+        {
+            if (prompt == Prompt.Critical)
+                return "to give critical.";
+            else if (prompt == Prompt.Ride)
+                return "to ride.";
+            else if (prompt == Prompt.AddToHand)
+                return "to add to hand.";
+            return "";
         }
     }
 
@@ -6680,6 +6744,10 @@ namespace VanguardEngine
         public const int RetiredAsCost = 78;
         public const int RodeThisTurn = 79;
         public const int VCArms = 80;
+        public const int MyUnitsHit = 81;
+        public const int RevealedDriveChecksThisTurn = 82;
+        public const int UnitsHit = 83;
+        public const int BackRowCenterRC = 84;
     }
 
     class Query
@@ -6811,5 +6879,6 @@ namespace VanguardEngine
         public const int AddToHand = 1;
         public const int Bind = 2;
         public const int Critical = 3;
+        public const int Ride = 4;
     }
 }

@@ -171,6 +171,11 @@ namespace VanguardEngine
         {
             return type == OrderType.LeftDeityArms || type == OrderType.RightDeityArms;
         }
+
+        public static bool IsBlitzOrder(int type)
+        {
+            return type == OrderType.Blitz || type == OrderType.FoxArt;
+        }
     }
 
     public class Skill
