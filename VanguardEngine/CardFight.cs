@@ -81,7 +81,7 @@ namespace VanguardEngine
             _player2.OnMarkedForRetire += MarkedForRetire;
             _player1.OnZoneChanged += UpdateTracking;
             _abilities = new Abilities();
-            inputManager.Initialize(_player1, _player2);
+            inputManager.Initialize(_player1, _player2, Deck1, Deck2, clientNumber, seed);
             _inputManager = inputManager;
             luaInterpreter = new LuaInterpreter(luaPath, this);
             field.Initialize(deck1, deck2, tokens, seed, clientNumber);
@@ -398,7 +398,6 @@ namespace VanguardEngine
 
         public void RidePhaseMenu(Player player1, Player player2)
         {
-            int input;
             int selection = 0;
             CardEventArgs args;
             if (OnRidePhase != null)
@@ -410,7 +409,8 @@ namespace VanguardEngine
             PerformCheckTiming(player1, player2);
             while (player1.CanRideFromRideDeck() || player1.CanRideFromHand())
             {
-                selection = _inputManager.SelectRidePhaseAction(player1);
+                Tuple<int, int> input = _inputManager.SelectRidePhaseAction(player1);
+                selection = input.Item1;
                 if (selection == RidePhaseAction.RideFromRideDeck)
                 {
                     if (player1.CanRideFromRideDeck())
@@ -422,8 +422,8 @@ namespace VanguardEngine
                             (_player1.GetHand().Count == 0 || _inputManager.YesNo(player1, "Skip discard cost?"))) ;
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
-                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, input, true);
+                        selection = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
+                        Ride(player1, player2, selection, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -433,8 +433,8 @@ namespace VanguardEngine
                 {
                     if (player1.CanRideFromHand())
                     {
-                        input = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, input, true);
+                        selection = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "to ride.")[0];
+                        Ride(player1, player2, selection, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -442,7 +442,7 @@ namespace VanguardEngine
                 }
                 else if (selection == RidePhaseAction.RideFromHand)
                 {
-                    Ride(player1, player2, _inputManager.int_input2, true);
+                    Ride(player1, player2, input.Item2, true);
                     PerformCheckTiming(player1, player2);
                 }
                 else if (selection == RidePhaseAction.End)
@@ -473,7 +473,6 @@ namespace VanguardEngine
             Tuple<int, int> selections;
             List<int> canSelect = new List<int>();
             int location;
-            int input;
             CardEventArgs args;
             if (OnMainPhase != null)
             {
@@ -488,7 +487,8 @@ namespace VanguardEngine
                 _inputManager._abilities.Clear();
                 _inputManager._abilities.AddRange(GetACTAbilities(player1));
                 _inputManager._abilities.AddRange(GetAvailableOrders(player1, false));
-                selection = _inputManager.SelectMainPhaseAction(player1);
+                Tuple<int, int> input = _inputManager.SelectMainPhaseAction(player1);
+                selection = input.Item1;
                 if (selection == 1 && !_inputManager.IsReadingInputLog())
                     BrowseHand(player1);
                 else if (selection == 2 && !_inputManager.IsReadingInputLog())
@@ -497,16 +497,16 @@ namespace VanguardEngine
                 {
                     if (player1.CanCallRearguard())
                     {
-                        input = _inputManager.SelectRearguardToCall(player1);
-                        canSelect.AddRange(player1.GetAvailableCircles(input));
-                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
-                        Log.WriteLine("input: " + input + " location: " + location);
-                        if (_abilities.CanOverDress(input, location) && _inputManager.YesNo(player1, "Perform overDress?"))
+                        selection = _inputManager.SelectRearguardToCall(player1);
+                        canSelect.AddRange(player1.GetAvailableCircles(selection));
+                        location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(selection), new List<int>(), canSelect);
+                        Log.WriteLine("input: " + selection + " location: " + location);
+                        if (_abilities.CanOverDress(selection, location) && _inputManager.YesNo(player1, "Perform overDress?"))
                         {
-                            Call(player1, player2, location, input, true);
+                            Call(player1, player2, location, selection, true);
                         }
                         else
-                            Call(player1, player2, location, input, false);
+                            Call(player1, player2, location, selection, false);
                     }
                     else
                         Log.WriteLine("No Rearguards can be called.");
@@ -551,22 +551,22 @@ namespace VanguardEngine
                     break;
                 else if (selection == MainPhaseAction.CallFromHand) //call specific RG (for use outside of console only)
                 {
-                    input = _inputManager.int_input2;
-                    canSelect.AddRange(player1.GetAvailableCircles(input));
-                    location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(input), new List<int>(), canSelect);
-                    if (_abilities.CanOverDress(input, location) && _inputManager.YesNo(player1, "Perform overDress?"))
+                    selection = input.Item2;
+                    canSelect.AddRange(player1.GetAvailableCircles(selection));
+                    location = _inputManager.SelectCallLocation(player1, "Select circle to call to.", player1.GetCard(selection), new List<int>(), canSelect);
+                    if (_abilities.CanOverDress(selection, location) && _inputManager.YesNo(player1, "Perform overDress?"))
                     {
-                        Call(player1, player2, location, input, true);
+                        Call(player1, player2, location, selection, true);
                     }
                     else
-                        Call(player1, player2, location, input, false);
+                        Call(player1, player2, location, selection, false);
                 }
                 else if (selection == MainPhaseAction.MoveRearguard) //move specific column (for use outside of console only)
                 {
+                    int selectedID = input.Item2;
                     if (player1.CanFreeSwap())
                     {
-                        int selectedID = _inputManager.int_input2;
-                        List<int> availableCircles = player1.GetCirclesForFreeSwap(_inputManager.int_input2);
+                        List<int> availableCircles = player1.GetCirclesForFreeSwap(selectedID);
                         if (availableCircles.Count > 0)
                         {
                             int newCircle = _inputManager.SelectCircle(player1, availableCircles, 1)[0];
@@ -574,14 +574,14 @@ namespace VanguardEngine
                         }
                     }
                     else
-                        player1.AlternateMoveRearguard(_inputManager.int_input2);
+                        player1.AlternateMoveRearguard(selectedID);
                 }
                 else if (selection == MainPhaseAction.ActivateAbility)
                 {
                     List<Ability> ACTs = new List<Ability>();
                     foreach (AbilityTimingCount ability in GetACTAbilities(player1))
                     {
-                        if (ability.ability.GetCard().tempID == _inputManager.int_input2)
+                        if (ability.ability.GetCard().tempID == input.Item2)
                         {
                             ACTs.Add(ability.ability);
                         }
@@ -600,7 +600,7 @@ namespace VanguardEngine
                         ActivateACT(player1, ACTs[0]);
                     foreach (AbilityTimingCount ability in GetAvailableOrders(player1, false))
                     {
-                        if (ability.ability.GetCard().tempID == _inputManager.int_input2)
+                        if (ability.ability.GetCard().tempID == input.Item2)
                         {
                             ActivateOrder(player1, ability.ability, true, true);
                             break;
@@ -787,19 +787,20 @@ namespace VanguardEngine
                 if (player1.CanAttack())
                 {
                     booster = -1;
-                    selection = _inputManager.SelectBattlePhaseAction(player1);
+                    Tuple<int, int> tupleInput = _inputManager.SelectBattlePhaseAction(player1);
+                    selection = tupleInput.Item1;
                     if (selection == 1)
                         BrowseHand(player1);
                     else if (selection == 2)
                         BrowseField(player1);
                     else if (selection == BattlePhaseAction.End)
                         break;
-                    else if (selection == 3 || selection == BattlePhaseAction.Attack) //for use outside of console only
+                    else if (selection == 3 || selection == BattlePhaseAction.Attack) 
                     {
                         if (selection == 3)
                             attacker = _inputManager.SelectAttackingUnit(player1);
                         else
-                            attacker = _inputManager.int_input2;
+                            attacker = tupleInput.Item2; //for use outside of console only
                         player1.SetAttacker(attacker);
                         if (player1.CanBeBoosted())
                         {
@@ -871,7 +872,8 @@ namespace VanguardEngine
                     player2.PrintEnemyAttack();
                     if (player2.GetAttackedCards().Count > 0)
                     {
-                        selection = _inputManager.SelectGuardPhaseAction(player2);
+                        Tuple<int, int> input = _inputManager.SelectGuardPhaseAction(player2);
+                        selection = input.Item1;
                         if (selection == 1)
                             BrowseHand(player2);
                         else if (selection == 2)
@@ -932,7 +934,7 @@ namespace VanguardEngine
                         else if (selection == GuardStepAction.Intercept)
                         {
                             selections = new List<int>();
-                            selections.Add(_inputManager.int_input2);
+                            selections.Add(input.Item2);
                             if (player2.GetAttackedCards().Count > 1)
                                 selection2 = _inputManager.SelectCardToGuard(player2);
                             else
@@ -944,7 +946,7 @@ namespace VanguardEngine
                         {
                             foreach (AbilityTimingCount ability in GetAvailableOrders(player2, true))
                             {
-                                if (ability.ability.GetCard().tempID == _inputManager.int_input2)
+                                if (ability.ability.GetCard().tempID == input.Item2)
                                 {
                                     ActivateOrder(player2, ability.ability, true, true);
                                     break;
@@ -1402,6 +1404,7 @@ namespace VanguardEngine
             {
                 CardEventArgs args = new CardEventArgs();
                 args.card = ability.GetCard();
+                args.abilityText = ability.Description;
                 OnAbilityActivated(this, args);
             }
             ability.PayCost();
@@ -1463,6 +1466,7 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = ability.ability.GetCard();
+                    args.abilityText = ability.ability.Description;
                     OnAbilityActivated(this, args);
                 }
                 ability.ability.Activate(ability.activation, ability.timingCount);
@@ -1513,6 +1517,7 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = canActivate[selection].ability.GetCard();
+                    args.abilityText = canActivate[selection].ability.Description;
                     OnAbilityActivated(this, args);
                 }
                 canActivate[selection].ability.PayCost(canActivate[selection].activation, canActivate[selection].timingCount);
@@ -2047,6 +2052,7 @@ namespace VanguardEngine
             {
                 CardEventArgs args = new CardEventArgs();
                 args.card = ability.GetCard();
+                args.abilityText = ability.Description;
                 OnAbilityActivated(this, args);
             }
             ability.PayCost();

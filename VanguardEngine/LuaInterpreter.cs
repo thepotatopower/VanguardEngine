@@ -6748,6 +6748,41 @@ namespace VanguardEngine
         public const int RevealedDriveChecksThisTurn = 82;
         public const int UnitsHit = 83;
         public const int BackRowCenterRC = 84;
+
+        public static string GetName(int location)
+        {
+            if (location == Location.Deck)
+                return "Deck";
+            else if (location == Location.RideDeck)
+                return "Ride Deck";
+            else if (location == Location.Hand)
+                return "Hand";
+            else if (location == Location.VC)
+                return "VC";
+            else if (location == Location.RC)
+                return "RC";
+            else if (location == Location.GC)
+                return "GC";
+            else if (location == Location.Drop)
+                return "Drop";
+            else if (location == Location.Damage)
+                return "Damage Zone";
+            else if (location == Location.OrderArea)
+                return "Order Area";
+            else if (location == Location.Order)
+                return "Order Zone";
+            else if (location == Location.Bind)
+                return "Bind Zone";
+            else if (location == Location.Soul)
+                return "Soul";
+            else if (location == Location.originalDress)
+                return "originalDress";
+            else if (location == Location.Arm)
+                return "Arm";
+            else if (location == Location.Trigger)
+                return "Trigger Zone";
+            return "";
+        }
     }
 
     class Query

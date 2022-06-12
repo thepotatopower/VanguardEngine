@@ -9,17 +9,24 @@ namespace VanguardEngine
 {
     public class LoadCards
     {
-        public static List<string> GenerateList(string deckFilepath, int loadCode)
+        public static List<string> GenerateList(string deckFilepath, int loadCode, int player)
         {
             string[] f1 = File.ReadAllLines(deckFilepath);
             //if (loadCode == LoadCode.WithRideDeck && f1.Length != 52)
             //    return null;
             List<string> output = new List<string>();
+            int start = 0;
+            int end = 52;
+            if (player == 2)
+            {
+                start = 52;
+                end = 104;
+            }
             if (loadCode == LoadCode.WithRideDeck)
             {
-                for (int i = 0; i < 52; i++)
+                for (int i = start; i < end; i++)
                 {
-                    if (i == 0 || i == 5)
+                    if (i == start || i == start + 5)
                         continue;
                     output.Add(f1[i]);
                 }

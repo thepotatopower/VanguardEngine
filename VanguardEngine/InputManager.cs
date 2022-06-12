@@ -46,34 +46,67 @@ namespace VanguardEngine
         public EventHandler<CardEventArgs> OnPlayerSwap;
         public EventHandler<CardEventArgs> OnChosen;
         public bool _cancellable = false;
-        public string inputlog = "";
+        string inputlog = "";
+        int POV = -1;
+        int seed = -1;
         List<string> inputLogInputs;
+        public string logDirectory = "Replays/";
 
-        public void Initialize(Player player1, Player player2)
+        public void Initialize(Player player1, Player player2, List<Card> player1Deck, List<Card> player2Deck, int pov, int seed)
         {
             _actingPlayer = player1;
             DateTime dt = DateTime.Now;
-            inputlog = dt.Hour.ToString() + dt.Minute.ToString() + dt.Second.ToString() + dt.Millisecond.ToString() + ".txt";
+            if (inputLogInputs == null || inputLogInputs.Count == 0)
+            {
+                POV = pov;
+                inputlog = logDirectory + dt.Hour.ToString() + dt.Minute.ToString() + dt.Second.ToString() + dt.Millisecond.ToString() + ".txt";
+                if (player1Deck.Count < 50 || player2Deck.Count < 50)
+                    throw new ArgumentException("error with deck size");
+                RecordInput("#RideDeck");
+                for (int i = 0; i < 4; i++)
+                    RecordInput(player1Deck[i].id);
+                RecordInput("#MainDeck");
+                for (int i = 4; i < 50; i++)
+                    RecordInput(player1Deck[i].id);
+                RecordInput("#RideDeck");
+                for (int i = 0; i < 4; i++)
+                    RecordInput(player2Deck[i].id);
+                RecordInput("#MainDeck");
+                for (int i = 4; i < 50; i++)
+                    RecordInput(player2Deck[i].id);
+                RecordInput(POV.ToString());
+                RecordInput(seed.ToString());
+            }
             //_player2 = player2;
+        }
+
+        public void SetReplayDirectory(string directory)
+        {
+            logDirectory = directory;
         }
 
         public void ReadFromInputLog(string inputfile)
         {
             inputLogInputs = new List<string>();
             List<string> lines = File.ReadLines(inputfile).ToList();
-            for (int i = 0; i < 52; i++)
+            for (int i = 0; i < 104; i++)
                 lines.RemoveAt(0);
+            POV = Int32.Parse(lines[0]);
+            seed = Int32.Parse(lines[1]);
+            lines.RemoveAt(0);
+            lines.RemoveAt(0);
             inputLogInputs.AddRange(lines);
         }
 
-        //public virtual void SwapPlayers()
-        //{
-        //    Player temp = _actingPlayer;
-        //    _actingPlayer = _player2;
-        //    _player2 = temp;
-        //    if (OnPlayerSwap != null)
-        //        OnPlayerSwap(this, new CardEventArgs());
-        //}
+        public int GetPOV()
+        {
+            return POV;
+        }
+
+        public int GetSeed()
+        {
+            return seed;
+        }
 
         public int SelectPrompt(int max)
         {
@@ -86,31 +119,6 @@ namespace VanguardEngine
             }
             return selection;
         }
-
-        //protected virtual void WaitForInput(ThreadStart start)
-        //{
-        //    Thread InputThread = new Thread(start);
-        //    InputThread.Start();
-        //    oSignalEvent.WaitOne();
-        //    oSignalEvent.Reset();
-        //    InputThread.Abort();
-        //}
-
-        //public virtual bool YesNo(Player actingPlayer, int request)
-        //{
-        //    bool swapped = false;
-        //    if (actingPlayer._playerID != _actingPlayer._playerID)
-        //    {
-        //        SwapPlayers();
-        //        swapped = true;
-        //    }
-        //    prompt = request;
-        //    string_input = "";
-        //    YesNo_Input();
-        //    if (swapped)
-        //        SwapPlayers();
-        //    return bool_input;
-        //}
 
         public virtual bool YesNo(Player actingPlayer, string query)
         {
@@ -195,14 +203,15 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectRidePhaseAction(Player actingPlayer)
+        public virtual Tuple<int, int> SelectRidePhaseAction(Player actingPlayer)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetIntInput();
+                return GetTupleInput();
             _actingPlayer = actingPlayer;
             SelectRidePhaseAction_Input();
-            RecordInput(actingPlayer, int_input);
-            return int_input;
+            Tuple<int, int> input = new Tuple<int, int>(int_input, int_input2);
+            RecordInput(actingPlayer, input);
+            return input;
         }
 
         protected virtual void SelectRidePhaseAction_Input()
@@ -215,14 +224,15 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectMainPhaseAction(Player actingPlayer)
+        public virtual Tuple<int, int> SelectMainPhaseAction(Player actingPlayer)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetIntInput();
+                return GetTupleInput();
             _actingPlayer = actingPlayer;
             SelectMainPhaseAction_Input();
-            RecordInput(actingPlayer, int_input);
-            return int_input;
+            Tuple<int, int> input = new Tuple<int, int>(int_input, int_input2);
+            RecordInput(actingPlayer, input);
+            return input;
         }
 
         protected virtual void SelectMainPhaseAction_Input()
@@ -436,14 +446,15 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectBattlePhaseAction(Player actingPlayer)
+        public virtual Tuple<int, int> SelectBattlePhaseAction(Player actingPlayer)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetIntInput();
+                return GetTupleInput();
             _actingPlayer = actingPlayer;
             SelectBattlePhaseAction_Input();
-            RecordInput(actingPlayer, int_input);
-            return int_input;
+            Tuple<int, int> tupleInput = new Tuple<int, int>(int_input, int_input2);
+            RecordInput(actingPlayer, tupleInput);
+            return tupleInput;
         }
 
         protected virtual void SelectBattlePhaseAction_Input()
@@ -501,14 +512,15 @@ namespace VanguardEngine
             oSignalEvent.Set();
         }
 
-        public virtual int SelectGuardPhaseAction(Player actingPlayer)
+        public virtual Tuple<int, int> SelectGuardPhaseAction(Player actingPlayer)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetIntInput();
+                return GetTupleInput();
             _actingPlayer = actingPlayer;
             SelectGuardPhaseAction_Input();
-            RecordInput(actingPlayer, int_input);
-            return int_input;
+            Tuple<int, int> input = new Tuple<int, int>(int_input, int_input2);
+            RecordInput(actingPlayer, input);
+            return input;
         }
 
         protected virtual void SelectGuardPhaseAction_Input()
@@ -580,7 +592,16 @@ namespace VanguardEngine
         public virtual int SelectActiveUnit(Player actingPlayer, int request, int amount)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetIntInput();
+            {
+                int input = GetIntInput();
+                if (OnChosen != null)
+                {
+                    CardEventArgs args = new CardEventArgs();
+                    args.card = _actingPlayer.GetCard(input);
+                    OnChosen(this, args);
+                }
+                return input;
+            }
             _actingPlayer = actingPlayer;
             prompt = request;
             value = amount;
@@ -744,7 +765,19 @@ namespace VanguardEngine
         public List<int> SelectFromList(Player actingPlayer, List<Card> cards, int count, int min, string query, List<int> specifications)
         {
             if (inputLogInputs != null && inputLogInputs.Count > 0)
-                return GetListInput();
+            {
+                List<int> inputs = GetListInput();
+                foreach (int tempID in inputs)
+                {
+                    if (OnChosen != null)
+                    {
+                        CardEventArgs args = new CardEventArgs();
+                        args.card = actingPlayer.GetCard(tempID);
+                        OnChosen(this, args);
+                    }
+                }
+                return inputs;
+            }
             if (count == 0 && min == 0)
             {
                 RecordInput(actingPlayer, new List<int>());
@@ -1079,6 +1112,7 @@ namespace VanguardEngine
         public void RecordInput(Player player, Tuple<int, int> input)
         {
             string line = "P" + player._playerID + " tuple" + input.Item1 + "|" + input.Item2;
+            RecordInput(line);
         }
 
         public Tuple<int, int> GetTupleInput()
