@@ -21,7 +21,7 @@ namespace VanguardEngine
         protected GuardianCircle _GC;
         protected Dictionary<int, List<Card>> _guardians = new Dictionary<int, List<Card>>();
         protected List<Card> _sentinel = new List<Card>();
-        protected int _attacker = -1;
+        protected Tuple<int, int> _attacker = new Tuple<int, int>(-1, -1);
         protected List<Card> _attacked = new List<Card>();
         protected int _booster = -1;
         protected bool _player1PersonaRide = false;
@@ -136,11 +136,16 @@ namespace VanguardEngine
 
         public void SetUnit(int circle, Card card)
         {
+            _circles[circle].SetMovementType(MovementType.Call);
             _circles[circle].Add(card);
         }
 
         public void RideUnit(int circle, Card card)
         {
+            if (_circles[circle].GetType() == typeof(RearguardCircle))
+                _circles[circle].SetMovementType(MovementType.overDress);
+            else
+                _circles[circle].SetMovementType(MovementType.Ride);
             _circles[circle].AddRide(card);
         }
 
@@ -297,10 +302,14 @@ namespace VanguardEngine
             get => _player2Looking;
         }
 
-        public int Attacker
+        public Tuple<int, int> Attacker //circle, fieldid
         {
             get => _attacker;
-            set => _attacker = value;
+        }
+
+        public void SetAttacker(int circle, int fieldID)
+        {
+            _attacker = new Tuple<int, int>(circle, fieldID);
         }
 
         public List<Card> Attacked
@@ -1513,6 +1522,7 @@ namespace VanguardEngine
         public const int NumOfAttacks = 48;
         public const int AttackedRearguard = 49;
         public const int TriggerCritical = 50;
+        public const int RegardedAsWhenRodeUpon = 51;
     }
 
     public class Zone
@@ -1526,6 +1536,7 @@ namespace VanguardEngine
         protected int _FL = -1;
         protected bool modified = false;
         protected int owner = -1;
+        protected int movementType = MovementType.Default;
 
         public Zone(Field field, int _owner)
         {
@@ -1541,6 +1552,11 @@ namespace VanguardEngine
                 _field.CardLocations[card.tempID] = new Tuple<Zone, int, int>(this, this._FL, _field.rand.Next());
                 _field.PreviousCardLocations[card.tempID] = _field.CardLocations[card.tempID];
             }
+        }
+
+        public void SetMovementType(int type)
+        {
+            movementType = type;
         }
 
         protected virtual List<Card> Remove(Card card)
@@ -1581,8 +1597,8 @@ namespace VanguardEngine
             ResetCard(card);
             if (_field.Booster != -1 && (_field.GetUnit(_field.Booster) == null || _field.GetUnit(_field.Booster).tempID == card.tempID))
                 _field.Booster = -1;
-            if (_field.Attacker != -1 && (_field.GetUnit(_field.Attacker) == null || _field.GetUnit(_field.Attacker).tempID == card.tempID))
-                _field.Attacker = -1;
+            //if (_field.Attacker != -1 && (_field.GetUnit(_field.Attacker) == null || _field.GetUnit(_field.Attacker).tempID == card.tempID))
+            //    _field.Attacker = -1;
             if (_field.Attacked.Exists(c => c.tempID == card.tempID))
                 _field.Attacked.Remove(_field.Attacked.Find(c => c.tempID == card.tempID));
             if (_field.CardLocations[card.tempID] != null)
@@ -1631,6 +1647,7 @@ namespace VanguardEngine
             //if (_field.Player1Deck.GetCards().Count == 0 || _field.Player2Deck.GetCards().Count == 0)
             //    throw new ArgumentException("deck out.");
             modified = true;
+            movementType = MovementType.Default;
             return card;
         }
 
@@ -1658,6 +1675,7 @@ namespace VanguardEngine
 
         protected virtual void ActivateEvent()
         {
+            args.movementType = movementType; 
             if (previousZone != this)
                 _field.ActivateEvent(args);
         }
@@ -2162,30 +2180,19 @@ namespace VanguardEngine
         {
             return abilitySource != null;
         }
+
+        public bool GradeOrGreater(int grade)
+        {
+            return this.grade >= grade;
+        }
     }
 
-    //public class FieldSnapshot
-    //{
-    //    Card[] _snapShot = new Card[FL.MaxFL() + 1];
-    //    Field _field;
-
-    //    public FieldSnapshot(Field field)
-    //    {
-    //        _field = field;
-    //        for (int i = 0; i < FL.MaxFL(); i++)
-    //        {
-    //            _snapShot[i] = _field.GetUnit(i);
-    //        }
-    //    }
-
-    //    public int GetColumn(int tempID)
-    //    {
-    //        for (int i = 0; i < _snapShot.Length; i++)
-    //        {
-    //            if (_snapShot[i] != null && _snapShot[i].tempID == tempID)
-    //                return _field.GetColumn(i);
-    //        }
-    //        return -1;
-    //    }
-    //}
+    public class MovementType
+    {
+        public static int Default = 0;
+        public static int Draw = 1;
+        public static int Ride = 2;
+        public static int Call = 3;
+        public static int overDress = 4;
+    }
 }

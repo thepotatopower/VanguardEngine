@@ -2487,6 +2487,17 @@ namespace VanguardEngine
                         currentPool.AddRange(newPool);
                         newPool.Clear();
                     }
+                    else if (other == Other.HasOriginalDress)
+                    {
+                        foreach (Card card in currentPool)
+                        {
+                            if (_player1.GetOriginalDress(card.tempID).Count > 0)
+                                newPool.Add(card);
+                        }
+                        currentPool.Clear();
+                        currentPool.AddRange(newPool);
+                        newPool.Clear();
+                    }
                     else if (other == Other.ThisFieldID || other == Other.NotThisFieldID)
                     {
                         if (data != null)
@@ -3209,7 +3220,7 @@ namespace VanguardEngine
 
         public bool IsAttackingUnit()
         {
-            if (_player1.AttackingUnit() != null && _card.tempID == _player1.AttackingUnit().tempID)
+            if (_player1.GetAttacker() != null && _card.tempID == _player1.GetAttacker().tempID)
                 return true;
             return false;
         }
@@ -3793,19 +3804,19 @@ namespace VanguardEngine
             _player2.AddToSoul(cardsToSoul);
         }
 
-        public void AddToDrop(List<object> param)
+        public List<int> AddToDrop(List<object> param)
         {
             SetParam(param, 1);
-            AddToDrop(1);
+            return AddToDrop(1);
         }
 
-        public void AddToDrop(int paramNum)
+        public List<int> AddToDrop(int paramNum)
         {
             List<Card> cardsToSelect = ValidCards(paramNum);
             List<int> cardsToDrop = new List<int>();
             foreach (Card card in cardsToSelect)
                 cardsToDrop.Add(card.tempID);
-            _player1.AddToDrop(cardsToDrop);
+            return _player1.AddToDrop(cardsToDrop);
         }
 
         public List<int> ChooseAddToDrop(List<object> param)
@@ -4686,6 +4697,11 @@ namespace VanguardEngine
             return Select(filter, locations, max, min, new List<int>(), -1);
         }
 
+        public List<int> Select(string filter, List<int> locations, int max, int min, int prompt)
+        {
+            return Select(filter, locations, max, min, new List<int>(), prompt);
+        }
+
         public List<int> Select(string filter, List<int> locations, int max, int min, List<int> specifications, int prompt)
         {
             List<Card> filtered = FilterCards(filter, locations);
@@ -5011,6 +5027,11 @@ namespace VanguardEngine
             if (card != null)
                 return card.name;
             return "";
+        }
+
+        public string LoadNameFromCardID(string cardID)
+        {
+            return GetNameFromCardID(cardID);
         }
 
         public string LoadName(string name)
@@ -5546,6 +5567,11 @@ namespace VanguardEngine
             return _player1.Grade(tempID) == grade;
         }
 
+        public bool GradeOrLess(int tempID, int grade)
+        {
+            return _player1.Grade(tempID) <= grade;
+        }
+
         public void Track(int tempID)
         {
             _tracking.Clear();
@@ -5686,6 +5712,11 @@ namespace VanguardEngine
         public bool SourceIsAbility()
         {
             return data != null && data.abilitySource != null;
+        }
+
+        public bool SourceHasProperty(int property)
+        {
+            return data != null && data.ability != null && data.ability._additionalProperties.Contains(property);
         }
 
         public bool SourceIsVanguardAbility()
@@ -6011,6 +6042,16 @@ namespace VanguardEngine
             return false;
         }
 
+        public bool IsUnit(int tempID)
+        {
+            Card card = _player1.GetCard(tempID);
+            if (card != null)
+            {
+                return card.unitType != UnitType.NotUnit;
+            }
+            return false;
+        }
+
         public bool IsOrderType(int tempID, int orderType)
         {
             Card card = _player1.GetCard(tempID);
@@ -6257,6 +6298,16 @@ namespace VanguardEngine
             return power;
         }
 
+        public int GetOriginalShield(List<object> param)
+        {
+            SetParam(param, 1);
+            List<Card> cards = ValidCards(1);
+            int shield = 0;
+            foreach (Card card in cards)
+                shield += card.shield;
+            return shield;
+        }
+
         public bool IsClan(int tempID, int clan)
         {
             Card card = _player1.GetCard(tempID);
@@ -6297,15 +6348,32 @@ namespace VanguardEngine
             return _player1.GetAttacker() != null && _player1.GetAttacker().tempID == id;
         }
 
-        public void SuperiorRide(List<object> param)
+        public bool CanSuperiorRide(string filter, List<int> locations)
         {
             if (_player1.MyStates.HasState(PlayerState.CannotSuperiorRide))
-                return;
+                return false;
+            List<Card> cards = FilterCards(filter, locations);
+            return (cards.Count > 0);
+        }
+
+        public List<int> SuperiorRide(List<object> param, bool asStand)
+        {
+            if (_player1.MyStates.HasState(PlayerState.CannotSuperiorRide))
+                return new List<int>();
             SetParam(param, 1);
             List<Card> validCards = ValidCards(1);
             List<int> selected = _cardFight.SelectCards(_player1, validCards, GetCount(1), GetMin(1), GetQuery(Prompt.Ride));
             if (selected.Count > 0)
-                _cardFight.Ride(_player1, _player2, selected[0], false);
+            {
+                int id = _cardFight.Ride(_player1, _player2, selected[0], false, asStand);
+                return new List<int>(id);
+            }
+            return new List<int>();
+        }
+
+        public List<int> SuperiorRide(List<object> param)
+        {
+            return SuperiorRide(param, true);
         }
 
         public string GetQuery(int prompt)
@@ -6316,6 +6384,8 @@ namespace VanguardEngine
                 return "to ride.";
             else if (prompt == Prompt.AddToHand)
                 return "to add to hand.";
+            else if (prompt == Prompt.AddToDrop)
+                return "to send to drop.";
             return "";
         }
     }
@@ -6855,6 +6925,7 @@ namespace VanguardEngine
         public const int DifferentName = 42;
         public const int Applicable = 43;
         public const int Blitz = 44;
+        public const int HasOriginalDress = 45;
     }
 
     class Property
@@ -6906,6 +6977,7 @@ namespace VanguardEngine
         public const int DoNotConvert = 43;
         public const int Cancellable = 44;
         public const int DifferentNames = 45;
+        public const int RevolDress = 46;
     }
 
     public class Prompt
@@ -6915,5 +6987,6 @@ namespace VanguardEngine
         public const int Bind = 2;
         public const int Critical = 3;
         public const int Ride = 4;
+        public const int AddToDrop = 5;
     }
 }

@@ -28,8 +28,8 @@ namespace VanguardEngine
             //Console.ReadLine();
             Random r = new Random();
             Console.WriteLine("Starting CardFight.");
-            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("rorowa.txt", LoadCode.WithRideDeck, 1), "Data Source=./cards.db;Version=3;");
-            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("rorowa.txt", LoadCode.WithRideDeck, 1), "Data Source=./cards.db;Version=3;");
+            List<Card> deck1 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("youthberk.txt", LoadCode.WithRideDeck, 1), "Data Source=./cards.db;Version=3;");
+            List<Card> deck2 = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("youthberk.txt", LoadCode.WithRideDeck, 1), "Data Source=./cards.db;Version=3;");
             List<Card> tokens = LoadCards.GenerateCardsFromList(LoadCards.GenerateList("tokens.txt", LoadCode.Tokens, -1), "Data Source=./cards.db;Version=3;");
             Console.WriteLine(Directory.GetCurrentDirectory());
             start = cardFight.Initialize(deck1, deck2, tokens, inputManager, ".." + Path.DirectorySeparatorChar + "lua", "Data Source=./cards.db;Version=3;", "Data Source=./names.db;Version=3;", r.Next(), 0);

@@ -16,6 +16,7 @@ namespace VanguardEngine
         public int currentGrade { get; set; }
         public int guardTarget { get; set; }
         public int circle { get; set; }
+        public int movementType { get; set; }
         public List<Card> cardList { get; set; }
         public int playerID { get; set; }
         public List<int> intList { get; set; }
@@ -23,6 +24,7 @@ namespace VanguardEngine
         public bool faceup { get; set; }
         public bool upright { get; set; }
         public int i { get; set; }
+        public int location { get; set; }
         public bool b { get; set; }
         public string abilityText { get; set; }
         public Tuple<int, int> previousLocation { get; set; }

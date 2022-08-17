@@ -598,6 +598,8 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = _actingPlayer.GetCard(input);
+                    args.playerID = actingPlayer._playerID;
+                    args.location = _actingPlayer.GetLocation(args.card);
                     OnChosen(this, args);
                 }
                 return input;
@@ -610,6 +612,8 @@ namespace VanguardEngine
             {
                 CardEventArgs args = new CardEventArgs();
                 args.card = _actingPlayer.GetCard(int_input);
+                args.playerID = actingPlayer._playerID;
+                args.location = _actingPlayer.GetLocation(args.card);
                 OnChosen(this, args);
             }
             RecordInput(actingPlayer, int_input);
@@ -773,6 +777,8 @@ namespace VanguardEngine
                     {
                         CardEventArgs args = new CardEventArgs();
                         args.card = actingPlayer.GetCard(tempID);
+                        args.playerID = actingPlayer._playerID;
+                        args.location = _actingPlayer.GetLocation(args.card);
                         OnChosen(this, args);
                     }
                 }
@@ -926,6 +932,8 @@ namespace VanguardEngine
                 {
                     CardEventArgs args = new CardEventArgs();
                     args.card = actingPlayer.GetCard(tempID);
+                    args.playerID = actingPlayer._playerID;
+                    args.location = _actingPlayer.GetLocation(args.card);
                     OnChosen(this, args);
                 }
             }
@@ -1045,7 +1053,7 @@ namespace VanguardEngine
 
         protected virtual void DisplayCards_Input()
         {
-            if (inputLogInputs.Count > 0)
+            if (inputLogInputs != null && inputLogInputs.Count > 0)
                 return;
             Log.WriteLine("----------");
             for (int i = 0; i < cardsToSelect.Count; i++)

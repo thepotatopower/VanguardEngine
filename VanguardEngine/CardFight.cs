@@ -423,7 +423,7 @@ namespace VanguardEngine
                         else
                             Discard(player1, player2, player1.GetHand(), 1, 1);
                         selection = _inputManager.SelectFromList(player1, player1.GetRideableCards(true), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, selection, true);
+                        Ride(player1, player2, selection, true, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -434,7 +434,7 @@ namespace VanguardEngine
                     if (player1.CanRideFromHand())
                     {
                         selection = _inputManager.SelectFromList(player1, player1.GetRideableCards(false), 1, 1, "to ride.")[0];
-                        Ride(player1, player2, selection, true);
+                        Ride(player1, player2, selection, true, true);
                         PerformCheckTiming(player1, player2);
                     }
                     else
@@ -442,7 +442,7 @@ namespace VanguardEngine
                 }
                 else if (selection == RidePhaseAction.RideFromHand)
                 {
-                    Ride(player1, player2, input.Item2, true);
+                    Ride(player1, player2, input.Item2, true, true);
                     PerformCheckTiming(player1, player2);
                 }
                 else if (selection == RidePhaseAction.End)
@@ -450,13 +450,14 @@ namespace VanguardEngine
             }
         }
 
-        public void Ride(Player player1, Player player2, int selection, bool normal)
+        public int Ride(Player player1, Player player2, int selection, bool normal, bool asStand)
         {
-            player1.Ride(selection, normal);
+            int id = player1.Ride(selection, normal, asStand);
             AddAbilityTiming(Activation.OnRide, player1._playerID, player1.GetLastRidden());
             AddAbilityTiming(Activation.PlacedOnVC, player1._playerID, player1.GetLastPlacedOnVC());
             foreach (Card card in player1.GetLastPlacedOnVC())
                 GenerateActionLog(Location.RodeThisTurn, player1._playerID, card, new List<Card>());
+            return id;
         }
 
         public void Discard(Player player1, Player player2, List<Card> cardsToSelect, int max, int min)
@@ -2134,6 +2135,7 @@ namespace VanguardEngine
             }
             if (_currentAbility != null && snapShots[_currentAbility.GetCard().tempID] != null)
                 abilityTimingData.abilitySource = snapShots[_currentAbility.GetCard().tempID];
+            abilityTimingData.ability = _currentAbility;
             if (relevantSnapshots.Count > 0)
             {
                 abilityTimingData.movedFrom = relevantSnapshots[0].previousLocation;
@@ -2519,6 +2521,7 @@ namespace VanguardEngine
         public Snapshot[] allSnapshots = new Snapshot[200];
         List<Snapshot>[] relevantSnapshots = new List<Snapshot>[5];
         public Snapshot abilitySource;
+        public Ability ability;
         public bool asCost = false;
         public bool additionalInfo = false;
         public int movedTo = -1;

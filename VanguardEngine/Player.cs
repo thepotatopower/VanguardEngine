@@ -682,6 +682,7 @@ namespace VanguardEngine
             CardEventArgs args = new CardEventArgs();
             for (int i = 0; i < count && PlayerDeck.Count() > 0; i++)
             {
+                PlayerHand.SetMovementType(MovementType.Draw);
                 cardsAdded.Add(PlayerHand.Add(PlayerDeck.Index(0)));
             }
             args.i = count;
@@ -1041,7 +1042,7 @@ namespace VanguardEngine
         public List<Card> GetPotentialAttackTargets()
         {
             List<Card> cards = new List<Card>();
-            Card Attacker = _field.GetUnit(_field.Attacker);
+            Card Attacker = _field.GetUnit(_field.Attacker.Item1);
             for (int i = EnemyFrontLeft; i <= EnemyVanguard; i++)
             {
                 if (i == EnemyVanguard && _field.CardStates.HasState(Attacker.tempID, CardState.CannotAttackVanguard))
@@ -1240,7 +1241,12 @@ namespace VanguardEngine
             if (!_field.Attacked.Contains(attacked))
                 return 0;
             int shield = CalculatePowerOfUnit(GetCircle(_field.CardCatalog[tempID]));
-            if (_field.Sentinel.Contains(attacked) || (_field.GetUnit(_field.Attacker) != null && _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(Grade(_field.GetUnit(_field.Attacker).tempID))))
+            foreach (Card card in _field.Attacked)
+            {
+                if (_field.CardStates.HasState(card.tempID, CardState.CannotBeHit))
+                    return 1000000000;
+            }
+            if (_field.Sentinel.Contains(attacked) || (GetAttacker() != null && _field.CardStates.GetValues(attacked.tempID, CardState.CannotBeHitByGrade).Contains(Grade(GetAttacker().tempID))))
                 return 1000000000;
             if (!_field.Guardians.ContainsKey(tempID))
                 return shield;
@@ -1263,7 +1269,7 @@ namespace VanguardEngine
         {
             foreach (Card card in _field.Attacked)
             {
-                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || _field.CardStates.GetValues(card.tempID, CardState.CannotBeHitByGrade).Contains(Grade(_field.GetUnit(_field.Attacker).tempID)))
+                if (_field.Sentinel.Contains(_field.CardCatalog[card.tempID]) || (GetAttacker() != null && _field.CardStates.GetValues(card.tempID, CardState.CannotBeHitByGrade).Contains(Grade(GetAttacker().tempID))))
                 {
                     Log.WriteLine("[" + card.name + "] Hit immunity active.");
                     return;
@@ -1274,12 +1280,12 @@ namespace VanguardEngine
 
         public void PrintAttack()
         {
-            Log.WriteLine("Attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
+            Log.WriteLine("Attacking for " + CalculatePowerOfUnit(_field.Attacker.Item1) + ".");
         }
 
         public void PrintEnemyAttack()
         {
-            Log.WriteLine("Enemy attacking for " + CalculatePowerOfUnit(_field.Attacker) + ".");
+            Log.WriteLine("Enemy attacking for " + CalculatePowerOfUnit(_field.Attacker.Item1) + ".");
         }
 
         public int CalculatePowerOfUnit(int location)
@@ -1295,7 +1301,7 @@ namespace VanguardEngine
                 power += 10000;
             else if (IsFrontRow(location) && !IsPlayer(location) && _field.GetPersonaRide(_enemyID))
                 power += 10000;
-            if (_field.Booster >= 0 && location == _field.Attacker)
+            if (_field.Booster >= 0 && location == _field.Attacker.Item1)
             {
                 if (_field.GetUnit(_field.Booster) == null)
                     _field.Booster = -1;
@@ -1411,17 +1417,17 @@ namespace VanguardEngine
 
         public bool CanBeBoosted()
         {
-            if (_field.Attacker == PlayerFrontLeft)
+            if (_field.Attacker.Item1 == PlayerFrontLeft)
             {
                 if (_field.GetUnit(PlayerBackLeft) != null && CanBoost(_field.GetUnit(PlayerBackLeft)))
                     return true;
             }
-            else if (_field.Attacker == PlayerVanguard)
+            else if (_field.Attacker.Item1 == PlayerVanguard)
             {
                 if (_field.GetUnit(PlayerBackCenter) != null && CanBoost(_field.GetUnit(PlayerBackCenter)))
                     return true;
             }
-            else if (_field.Attacker == PlayerFrontRight)
+            else if (_field.Attacker.Item1 == PlayerFrontRight)
             {
                 if (_field.GetUnit(PlayerBackRight) != null && CanBoost(_field.GetUnit(PlayerBackRight)))
                     return true;
@@ -1571,7 +1577,7 @@ namespace VanguardEngine
 
         public int Drive()
         {
-            Card attacker = _field.GetUnit(_field.Attacker);
+            Card attacker = _field.GetUnit(_field.Attacker.Item1);
             int drive = 0;
             foreach (int value in _field.CardStates.GetValues(attacker.tempID, CardState.BonusDrive))
                 drive += value;
@@ -1586,7 +1592,7 @@ namespace VanguardEngine
 
         public int Critical()
         {
-            Card card = _field.GetUnit(_field.Attacker);
+            Card card = _field.GetUnit(_field.Attacker.Item1);
             int critical = card.critical;
             foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusCritical))
                 critical += value;
@@ -1622,20 +1628,20 @@ namespace VanguardEngine
 
         public bool StillAttacking()
         {
-            if (_field.GetUnit(_field.Attacker) != null)
-                return true;
-            return false;
+            return GetAttacker() != null;
         }
 
         public bool AttackHits()
         {
-            Card attacker = _field.GetUnit(_field.Attacker);
+            Card attacker = GetAttacker();
+            if (attacker == null)
+                return false;
             CardEventArgs args = new CardEventArgs();
             foreach (Card card in _field.Attacked)
             {
                 if (!GetAllUnitsOnField().Contains(card))
                     return false;
-                if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeHit) && CalculatePowerOfUnit(_field.Attacker) >= CalculateShield(card.tempID))
+                if (!_field.CardStates.HasState(card.tempID, CardState.CannotBeHit) && CalculatePowerOfUnit(_field.Attacker.Item1) >= CalculateShield(card.tempID))
                 {
                     _field.UnitsHit.Add(card);
                     Log.WriteLine("----------\n" + attacker.name + "'s attack makes a hit on " + card.name + "!");
@@ -1678,13 +1684,13 @@ namespace VanguardEngine
 
         public bool AttackerIsVanguard()
         {
-            if (_field.Attacker == PlayerVanguard)
+            if (_field.Attacker.Item1 == PlayerVanguard)
                 return true;
             else
                 return false;
         }
 
-        public void Ride(int selection, bool normal)
+        public int Ride(int selection, bool normal, bool asStand)
         {
             Card card = _field.CardCatalog[selection];
             _lastRidden.Clear();
@@ -1715,6 +1721,10 @@ namespace VanguardEngine
             {
                 personaRide = true;
             }
+            if (!asStand)
+                _field.Orientation.SetUpRight(card.tempID, false);
+            else
+                _field.Orientation.SetUpRight(card.tempID, true);
             _field.RideUnit(PlayerVanguard, card);
             if (personaRide)
             {
@@ -1727,6 +1737,7 @@ namespace VanguardEngine
             _lastPlacedOnVC.Add(card);
             _field.CardStates.AddUntilEndOfTurnValue(card.tempID, CardState.RiddenFrom, rodeFrom.name);
             _riddenThisTurn = true;
+            return card.tempID;
         }
 
         public void Call(int location, int selection, bool overDress)
@@ -1738,13 +1749,7 @@ namespace VanguardEngine
         public int SuperiorCall(int circle, int tempID, bool overDress, bool standing)
         {
             List<int> called = new List<int>();
-            bool fromHand = false;
-            bool fromPrison = false;
             Card ToBeCalled = _field.CardCatalog[tempID];
-            if (EnemyPrisoners.Contains(_field.CardCatalog[tempID]))
-                fromPrison = true;
-            if (_field.CardLocations[tempID] != null && _field.CardLocations[tempID].Item1 == PlayerHand)
-                fromHand = true;
             if (ToBeCalled.orderType >= 0)
             {
                 PlayerDrop.Add(ToBeCalled);
@@ -1772,19 +1777,6 @@ namespace VanguardEngine
             _lastPlacedOnRC.Add(ToBeCalled);
             _unitsCalledThisTurn.Add(ToBeCalled);
             CardStates.AddUntilEndOfTurnState(ToBeCalled.tempID, CardState.PlacedThisTurn);
-            //if (fromHand)
-            //{
-            //    _unitsCalledFromHandThisTurn.Add(ToBeCalled);
-            //    _lastPlacedOnRCFromHand.Add(ToBeCalled);
-            //    return 1;
-            //}
-            //else
-            //    _lastPlacedOnRCOtherThanFromHand.Add(ToBeCalled);
-            //if (fromPrison)
-            //{
-            //    _lastPlacedOnRCFromPrison.Add(ToBeCalled);
-            //    return 2;
-            //}
             return ToBeCalled.tempID;
         }
 
@@ -1994,15 +1986,15 @@ namespace VanguardEngine
 
         public void SetAttacker(int tempID)
         {
-            _field.Attacker = GetCircle(_field.CardCatalog[tempID]);
+            _field.SetAttacker(GetCircle(_field.CardCatalog[tempID]), GetFieldID(tempID));
         }
 
         public void InitiateAttack(int booster, params int[] targets)
         {
-            Card Attacker = _field.GetUnit(_field.Attacker);
+            Card Attacker = _field.GetUnit(_field.Attacker.Item1);
             Card Attacked;
             _field.Orientation.Rotate(Attacker.tempID, false);
-            _field.Attacker = GetCircle(Attacker);
+            _field.SetAttacker(GetCircle(Attacker), GetFieldID(Attacker.tempID));
             if (booster >= 0)
             {
                 _field.Booster = booster;
@@ -2072,7 +2064,7 @@ namespace VanguardEngine
                 args.card = Attacker;
                 foreach (Card attacked in _field.Attacked)
                     args.intList.Add(attacked.tempID);
-                args.currentPower = CalculatePowerOfUnit(_field.Attacker);
+                args.currentPower = CalculatePowerOfUnit(_field.Attacker.Item1);
                 OnAttack(this, args);
             }
         }
@@ -2090,9 +2082,14 @@ namespace VanguardEngine
 
         public Card GetAttacker()
         {
-            if (_field.Attacker == -1)
+            if (_field.Attacker.Item1 == -1)
                 return null;
-            return _field.GetUnit(_field.Attacker);
+            Card attacker = GetUnitAt(_field.Attacker.Item1, false);
+            if (attacker == null)
+                return null;
+            if (GetFieldID(attacker.tempID) != _field.Attacker.Item2)
+                return null;
+            return attacker;
         }
 
         public int NumOfAttacks()
@@ -2549,7 +2546,7 @@ namespace VanguardEngine
         {
             Card target = _field.CardCatalog[selection];
             int currentPower = CalculatePowerOfUnit(GetCircle(target));
-            if (_field.Booster >= 0 && GetCircle(target) == _field.Attacker)
+            if (_field.Booster >= 0 && GetCircle(target) == _field.Attacker.Item1)
             {
                 currentPower -= CalculatePowerOfUnit(_field.Booster);
             }
@@ -2711,14 +2708,17 @@ namespace VanguardEngine
             }
         }
 
-        public void AddToDrop(List<int> selections)
+        public List<int> AddToDrop(List<int> selections)
         {
             Card cardToAdd;
+            List<int> sent = new List<int>();
             foreach (int tempID in selections)
             {
                 cardToAdd = _field.CardCatalog[tempID];
                 PlayerDrop.Add(cardToAdd);
+                sent.Add(cardToAdd.tempID);
             }
+            return sent;
         }
 
         public void AddToDrop(int tempID)
@@ -3166,15 +3166,21 @@ namespace VanguardEngine
         public void Search(List<int> cardsToSearch)
         {
             List<int> list = new List<int>();
-            bool addedFromDeck = false;
             foreach (int tempID in cardsToSearch)
             {
-                if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
-                    addedFromDeck = true;
-                PlayerHand.Add(_field.CardCatalog[tempID]);
-                list.Add(_field.CardCatalog[tempID].tempID);
-                Reveal(list);
-                list.Clear();
+                //if (PlayerDeck.Contains(_field.CardCatalog[tempID]))
+                //    addedFromDeck = true;
+                Card card = _field.CardCatalog[tempID];
+                if (card != null)
+                {
+                    if (PlayerDeck.Contains(card))
+                    {
+                        list.Add(card.tempID);
+                        Reveal(list);
+                        list.Clear();
+                    }
+                    PlayerHand.Add(card);
+                }
             }
             Shuffle();
         }
@@ -3447,7 +3453,7 @@ namespace VanguardEngine
             MyStates.EndAttack();
             _field.CardStates.EndAttack();
             _field.Sentinel.Clear();
-            _field.Attacker = -1;
+            _field.SetAttacker(-1, -1);
             _field.Attacked.Clear();
             _field.Guardians.Clear();
             _field.Booster = -1;
@@ -3595,9 +3601,7 @@ namespace VanguardEngine
 
         public Card AttackingUnit()
         {
-            if (_field.Attacker > 0)
-                return _field.GetUnit(_field.Attacker);
-            return null;
+            return GetAttacker();
         }
 
         public Card Booster()
@@ -3614,12 +3618,12 @@ namespace VanguardEngine
 
         public int AttackingUnitLocation()
         {
-            return _field.Attacker;
+            return _field.Attacker.Item1;
         }
 
         public int AttackingUnitID()
         {
-            return _field.GetUnit(_field.Attacker).tempID;
+            return _field.GetUnit(_field.Attacker.Item1).tempID;
         }
 
         public bool HasCardInDeck(string name)
