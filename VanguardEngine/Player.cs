@@ -1293,6 +1293,8 @@ namespace VanguardEngine
             Card card = _field.GetUnit(location);
             if (card == null)
                 return 0;
+            if (location != _field.Attacker.Item1)
+                return 0;
             int power = card.power;
             foreach (int value in _field.CardStates.GetValues(card.tempID, CardState.BonusPower))
                 power += value;
@@ -1301,12 +1303,10 @@ namespace VanguardEngine
                 power += 10000;
             else if (IsFrontRow(location) && !IsPlayer(location) && _field.GetPersonaRide(_enemyID))
                 power += 10000;
-            if (_field.Booster >= 0 && location == _field.Attacker.Item1)
+            if (_field.Booster.Count > 0 && location == _field.Attacker.Item1)
             {
-                if (_field.GetUnit(_field.Booster) == null)
-                    _field.Booster = -1;
-                else
-                    power += CalculatePowerOfUnit(_field.Booster);
+                foreach (int booster in _field.Booster)
+                    power += CalculatePowerOfUnit(GetCircle(_field.CardCatalog[booster]));
             }
             if (IsRearguard(card.tempID) && ((card.originalOwner == _playerID && MyStates.HasState(PlayerState.RearguardPower10000))
                 || (card.originalOwner != _playerID && EnemyStates.HasState(PlayerState.RearguardPower10000))))
@@ -1997,8 +1997,8 @@ namespace VanguardEngine
             _field.SetAttacker(GetCircle(Attacker), GetFieldID(Attacker.tempID));
             if (booster >= 0)
             {
-                _field.Booster = booster;
-                _field.Orientation.Rotate(_field.GetUnit(_field.Booster).tempID, false);
+                _field.Booster.Add(booster);
+                _field.Orientation.Rotate(booster, false);
             }
             if (targets.Length > 1)
             {
@@ -2546,9 +2546,10 @@ namespace VanguardEngine
         {
             Card target = _field.CardCatalog[selection];
             int currentPower = CalculatePowerOfUnit(GetCircle(target));
-            if (_field.Booster >= 0 && GetCircle(target) == _field.Attacker.Item1)
+            if (_field.Booster.Count > 0 && GetCircle(target) == _field.Attacker.Item1)
             {
-                currentPower -= CalculatePowerOfUnit(_field.Booster);
+                foreach (int booster in _field.Booster)
+                    currentPower -= CalculatePowerOfUnit(GetCircle(_field.CardCatalog[booster]));
             }
             _field.CardStates.AddUntilEndOfTurnValue(target.tempID, CardState.BonusPower, currentPower);
         }
@@ -3456,7 +3457,7 @@ namespace VanguardEngine
             _field.SetAttacker(-1, -1);
             _field.Attacked.Clear();
             _field.Guardians.Clear();
-            _field.Booster = -1;
+            _field.Booster.Clear();
             _lastRevealedDriveChecks.Clear();
             _lastRevealedDamageChecks.Clear();
             _field.UnitsHit.Clear();
@@ -3604,11 +3605,12 @@ namespace VanguardEngine
             return GetAttacker();
         }
 
-        public Card Booster()
+        public List<Card> Booster()
         {
-            if (_field.Booster > 0)
-                return _field.GetUnit(_field.Booster);
-            return null;
+            List<Card> cards = new List<Card>();
+            foreach (int booster in _field.Booster)
+                cards.Add(_field.CardCatalog[booster]);
+            return cards;
         }
 
         public List<Card> AttackedUnits()

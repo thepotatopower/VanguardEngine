@@ -23,7 +23,7 @@ namespace VanguardEngine
         protected List<Card> _sentinel = new List<Card>();
         protected Tuple<int, int> _attacker = new Tuple<int, int>(-1, -1);
         protected List<Card> _attacked = new List<Card>();
-        protected int _booster = -1;
+        protected List<int> _booster = new List<int>();
         protected bool _player1PersonaRide = false;
         protected bool _player2PersonaRide = false;
         protected Drop _player1Drop;
@@ -317,7 +317,7 @@ namespace VanguardEngine
             get => _attacked;
         }
 
-        public int Booster
+        public List<int> Booster
         {
             get => _booster;
             set => _booster = value;
@@ -1595,8 +1595,8 @@ namespace VanguardEngine
         protected virtual Card AddToZone(Card card, bool bottom)
         {
             ResetCard(card);
-            if (_field.Booster != -1 && (_field.GetUnit(_field.Booster) == null || _field.GetUnit(_field.Booster).tempID == card.tempID))
-                _field.Booster = -1;
+            if (_field.Booster.Exists(t => card.tempID == t))
+                _field.Booster.Remove(card.tempID);
             //if (_field.Attacker != -1 && (_field.GetUnit(_field.Attacker) == null || _field.GetUnit(_field.Attacker).tempID == card.tempID))
             //    _field.Attacker = -1;
             if (_field.Attacked.Exists(c => c.tempID == card.tempID))

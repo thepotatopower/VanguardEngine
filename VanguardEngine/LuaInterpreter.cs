@@ -1954,7 +1954,7 @@ namespace VanguardEngine
                 return false;
             SetParam(param, 1);
             List<Card> cards = ValidCards(1);
-            return cards.Count > 0;
+            return cards.Count >= 0;
         }
 
         public bool CanSuperiorCall(List<object> param)
@@ -2331,7 +2331,7 @@ namespace VanguardEngine
                     {
                         foreach (Card card in currentPool)
                         {
-                            if (_player1.Booster() != null && card.tempID == _player1.Booster().tempID)
+                            if (_player1.Booster().Contains(card))
                                 newPool.Add(card);
                         }
                         currentPool.Clear();
@@ -3251,7 +3251,7 @@ namespace VanguardEngine
 
         public bool IsBooster()
         {
-            if (_player1.Booster() != null && _card.tempID == _player1.Booster().tempID)
+            if (_player1.Booster() != null && _player1.Booster().Exists(card => card.tempID == _card.tempID))
                 return true;
             return false;
         }
@@ -6731,6 +6731,7 @@ namespace VanguardEngine
         public const int OnArmed = -44;
         public const int Glitter = -45;
         public const int OnRide = -46;
+        public const int OnBoost = -47;
     }
 
     public class Location

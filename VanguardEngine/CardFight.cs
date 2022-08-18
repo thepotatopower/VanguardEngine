@@ -858,7 +858,9 @@ namespace VanguardEngine
             if (targets.Length > 0)
             {
                 //AddAbilityTiming(Activation.OnAttack, 0);
-                AddAbilityTiming(Activation.OnAttack, 1, player1.GetAttacker());
+                AddAbilityTiming(Activation.OnAttack, player1._playerID, player1.GetAttacker());
+                if (player1.Booster().Count > 0)
+                    AddAbilityTiming(Activation.OnBoost, player1._playerID, player1.Booster()[0]);
                 PerformCheckTiming(player1, player2);
                 if (player1 == _player1)
                     Log.WriteLine("----------\nSWITCHING CONTROL TO PLAYER 2.");
