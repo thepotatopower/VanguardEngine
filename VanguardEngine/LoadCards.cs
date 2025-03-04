@@ -16,14 +16,15 @@ namespace VanguardEngine
             //    return null;
             List<string> output = new List<string>();
             int start = 0;
-            int end = 52;
+            int end = 56;
             if (player == 2)
             {
-                start = 52;
-                end = 104;
+                start = 56;
+                end = 108;
             }
             if (loadCode == LoadCode.WithRideDeck)
             {
+                output.Add("dzsd01_001");
                 for (int i = start; i < end; i++)
                 {
                     if (i == start || i == start + 5)

@@ -8,6 +8,7 @@ namespace VanguardEngine
     {
         protected Field _field;
         protected int _damage = 0;
+        protected int _energy = 0;
         public int _startingTurn = -1;
         protected bool _guarding = false;
         protected Dictionary<int, RecordedUnitValue> _recordedUnitValues = new Dictionary<int, RecordedUnitValue>();
@@ -70,6 +71,8 @@ namespace VanguardEngine
         protected Zone EnemyOrder;
         protected Zone PlayerOrderArea;
         protected Zone EnemyOrderArea;
+        public Zone PlayerCrestZone;
+        public Zone EnemyCrestZone;
         protected Zone PlayerRideDeck;
         protected Zone EnemyRideDeck;
         protected PseudoZone PlayerRevealed;
@@ -1222,6 +1225,11 @@ namespace VanguardEngine
             if (_startingTurn == 2 && _field.Turn % 2 == 0)
                 return true;
             return false;
+        }
+
+        public bool GoingSecond()
+        {
+            return _startingTurn == 2;
         }
 
         public List<Card> GetDamageZone()
@@ -4223,6 +4231,16 @@ namespace VanguardEngine
         public List<int> GetCardValues(int tempID, int cardState)
         {
             return _field.CardStates.GetValues(tempID, cardState);
+        }
+
+        public int GetEnergy()
+        {
+            return _energy;
+        }
+
+        public void ModifyEnergy(int newEnergy)
+        {
+            _energy += newEnergy;
         }
     }
 

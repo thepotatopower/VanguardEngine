@@ -105,6 +105,7 @@ namespace VanguardEngine
             tempScript.Globals["GetID"] = (Func<int>)GetID;
             tempScript.Globals["NewAbility"] = (Func<int, Ability>)NewAbility;
             tempScript.Globals["GiveAbility"] = (Func<int, int, Ability>)NewAbility;
+            tempScript.Globals["NewAbility"] = (Func<DynValue, Ability>)NewAbility;
             if (card.str1 == "")
             {
                 Log.WriteLine("old ability format");
@@ -164,7 +165,7 @@ namespace VanguardEngine
                 tempScript.Globals.Set("c", c);
                 tempScript.DoFile(filePath);
                 tempScript.Call(tempScript.Globals["RegisterAbilities"]);
-                if (OrderType.IsSetOrder(card.orderType) && cardFight.GetAbility(GetID(), Activation.OnOrder) == null)
+                if (OrderType.IsSetOrder(card.orderType) && cardFight.GetAbility(GetID(), Activation.OnOrder) is null)
                 {
                     currentFilePath = luaPath + Path.DirectorySeparatorChar + "set_order.lua";
                     tempScript.DoFile(currentFilePath);
@@ -218,6 +219,61 @@ namespace VanguardEngine
                 ability = new Ability(cardFight._player1, cardFight._player2, cardFight, card, _abilityID++);
             else
                 ability = new Ability(cardFight._player2, cardFight._player1, cardFight, card, _abilityID++);
+            ability.StoreAbility(script);
+            obj = UserData.Create(ability);
+            script.Globals.Set("obj", obj);
+            cardFight.AddAbility(ability);
+            return ability;
+        }
+
+        public Ability NewAbility(DynValue table)
+        {
+            if (table.Type == DataType.Number)
+                return NewAbility((int)table.Number);
+            if (table.Type != DataType.Table)
+                throw new Exception("NewAbility input parameter incorrect for Card ID: " + currentCard.id);
+            Table luaTable = (Table)table.Table;
+            int tempID = (int)luaTable["ID"];
+            int targetID = tempID;
+            if (!luaTable.Get("targetID").Equals(DynValue.Nil))
+                targetID = (int)luaTable["TempID"];
+            Script script = new Script();
+            DynValue obj;
+            script.Globals.Set("l", l);
+            script.Globals.Set("a", a);
+            script.Globals.Set("q", q);
+            script.Globals.Set("o", o);
+            script.Globals.Set("FL", FL);
+            script.Globals.Set("p", p);
+            script.Globals.Set("u", u);
+            script.Globals.Set("tt", tt);
+            script.Globals.Set("s", s);
+            script.Globals.Set("ps", ps);
+            script.Globals.Set("cs", cs);
+            script.Globals.Set("r", r);
+            script.Globals.Set("Prompt", Prompt);
+            script.Globals.Set("ot", ot);
+            script.Globals.Set("c", c);
+            if (currentFilePath == "")
+                script.DoFile(luaPath + Path.DirectorySeparatorChar + cardFight._player1.GetCard(tempID).id + ".lua");
+            else
+                script.DoFile(currentFilePath);
+            script.Globals["NewAbility"] = (Func<int, Ability>)NewAbility;
+            script.Globals["GiveAbility"] = (Func<int, int, Ability>)NewAbility;
+            Card card;
+            if (targetID < 0)
+            {
+                card = new Card();
+                card.originalOwner = targetID * -1;
+            }
+            else
+                card = cardFight._player1.GetCard(targetID);
+            Ability ability;
+            if (card.originalOwner == 1)
+                ability = new Ability(cardFight._player1, cardFight._player2, cardFight, card, _abilityID++);
+            else
+                ability = new Ability(cardFight._player2, cardFight._player1, cardFight, card, _abilityID++);
+            ability.Initialize(luaTable);
             ability.StoreAbility(script);
             obj = UserData.Create(ability);
             script.Globals.Set("obj", obj);
@@ -535,6 +591,7 @@ namespace VanguardEngine
         protected string _getCosts = "";
         protected int _activationCount = 0;
         protected string _armTarget = "";
+        protected int _version = 0;
 
         public Ability(Player player1, Player player2, CardFight cardFight, Card card, int abilityID)
         {
@@ -543,6 +600,19 @@ namespace VanguardEngine
             _cardFight = cardFight;
             _card = card;
             _abilityID = abilityID;
+        }
+
+        public void Initialize(Table table)
+        {
+            _version = 3;
+            SetDescription(LuaTable.GetInt(table, "Description"));
+            SetTiming(LuaTable.GetInts(table, "Timing").ToArray());
+            SetLocation(LuaTable.GetInts(table, "Location").ToArray());
+            SetActivation(LuaTable.GetString(table, "Activation"));
+            SetTrigger(LuaTable.GetString(table, "Trigger"));
+            SetCondition(LuaTable.GetString(table, "Condition"));
+            if (LuaTable.GetInt(table, "OncePerTurn") == 1)
+                _oncePerTurn = true;
         }
 
         void SetAbilityData(int activation, Tuple<int, int> timingCount)
@@ -2013,6 +2083,50 @@ namespace VanguardEngine
             return ConvertToTempIDs(ValidCards(1));
         }
 
+        public List<Card> ValidCards(DynValue table)
+        {
+            CardParam cardParam = new CardParam(table.Table);
+            List<Card> currentPool = new List<Card>();
+            List<Card> newPool = new List<Card>();
+            List<Snapshot> snapshots = new List<Snapshot>();
+            foreach (int indexType in cardParam.SnapshotIndex)
+            {
+                Snapshot shot = GetSnapshotByIndex(indexType);
+                if (shot != null)
+                    snapshots.Add(shot);;
+            }
+            foreach (Snapshot snapshot in snapshots)
+            {
+                Card card = _player1.GetCard(snapshot.tempID);
+                if (card != null)
+                    currentPool.Add(card);
+            }
+            if (cardParam.Owner == true)
+            {
+                foreach (Card card in currentPool)
+                {
+                    if (snapshots.Count > 0)
+                    {
+                        foreach (Snapshot snapshot in snapshots)
+                        {
+                            if (snapshot.owner == _player1._playerID)
+                                newPool.Add(card);
+                        }
+                    }
+                    else
+                    {
+                        if (card.originalOwner == _player1._playerID)
+                            newPool.Add(card);
+                    }
+                }
+
+                currentPool.Clear();
+                currentPool.AddRange(newPool);
+                newPool.Clear();
+            }
+            return currentPool;
+        }
+
         public List<Card> ValidCards(int paramNum)
         {
             Param param = _params[paramNum];
@@ -2806,6 +2920,22 @@ namespace VanguardEngine
             if (trigger.trigger != Trigger.NotTrigger)
                 return true;
             return false;
+        }
+
+        public bool Exists(DynValue table)
+        {
+            if (table.Type == DataType.Number)
+                return Exists((int)table.Number);
+            if (_version != 3)
+            {
+                List<object> objList = new List<object>();
+                foreach (var pair in table.Table.Pairs)
+                {
+                    objList.Add(pair.Value);
+                }
+                return Exists(objList);
+            }
+            return ValidCards(table).Count > 0;
         }
 
         public bool Exists(List<object> param)
@@ -5618,6 +5748,17 @@ namespace VanguardEngine
             return _card.name;
         }
 
+        Snapshot GetSnapshotByIndex(int snapshotIndex)
+        {
+            AbilityTimingData data = null;
+            List<AbilityTimingData> list = _cardFight.GetAbilityTimingData(_currentActivation, _timingCount.Item1, _player1._playerID);
+            if (list.Count > 0 && list.Count >= _timingCount.Item2)
+                data = list[_timingCount.Item2 - 1];
+            else
+                return null;
+            return data.GetSnapshotIndex(snapshotIndex);
+        }
+
         List<Card> GetSnapshottedCards(int index)
         {
             List<Card> cards = new List<Card>();
@@ -6388,6 +6529,17 @@ namespace VanguardEngine
                 return "to send to drop.";
             return "";
         }
+
+        public bool GoingSecond()
+        {
+            return _player1.GoingSecond();
+        }
+
+        public void Put(DynValue fromParam, DynValue toParam)
+        {
+            List<Card> validCards = ValidCards(fromParam);
+            ;
+        }
     }
 
     //public class AbilityV2 : Ability
@@ -6684,6 +6836,18 @@ namespace VanguardEngine
         }
     }
 
+    public class CardParam
+    {
+        public List<int> SnapshotIndex = new List<int>();
+        public bool? Owner;
+
+        public CardParam(Table table)
+        {
+            SnapshotIndex = LuaTable.GetInts(table, "SnapshotIndex");
+            Owner = LuaTable.GetBoolean(table, "Owner");
+        }
+    }
+
     class Activation
     {
         public const int OnAttack = -2;
@@ -6819,6 +6983,7 @@ namespace VanguardEngine
         public const int RevealedDriveChecksThisTurn = 82;
         public const int UnitsHit = 83;
         public const int BackRowCenterRC = 84;
+        public const int CrestZone = 85;
 
         public static string GetName(int location)
         {
@@ -6989,5 +7154,43 @@ namespace VanguardEngine
         public const int Critical = 3;
         public const int Ride = 4;
         public const int AddToDrop = 5;
+    }
+
+    public class LuaTable
+    {
+        public static bool IsType(Table table, string name, DataType dataType)
+        {
+            return !table.Get(name).Equals(DynValue.Nil) && table.Get(name).Type == dataType;
+        }
+
+        public static string GetString(Table table, string name)
+        {
+            return table.Get(name).Equals(DynValue.Nil) ? "" : table.Get(name).String;
+        }
+
+        public static int GetInt(Table table, string name)
+        {
+            return table.Get(name).Equals(DynValue.Nil) ? 0 : (int)table.Get(name).Number;
+        }
+
+        public static List<int> GetInts(Table table, string name)
+        {
+            List<int> ints = new List<int>();
+            if (table.Get(name).Equals(DynValue.Nil) || table.Get(name).Type != DataType.Table)
+                return ints;
+            foreach (var pair in table.Get(name).Table.Pairs)
+            {
+                if (pair.Value.Type == DataType.Number)
+                    ints.Add((int)pair.Value.Number);
+            }
+            return ints;
+        }
+
+        public static bool? GetBoolean(Table table, string name)
+        {
+            if (table.Get(name).IsNil())
+                return null;   
+            return table.Get(name).Boolean;;
+        }
     }
 }

@@ -40,6 +40,8 @@ namespace VanguardEngine
         protected OrderArea _player2OrderArea;
         protected RideDeck _player1RideDeck;
         protected RideDeck _player2RideDeck;
+        protected CrestZone _player1CrestZone;
+        protected CrestZone _player2CrestZone;
         protected PseudoZone _player1Revealed;
         protected PseudoZone _player2Revealed;
         protected PseudoZone _player1Looking;
@@ -282,6 +284,20 @@ namespace VanguardEngine
             get => _player2OrderArea;
         }
 
+        public Card AddToCrestZone(Card card)
+        {
+            if (card.originalOwner == 1)
+                return _player1CrestZone.Add(card);
+            else if (card.originalOwner == 2)
+                return _player2CrestZone.Add(card);
+            return null;
+        }
+
+        public Zone Player2CrestZone
+        {
+            get => _player2CrestZone;
+        }
+
         public PseudoZone Player1Revealed
         {
             get => _player1Revealed;
@@ -435,6 +451,8 @@ namespace VanguardEngine
             _player2Order = new Order(this, 2);
             _player1OrderArea = new OrderArea(this, 1);
             _player2OrderArea = new OrderArea(this, 2);
+            _player1CrestZone = new CrestZone(this, 1);
+            _player2CrestZone = new CrestZone(this, 2);
             _player1RideDeck = new RideDeck(this, 1);
             _player2RideDeck = new RideDeck(this, 2);
             _player1Revealed = new PseudoZone(this, 1);
@@ -488,7 +506,7 @@ namespace VanguardEngine
             cards[0].fromRideDeck = true;
             _orientation.SetFaceUp(cards2[0].tempID, false);
             _circles[FL.EnemyVanguard].Initialize(cards2);
-            for (int i = 1; i < 4; i++)
+            for (int i = 1; i < 5; i++)
             {
                 cards.Clear();
                 cards.Add(deck1[i].Clone());
@@ -499,7 +517,7 @@ namespace VanguardEngine
                 cards.Clear();
             }
             cards2.Clear();
-            for (int i = 4; i < 50; i++)
+            for (int i = 5; i < 55; i++)
             {
                 cards.Add(deck1[i].Clone());
                 cards2.Add(deck2[i].Clone());
@@ -1808,7 +1826,7 @@ namespace VanguardEngine
 
         protected override Card AddToZone(Card card, bool bottom)
         {
-            _field.Orientation.SetFaceUp(card.tempID, false);
+            _field.Orientation.SetFaceUp(card.tempID, true);
             _field.Orientation.SetUpRight(card.tempID, true);
             return base.AddToZone(card, bottom);
         }
@@ -1981,6 +1999,22 @@ namespace VanguardEngine
         }
     }
 
+    public class CrestZone : Zone
+    {
+        private CrestZone OpposingCrestZone;
+        public CrestZone(Field field, int _owner) : base(field, _owner)
+        {
+            location = Location.CrestZone;
+        }
+        
+        protected override Card AddToZone(Card card, bool bottom)
+        {
+            _field.Orientation.SetFaceUp(card.tempID, true);
+            _field.Orientation.SetUpRight(card.tempID, false);
+            return base.AddToZone(card, bottom);
+        }
+    }
+
     public class Orientation
     {
         bool[] _faceup = new bool[200];
@@ -2127,6 +2161,7 @@ namespace VanguardEngine
         public readonly int grade;
         public readonly Snapshot abilitySource;
         public readonly List<Snapshot> relevantSnapshots = new List<Snapshot>();
+        public int owner = -1;
 
         public Snapshot(int _tempID, int _location, int _ownerOfLocation, int _previousLocation, int _ownerOfPreviousLocation, int _circle, int _previousCircle, string _name, int _fieldID, string _cardID, int _grade)
         {

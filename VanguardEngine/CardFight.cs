@@ -11,6 +11,7 @@ namespace VanguardEngine
 {
     public class CardFight
     {
+        private Field _field = new Field();
         public Player _player1;
         public Player _player2;
         public Player _actingPlayer;
@@ -68,7 +69,6 @@ namespace VanguardEngine
             //LoadConfigFile(namesPath);
             List<Card> deck1;
             List<Card> deck2;
-            Field field = new Field();
             deck1 = Deck1;
             deck2 = Deck2;
             foreach (Card card in deck2)
@@ -84,9 +84,9 @@ namespace VanguardEngine
             inputManager.Initialize(_player1, _player2, Deck1, Deck2, clientNumber, seed);
             _inputManager = inputManager;
             luaInterpreter = new LuaInterpreter(luaPath, this);
-            field.Initialize(deck1, deck2, tokens, seed, clientNumber);
-            _player1.Initialize(1, field);
-            _player2.Initialize(2, field);
+            _field.Initialize(deck1, deck2, tokens, seed, clientNumber);
+            _player1.Initialize(1, _field);
+            _player2.Initialize(2, _field);
             for (int i = 0; i < deck1.Count; i++)
             {
                 _abilities.AddAbilities(deck1[i].tempID, luaInterpreter.GetAbilities(deck1[i], _player1, _player2, true));
@@ -2150,7 +2150,10 @@ namespace VanguardEngine
                     temp.Add(_player1.GetSnapshot(_player1.Vanguard().tempID));
                 else
                     temp.Add(_player2.GetSnapshot(_player2.Vanguard().tempID));
+                temp[0].owner = playerID;
                 abilityTimingData.AddRelevantSnapshots(temp, 1);
+                abilityTimingData.AddSnapshotIndex(temp[0], SnapshotIndexType.Default);
+                abilityTimingData.AddSnapshotIndex(temp[0], SnapshotIndexType.PlacedOnVC);
                 if (cards.Count > 0)
                 {
                     //GenerateActionLog(playerID, cards[0], temp);
@@ -2327,6 +2330,17 @@ namespace VanguardEngine
                 }
             }
             return snapshots;
+        }
+
+        public void Put(Player player, List<Card> cards, int location)
+        {
+            if (location == Location.CrestZone)
+            {
+                foreach (Card card in cards)
+                {
+                    _field.AddToCrestZone(card);
+                }
+            }
         }
     }
 
@@ -2522,6 +2536,7 @@ namespace VanguardEngine
     {
         public Snapshot[] allSnapshots = new Snapshot[200];
         List<Snapshot>[] relevantSnapshots = new List<Snapshot>[5];
+        private Dictionary<int, Snapshot> snapshotIndex = new Dictionary<int, Snapshot>();
         public Snapshot abilitySource;
         public Ability ability;
         public bool asCost = false;
@@ -2541,6 +2556,18 @@ namespace VanguardEngine
             if (index < 0 || index >= 4)
                 return new List<Snapshot>();
             return relevantSnapshots[index];
+        }
+
+        public void AddSnapshotIndex(Snapshot snapShot, int index)
+        {
+            snapshotIndex[index] = snapShot;
+        }
+        
+        public Snapshot GetSnapshotIndex(int index)
+        {
+            if (snapshotIndex.ContainsKey(index))
+                return snapshotIndex[index];
+            return null;
         }
 
         public void AddRelevantSnapshots(List<Snapshot> snapShots, int index)
@@ -2609,5 +2636,11 @@ namespace VanguardEngine
     {
         public string key;
         public string name;
+    }
+
+    public class SnapshotIndexType
+    {
+        public const int Default = 0;
+        public const int PlacedOnVC = 1;
     }
 }
